@@ -9,8 +9,10 @@ import ProfessionDiscovery from './components/ProfessionDiscovery';
 import ChallengesHub from './components/ChallengesHub';
 import QAHub from './components/QAHub';
 import CreatePostModal from './components/CreatePostModal';
+import UserProfile from './components/UserProfile';
 
 import { 
+  INITIAL_USERS,
   INITIAL_POSTS, 
   INITIAL_STORIES, 
   INITIAL_CATEGORIES, 
@@ -28,11 +30,15 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Data States
+  const [users] = useState(INITIAL_USERS);
   const [posts, setPosts] = useState(INITIAL_POSTS);
   const [stories, setStories] = useState(INITIAL_STORIES);
   const [categories] = useState(INITIAL_CATEGORIES);
   const [challenges, setChallenges] = useState(INITIAL_CHALLENGES);
   const [qaItems, setQaItems] = useState(INITIAL_QA_ITEMS);
+
+  // Profile View State (null = main feed, object = viewing profile)
+  const [viewingUser, setViewingUser] = useState(null);
 
   // Modals
   const [activeStoryIdx, setActiveStoryIdx] = useState(null);
@@ -131,7 +137,36 @@ export default function App() {
     }));
   };
 
-  // Filtered Posts
+  const handleOpenUserProfile = (username) => {
+    const user = users[username] || users["elena_lawyer"];
+    setViewingUser(user);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenMyProfile = () => {
+    setViewingUser(users["elena_lawyer"]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectHighlight = (highlight) => {
+    // Open story player with this highlight
+    const highlightStory = {
+      id: highlight.id,
+      userId: viewingUser.id,
+      username: viewingUser.username,
+      fullName: viewingUser.fullName,
+      avatarUrl: viewingUser.avatarUrl,
+      professionTitle: viewingUser.professionTitle,
+      mediaUrl: highlight.cover,
+      caption: `Pinned Highlight: ${highlight.title}`,
+      timeAgo: "Pinned",
+      professionTag: viewingUser.industry.split(' ')[0]
+    };
+    setStories([highlightStory, ...stories]);
+    setActiveStoryIdx(0);
+  };
+
+  // Filtered Posts for Main Feed
   const filteredPosts = posts.filter(post => {
     const matchesSearch = 
       !searchTerm ||
@@ -158,110 +193,133 @@ export default function App() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          setViewingUser(null);
+          setActiveTab(tab);
+        }}
+        onOpenMyProfile={handleOpenMyProfile}
       />
 
       {/* Main App Container */}
       <main className="flex-1 max-w-2xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        {/* 24h Worklife Story Tray */}
-        <StoryTray
-          stories={stories}
-          onSelectStory={(_, idx) => setActiveStoryIdx(idx)}
-          onOpenAddStory={() => setIsCreateOpen(true)}
-        />
-
-        {/* Profession Discovery & Taxonomy Slider */}
-        <ProfessionDiscovery
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-          onSelectRole={(role) => setSearchTerm(role)}
-        />
-
-        {/* Main Feed Navigation Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl mb-5 text-xs font-bold border border-slate-300/60">
-          <button
-            onClick={() => setActiveTab('feed')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
-              activeTab === 'feed'
-                ? 'bg-white text-slate-900 shadow-sm font-extrabold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-brand-600" />
-            <span>Feed & Case Studies</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('challenges')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
-              activeTab === 'challenges'
-                ? 'bg-white text-slate-900 shadow-sm font-extrabold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Puzzle className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Dilemmas ({challenges.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('qa')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
-              activeTab === 'qa'
-                ? 'bg-white text-slate-900 shadow-sm font-extrabold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
-            <span>Q&A AMAs</span>
-          </button>
-        </div>
-
-        {/* FEED TAB CONTENT */}
-        {activeTab === 'feed' && (
-          <div className="space-y-6">
-            {filteredPosts.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-sm font-bold text-slate-600">No posts matched your search filters.</p>
-                <button
-                  onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}
-                  className="mt-2 text-xs font-bold text-brand-600 hover:underline"
-                >
-                  Clear all filters
-                </button>
-              </div>
-            ) : (
-              filteredPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onLike={handleLikePost}
-                  onBookmark={handleBookmarkPost}
-                  onOpenCaseStudy={setSelectedCaseStudy}
-                  onOpenReviewModal={setReviewModalPost}
-                />
-              ))
-            )}
-          </div>
-        )}
-
-        {/* CHALLENGES TAB CONTENT */}
-        {activeTab === 'challenges' && (
-          <ChallengesHub
-            challenges={challenges}
-            onAddSuggestion={handleAddSuggestion}
-            onUpvoteSuggestion={handleUpvoteSuggestion}
-            onOpenCreateChallenge={() => setIsCreateOpen(true)}
-          />
-        )}
-
-        {/* QA AMAs TAB CONTENT */}
-        {activeTab === 'qa' && (
-          <QAHub
+        {/* VIEWING PROFILE VIEW */}
+        {viewingUser ? (
+          <UserProfile
+            user={viewingUser}
+            posts={posts}
             qaItems={qaItems}
+            challenges={challenges}
+            onBack={() => setViewingUser(null)}
+            onOpenCaseStudy={setSelectedCaseStudy}
+            onOpenReviewModal={setReviewModalPost}
             onAskQuestion={handleAskQuestion}
-            onUpvoteQA={handleUpvoteQA}
+            onSelectHighlight={handleSelectHighlight}
           />
+        ) : (
+          /* MAIN FEED & TABS VIEW */
+          <>
+            {/* 24h Worklife Story Tray */}
+            <StoryTray
+              stories={stories}
+              onSelectStory={(_, idx) => setActiveStoryIdx(idx)}
+              onOpenAddStory={() => setIsCreateOpen(true)}
+            />
+
+            {/* Profession Discovery & Taxonomy Slider */}
+            <ProfessionDiscovery
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              onSelectRole={(role) => setSearchTerm(role)}
+            />
+
+            {/* Main Feed Navigation Tabs */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl mb-5 text-xs font-bold border border-slate-300/60">
+              <button
+                onClick={() => setActiveTab('feed')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
+                  activeTab === 'feed'
+                    ? 'bg-white text-slate-900 shadow-sm font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-brand-600" />
+                <span>Feed & Case Studies</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('challenges')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
+                  activeTab === 'challenges'
+                    ? 'bg-white text-slate-900 shadow-sm font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Puzzle className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Dilemmas ({challenges.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('qa')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
+                  activeTab === 'qa'
+                    ? 'bg-white text-slate-900 shadow-sm font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
+                <span>Q&A AMAs</span>
+              </button>
+            </div>
+
+            {/* FEED TAB CONTENT */}
+            {activeTab === 'feed' && (
+              <div className="space-y-6">
+                {filteredPosts.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                    <p className="text-sm font-bold text-slate-600">No posts matched your search filters.</p>
+                    <button
+                      onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}
+                      className="mt-2 text-xs font-bold text-brand-600 hover:underline"
+                    >
+                      Clear all filters
+                    </button>
+                  </div>
+                ) : (
+                  filteredPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onLike={handleLikePost}
+                      onBookmark={handleBookmarkPost}
+                      onOpenCaseStudy={setSelectedCaseStudy}
+                      onOpenReviewModal={setReviewModalPost}
+                      onOpenUserProfile={handleOpenUserProfile}
+                    />
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* CHALLENGES TAB CONTENT */}
+            {activeTab === 'challenges' && (
+              <ChallengesHub
+                challenges={challenges}
+                onAddSuggestion={handleAddSuggestion}
+                onUpvoteSuggestion={handleUpvoteSuggestion}
+                onOpenCreateChallenge={() => setIsCreateOpen(true)}
+              />
+            )}
+
+            {/* QA AMAs TAB CONTENT */}
+            {activeTab === 'qa' && (
+              <QAHub
+                qaItems={qaItems}
+                onAskQuestion={handleAskQuestion}
+                onUpvoteQA={handleUpvoteQA}
+              />
+            )}
+          </>
         )}
       </main>
 

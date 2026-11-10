@@ -1,12 +1,13 @@
 import React from 'react';
 import { Briefcase, Search, PlusSquare, Compass, Bell, MessageCircle } from 'lucide-react';
 
-export default function Header({ 
-  onOpenCreate, 
-  searchTerm, 
+export default function Header({
+  onOpenCreate,
+  searchTerm,
   onSearchChange,
   activeTab,
-  onTabChange
+  onTabChange,
+  onOpenMyProfile
 }) {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
@@ -57,12 +58,12 @@ export default function Header({
           </button>
 
           {/* User Profile Avatar */}
-          <div className="cursor-pointer">
+          <div className="cursor-pointer" onClick={onOpenMyProfile}>
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
               alt="Elena Vance"
-              className="w-8 h-8 rounded-full object-cover ring-2 ring-brand-500/30"
-              title="Elena Vance, Esq. (Litigation Partner)"
+              className="w-8 h-8 rounded-full object-cover ring-2 ring-brand-500/30 hover:scale-105 transition-transform"
+              title="View Your Profile & Portfolio (Elena Vance, Esq.)"
             />
           </div>
         </div>

@@ -4,12 +4,13 @@ import {
   ArrowRight, CheckCircle2, ChevronRight, Share2, Layers, AlertTriangle
 } from 'lucide-react';
 
-export default function PostCard({ 
-  post, 
-  onLike, 
-  onBookmark, 
-  onOpenCaseStudy, 
-  onOpenReviewModal 
+export default function PostCard({
+  post,
+  onLike,
+  onBookmark,
+  onOpenCaseStudy,
+  onOpenReviewModal,
+  onOpenUserProfile
 }) {
   const isCaseStudy = post.postType === 'pro_case_study' || post.postType === 'task_walkthrough';
   const task = post.taskDetails;
@@ -18,15 +19,20 @@ export default function PostCard({
     <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
       {/* Post Author Bar */}
       <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div
+          className="flex items-center gap-3 cursor-pointer group"
+          onClick={() => onOpenUserProfile && onOpenUserProfile(post.authorUsername)}
+        >
           <img
             src={post.authorAvatarUrl}
             alt={post.authorFullName}
-            className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100"
+            className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-brand-400 transition-all"
           />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sm text-slate-900">{post.authorFullName}</span>
+              <span className="font-bold text-sm text-slate-900 group-hover:text-brand-600 transition-colors">
+                {post.authorFullName}
+              </span>
               {post.isAuthorVerified && (
                 <ShieldCheck className="w-4 h-4 text-brand-600 fill-brand-50" />
               )}

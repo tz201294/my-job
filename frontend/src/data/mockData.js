@@ -4,14 +4,23 @@ export const INITIAL_USERS = {
     username: "elena_lawyer",
     fullName: "Elena Vance, Esq.",
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-    professionTitle: "Litigation Partner",
+    professionTitle: "Commercial Litigation Partner",
     industry: "Legal & Regulatory",
     specialization: "Commercial Litigation & IP",
     yearsExp: 12,
     isVerified: true,
-    bio: "Commercial Litigation Partner | Tech Contracts, IP Disputes, and Courtroom Strategy ⚖️",
+    bio: "Commercial Litigation Partner @ Vance & Associates | Complex Tech Contracts, Federal IP Disputes, and Courtroom Strategy ⚖️",
     followersCount: 21500,
-    postsCount: 62
+    followingCount: 420,
+    postsCount: 62,
+    rating: 4.9,
+    keyTools: ["Westlaw Legal", "LexisNexis", "FRCP Rule 45", "Clio Suite", "Adobe Redaction"],
+    highlights: [
+      { id: "hl_01", title: "Subpoenas", cover: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=400&q=80" },
+      { id: "hl_02", title: "Court Prep", cover: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=400&q=80" },
+      { id: "hl_03", title: "Arbitration", cover: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&q=80" },
+      { id: "hl_04", title: "Daily Coffee", cover: "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=400&q=80" }
+    ]
   },
   "sarah_plumber": {
     id: "usr_101",
@@ -23,9 +32,17 @@ export const INITIAL_USERS = {
     specialization: "Commercial High-Rise Piping",
     yearsExp: 10,
     isVerified: true,
-    bio: "Licensed Master Plumber | Demystifying water pressure, commercial boilers, & drain acoustics 🛠️",
+    bio: "Licensed Master Plumber @ Jenkins Pro Plumbing | Demystifying water pressure, commercial boilers, & drain acoustics 🛠️",
     followersCount: 14200,
-    postsCount: 48
+    followingCount: 310,
+    postsCount: 48,
+    rating: 4.8,
+    keyTools: ["24-inch Pipe Wrench", "Digital Manometer", "PTFE Sealant", "Drain Camera", "PEX Crimper"],
+    highlights: [
+      { id: "hl_11", title: "PRV Valves", cover: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80" },
+      { id: "hl_12", title: "Boiler Rigs", cover: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80" },
+      { id: "hl_13", title: "Tool Bag", cover: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=400&q=80" }
+    ]
   },
   "alex_driver": {
     id: "usr_102",
@@ -37,9 +54,16 @@ export const INITIAL_USERS = {
     specialization: "60ft Articulated Hybrid Fleet",
     yearsExp: 6,
     isVerified: true,
-    bio: "City Transit Bus Operator | 60ft articulated buses through urban corridors 🚌",
+    bio: "City Transit Bus Operator @ Metro Express | 60ft articulated hybrid buses through urban rush hour corridors 🚌",
     followersCount: 8900,
-    postsCount: 29
+    followingCount: 140,
+    postsCount: 29,
+    rating: 4.9,
+    keyTools: ["Route Telematics", "Convex Mirrors", "Regen Braking", "Dispatch CAD/AVL"],
+    highlights: [
+      { id: "hl_21", title: "60ft Pivots", cover: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80" },
+      { id: "hl_22", title: "Pre-Trips", cover: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=400&q=80" }
+    ]
   },
   "david_cpa": {
     id: "usr_104",
@@ -51,9 +75,15 @@ export const INITIAL_USERS = {
     specialization: "Fraud Audit & Section 1031 Exchanges",
     yearsExp: 8,
     isVerified: true,
-    bio: "Forensic Accountant | Tracing ledger discrepancies & tax structuring 📊",
+    bio: "Forensic Accountant | Tracing multi-currency wire trails, ledger discrepancies & 1031 tax structuring 📊",
     followersCount: 11200,
-    postsCount: 35
+    followingCount: 280,
+    postsCount: 35,
+    rating: 4.9,
+    keyTools: ["Excel PowerQuery", "Alteryx", "IDEA Audit", "QuickBooks Enterprise"],
+    highlights: [
+      { id: "hl_31", title: "Audit Trails", cover: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80" }
+    ]
   }
 };
 
