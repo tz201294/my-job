@@ -54,6 +54,30 @@ MOCK_USERS = {
             "is_verified_pro": True,
             "company_or_freelance": "Metro Express Transit",
             "key_tools": ["Fleet Telematics", "Route Dispatch System", "Defensive Driving Radar"]
+        },
+        "elena_lawyer": {
+            "id": "usr_103",
+            "username": "elena_lawyer",
+            "email": "elena@vancelegal.com",
+            "full_name": "Elena Vance, Esq.",
+            "bio": "Commercial Litigation Partner | Tech Contracts, IP Disputes, and Courtroom Strategy",
+            "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+            "is_active": True,
+            "created_at": datetime.utcnow(),
+            "followers_count": 21500,
+            "following_count": 420,
+            "posts_count": 62,
+            "profession": {
+                "id": "prof_103",
+                "user_id": "usr_103",
+                "industry": "Legal & Regulatory",
+                "title": "Commercial Litigation Attorney",
+                "specialization": "IP & Breach of Contract Disputes",
+                "years_of_experience": 12,
+                "is_verified_pro": True,
+                "company_or_freelance": "Vance & Associates Law",
+                "key_tools": ["Westlaw", "LexisNexis", "Clio Litigation Suite", "Adobe Pro Redaction"]
+            }
         }
     }
 }

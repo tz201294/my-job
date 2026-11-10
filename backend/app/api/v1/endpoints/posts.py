@@ -9,6 +9,64 @@ router = APIRouter()
 
 MOCK_POSTS = [
     {
+        "id": "post_503",
+        "author_id": "usr_103",
+        "author_username": "elena_lawyer",
+        "author_full_name": "Elena Vance, Esq.",
+        "author_avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+        "author_profession_title": "Commercial Litigation Attorney",
+        "is_author_verified": True,
+        "title": "Mastering the Subpoena Duces Tecum: How to Compel Critical Evidence Step-by-Step",
+        "caption": "A breakdown of how litigation attorneys draft, scope, and serve third-party discovery subpoenas without getting them quashed.",
+        "post_type": PostType.PRO_CASE_STUDY,
+        "media": [
+            {
+                "url": "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80",
+                "media_type": "image",
+                "caption": "Redacted discovery schedule and document request riders"
+            }
+        ],
+        "tags": ["law", "litigation", "legalpractice", "subpoena", "evidence"],
+        "likes_count": 1450,
+        "comments_count": 88,
+        "is_liked_by_me": False,
+        "is_bookmarked_by_me": False,
+        "task_details": {
+            "id": "task_503",
+            "post_id": "post_503",
+            "problem_statement": "In a corporate breach of contract dispute, the opposing party claimed all server logs were deleted. We needed to compel the third-party cloud hosting provider to preserve and produce the unedited audit logs before statutory deadlines.",
+            "category": "Legal",
+            "difficulty": TaskDifficulty.EXPERT,
+            "estimated_time_mins": 180,
+            "tools_used": ["Westlaw / LexisNexis", "Federal Rules of Civil Procedure (Rule 45)", "PDF Redaction Suite", "Licensed Process Server"],
+            "safety_warnings": "Ensure proper notice to all parties prior to service to prevent sanctions under FRCP 45(a)(4).",
+            "steps": [
+                {
+                    "step_number": 1,
+                    "title": "Draft Narrowly Tailored Document Requests (Schedule A)",
+                    "description": "Avoid overly broad catch-alls that invite undue burden motions. Specify exact server log date ranges, IP tables, and user authentication records.",
+                    "image_url": "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80",
+                    "tip": "Define technical terms clearly so IT custodians cannot exploit ambiguities."
+                },
+                {
+                    "step_number": 2,
+                    "title": "Issue Mandatory Notice of Intent to Serve",
+                    "description": "Serve a copy of the subpoena on all parties to the action at least 5 business days before service on the third-party witness.",
+                    "image_url": "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80",
+                    "tip": "Retain timestamped electronic service receipts in the litigation docket."
+                },
+                {
+                    "step_number": 3,
+                    "title": "Execute Personal Service & Monitor Compliance",
+                    "description": "Engage a certified process server in the target jurisdiction. Track the 14-day statutory objection window.",
+                    "image_url": "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=600&q=80",
+                    "tip": "Follow up with a courteous call to the cloud provider's in-house legal counsel to clarify file delivery formats."
+                }
+            ]
+        },
+        "created_at": datetime.utcnow()
+    },
+    {
         "id": "post_501",
         "author_id": "usr_101",
         "author_username": "sarah_plumber",

@@ -2,10 +2,17 @@
 
 ## 1. System Overview
 
-**MyJob** is a profession-centric, media-driven social platform combining:
-- **Instagram-style Stories & Reels**: 24-hour disappearing clips and pinned highlights of real job shifts.
-- **Structured Task Walkthroughs**: Visual step-by-step problem-solving guides with tools and workflow stages.
-- **Profession Discovery Engine**: Deep taxonomy filtering (e.g. Trades → Plumbing → Drain Repair).
+**MyJob** is a profession-centric, media-driven social platform that allows verified workers and professionals across any discipline (trades, law, medicine, transport, tech, finance) to showcase both their daily life and their specialized craft.
+
+### 1.1 The 3-Tier Worker Content Model
+Every worker account has three distinct modes of publishing:
+1. **Day-to-Day Stories (24h Ephemeral)**:
+   - Quick, relatable snaps of daily work routines (e.g., getting morning coffee, commuting to a court hearing, setting up tools in a van, reviewing meeting notes).
+2. **General Feed Posts (Milestones & Achievements)**:
+   - Permanent photo & text posts sharing career updates, trial verdicts, passed certifications, workplace humor, and milestone reflections.
+3. **Professional Deep-Dive Case Studies & Task Walkthroughs (The Core Differentiator)**:
+   - High-value, structured professional breakdowns where true expertise is demonstrated (e.g., *"How to draft and serve an enforceable Subpoena Duces Tecum"*, *"Diagnosing hydraulic water hammer in high-rise plumbing"*, *"Handling emergency detour dispatching"*).
+   - Includes: Problem context, statutory/tool references, step-by-step methodology, and expert pro-tips.
 
 ---
 

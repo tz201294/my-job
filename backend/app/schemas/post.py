@@ -6,9 +6,10 @@ from app.schemas.task import TaskDetailsBase, TaskDetailsCreate, TaskDetailsResp
 
 
 class PostType(str, Enum):
-    STANDARD = "standard"
-    TASK_WALKTHROUGH = "task_walkthrough"
-    REEL = "reel"
+    GENERAL_POST = "general_post"           # Achievements, milestones, desk setups, thoughts
+    PRO_CASE_STUDY = "pro_case_study"       # Deep-dive profession breakdown (e.g. "How to write a subpoena")
+    TASK_WALKTHROUGH = "task_walkthrough"   # Step-by-step practical trade or coding walkthrough
+    REEL = "reel"                           # Short-form video clip
 
 
 class MediaItem(BaseModel):

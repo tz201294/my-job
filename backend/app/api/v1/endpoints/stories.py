@@ -38,6 +38,22 @@ MOCK_STORIES = [
         "is_pinned_highlight": False,
         "highlight_collection_name": None,
         "views_count": 512
+    },
+    {
+        "id": "story_03",
+        "user_id": "usr_103",
+        "author_username": "elena_lawyer",
+        "author_avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+        "author_profession_title": "Commercial Litigation Attorney",
+        "media_url": "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80",
+        "media_type": MediaType.IMAGE,
+        "caption": "Early morning cortado & binder prep before today's 9:00 AM federal injunction hearing ☕⚖️",
+        "profession_tag": "Legal",
+        "created_at": datetime.utcnow() - timedelta(hours=1),
+        "expires_at": datetime.utcnow() + timedelta(hours=23),
+        "is_pinned_highlight": False,
+        "highlight_collection_name": None,
+        "views_count": 680
     }
 ]
 
