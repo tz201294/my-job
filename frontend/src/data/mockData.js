@@ -476,3 +476,60 @@ export const INITIAL_QA_ITEMS = [
     timeAgo: "3 days ago"
   }
 ];
+
+export const INITIAL_REELS = [
+  {
+    id: "reel_01",
+    authorId: "usr_103",
+    authorUsername: "elena_lawyer",
+    authorFullName: "Elena Vance, Esq.",
+    authorAvatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    authorProfessionTitle: "Commercial Litigation Partner",
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-lawyer-reading-documents-in-his-office-42798-large.mp4",
+    posterUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80",
+    caption: "The #1 objection rookie lawyers botch in federal depositions: 'Form of the question'. Here is what you MUST state on the record! ⚖️",
+    tags: ["litigationtips", "lawschool", "depositions"],
+    professionTag: "Legal",
+    likesCount: 3820,
+    commentsCount: 240,
+    isLiked: false,
+    isBookmarked: false,
+    audioTitle: "Elena Vance • Original Court Audio"
+  },
+  {
+    id: "reel_02",
+    authorId: "usr_101",
+    authorUsername: "sarah_plumber",
+    authorFullName: "Sarah Jenkins",
+    authorAvatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+    authorProfessionTitle: "Master Plumber",
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-plumber-working-with-pipes-40810-large.mp4",
+    posterUrl: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=800&q=80",
+    caption: "Clockwise or counter-clockwise? If you wrap PTFE tape the wrong way, tightening the brass nipple will unthread your seal! 🛠️🚿",
+    tags: ["plumbingtips", "trades", "diyrepair"],
+    professionTag: "Trades",
+    likesCount: 5410,
+    commentsCount: 312,
+    isLiked: false,
+    isBookmarked: false,
+    audioTitle: "Workshop Sounds • Real Plumber Audio"
+  },
+  {
+    id: "reel_03",
+    authorId: "usr_102",
+    authorUsername: "alex_driver",
+    authorFullName: "Alex Rivera",
+    authorAvatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    authorProfessionTitle: "Transit Bus Operator",
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-traffic-in-a-big-city-at-night-42861-large.mp4",
+    posterUrl: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+    caption: "The 3-point convex mirror sweep we perform every 7 seconds when driving through congested cycling zones 🚌💨",
+    tags: ["roadsafety", "transitlife", "citybus"],
+    professionTag: "Transport",
+    likesCount: 2940,
+    commentsCount: 156,
+    isLiked: false,
+    isBookmarked: false,
+    audioTitle: "Alex Rivera • City Rush Hour Ambiance"
+  }
+];

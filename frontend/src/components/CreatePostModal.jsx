@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, Layers, Image as ImageIcon, Plus, Trash2, 
-  Wrench, ShieldAlert, Sparkles, Check, Clock, Puzzle
+  Wrench, ShieldAlert, Sparkles, Check, Clock, Puzzle,
+  Upload, Video, Camera
 } from 'lucide-react';
 
 export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, onCreateChallenge }) {
@@ -11,12 +12,13 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaPreview, setMediaPreview] = useState('');
   const [tags, setTags] = useState('law, litigation, casestudy');
 
   // Case Study Specific Fields
   const [category, setCategory] = useState('Legal & Regulatory');
   const [difficulty, setDifficulty] = useState('Expert');
-  const [duration, setDuration] = useState('2 Hours');
+  const [duration, setDuration] = useState('2 Hours Prep');
   const [problemStatement, setProblemStatement] = useState('');
   const [toolsString, setToolsString] = useState('Westlaw, FRCP Rule 45, Adobe Redaction');
   const [safetyWarnings, setSafetyWarnings] = useState('Ensure timely notice is served to avoid sanctions.');
@@ -25,7 +27,7 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
       stepNumber: 1,
       title: 'Analyze Subpoena Scope & Jurisdictional Reach',
       description: 'Review third-party custodian records to verify non-party status.',
-      imageUrl: '',
+      imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=800&q=80',
       tip: 'Check local district rules for specialized deposition forms.'
     }
   ]);
@@ -33,10 +35,38 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
   // Story Fields
   const [storyCaption, setStoryCaption] = useState('');
   const [storyMedia, setStoryMedia] = useState('https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80');
+  const [storyPreview, setStoryPreview] = useState('');
 
   // Challenge Fields
   const [challengeTitle, setChallengeTitle] = useState('');
   const [challengeDesc, setChallengeDesc] = useState('');
+
+  // File Upload Handlers
+  const handleCoverFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const blobUrl = URL.createObjectURL(file);
+      setMediaPreview(blobUrl);
+      setMediaUrl(blobUrl);
+    }
+  };
+
+  const handleStoryFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const blobUrl = URL.createObjectURL(file);
+      setStoryPreview(blobUrl);
+      setStoryMedia(blobUrl);
+    }
+  };
+
+  const handleStepFileUpload = (idx, e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const blobUrl = URL.createObjectURL(file);
+      handleStepChange(idx, 'imageUrl', blobUrl);
+    }
+  };
 
   const handleAddStep = () => {
     setSteps([
@@ -145,8 +175,8 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
         {/* Modal Header */}
         <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
           <div>
-            <h3 className="font-extrabold text-base sm:text-lg">Worker Publishing Studio</h3>
-            <p className="text-xs text-slate-400">Share your daily routine or demonstrate real profession craft</p>
+            <h3 className="font-extrabold text-base sm:text-lg">Publishing Studio</h3>
+            <p className="text-xs text-slate-400">Upload media or document step-by-step profession techniques</p>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-full">
             <X className="w-5 h-5" />
@@ -207,18 +237,38 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
           {contentType === 'story' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Story Photo/Video URL
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Select Story Photo or Video
                 </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={storyMedia}
-                  onChange={(e) => setStoryMedia(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
-                  required
-                />
+                
+                {/* Drag and drop upload box */}
+                <div className="border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-2xl p-4 bg-slate-50 text-center cursor-pointer transition-colors relative">
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleStoryFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">Click to upload story media from device</p>
+                      <p className="text-[11px] text-slate-400">JPG, PNG, MP4 video up to 50MB</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview if uploaded */}
+                {(storyPreview || storyMedia) && (
+                  <div className="mt-3 relative w-32 h-44 rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                    <img src={storyPreview || storyMedia} alt="Preview" className="w-full h-full object-cover" />
+                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Preview</span>
+                  </div>
+                )}
               </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
                   Daily Worklife Moment (Caption)
@@ -303,18 +353,38 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
                 />
               </div>
 
-              {/* Media URL */}
+              {/* Cover Media Upload */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Cover Photo / Diagram URL
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Cover Photo / Diagram
                 </label>
+                <div className="border border-dashed border-slate-300 hover:border-brand-500 rounded-xl p-3 bg-slate-50 flex items-center justify-between cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-brand-600" />
+                    <span className="text-xs font-semibold text-slate-700">Choose file from device</span>
+                  </div>
+                  <span className="text-[11px] text-slate-400">or enter URL below</span>
+                </div>
+
                 <input
                   type="url"
-                  placeholder="https://..."
+                  placeholder="https://... (or leave blank if uploaded above)"
                   value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
+                  onChange={(e) => { setMediaUrl(e.target.value); setMediaPreview(e.target.value); }}
+                  className="mt-2 w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
                 />
+
+                {mediaPreview && (
+                  <div className="mt-2 w-full aspect-video max-h-40 rounded-xl overflow-hidden border border-slate-200">
+                    <img src={mediaPreview} alt="Cover Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
 
               {/* PRO CASE STUDY DEEP DIVE FIELDS */}
@@ -425,7 +495,7 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
                     </div>
 
                     {steps.map((st, idx) => (
-                      <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-brand-700">
                             Step {st.stepNumber}
@@ -456,6 +526,34 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
                           className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none"
                           required
                         />
+
+                        {/* Step Image Upload */}
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer">
+                            <Upload className="w-3 h-3 text-brand-600" />
+                            <span>Step Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleStepFileUpload(idx, e)}
+                              className="hidden"
+                            />
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="or Image URL..."
+                            value={st.imageUrl || ''}
+                            onChange={(e) => handleStepChange(idx, 'imageUrl', e.target.value)}
+                            className="flex-1 p-1.5 bg-white border border-slate-200 rounded-lg text-[11px] outline-none"
+                          />
+                        </div>
+
+                        {st.imageUrl && (
+                          <div className="w-24 h-16 rounded-lg overflow-hidden border border-slate-200">
+                            <img src={st.imageUrl} alt="Step preview" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+
                         <input
                           type="text"
                           placeholder="Pro tip for this step..."
@@ -484,7 +582,7 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
               type="submit"
               className="px-6 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-sm transition-all"
             >
-              Publish to MyJob Feed
+              Publish to MyJob
             </button>
           </div>
         </form>

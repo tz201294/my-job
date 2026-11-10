@@ -8,6 +8,7 @@ import ReviewRatingModal from './components/ReviewRatingModal';
 import ProfessionDiscovery from './components/ProfessionDiscovery';
 import ChallengesHub from './components/ChallengesHub';
 import QAHub from './components/QAHub';
+import ReelsHub from './components/ReelsHub';
 import CreatePostModal from './components/CreatePostModal';
 import UserProfile from './components/UserProfile';
 
@@ -17,15 +18,16 @@ import {
   INITIAL_STORIES, 
   INITIAL_CATEGORIES, 
   INITIAL_CHALLENGES, 
-  INITIAL_QA_ITEMS 
+  INITIAL_QA_ITEMS,
+  INITIAL_REELS
 } from './data/mockData';
 
 import { 
-  Layers, Puzzle, HelpCircle 
+  Layers, Puzzle, HelpCircle, Film
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('feed'); // 'feed' | 'challenges' | 'qa'
+  const [activeTab, setActiveTab] = useState('feed'); // 'feed' | 'reels' | 'challenges' | 'qa'
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -33,6 +35,7 @@ export default function App() {
   const [users] = useState(INITIAL_USERS);
   const [posts, setPosts] = useState(INITIAL_POSTS);
   const [stories, setStories] = useState(INITIAL_STORIES);
+  const [reels, setReels] = useState(INITIAL_REELS);
   const [categories] = useState(INITIAL_CATEGORIES);
   const [challenges, setChallenges] = useState(INITIAL_CHALLENGES);
   const [qaItems, setQaItems] = useState(INITIAL_QA_ITEMS);
@@ -66,6 +69,28 @@ export default function App() {
         return { ...p, isBookmarked: !p.isBookmarked };
       }
       return p;
+    }));
+  };
+
+  const handleLikeReel = (reelId) => {
+    setReels(reels.map(r => {
+      if (r.id === reelId) {
+        return {
+          ...r,
+          isLiked: !r.isLiked,
+          likesCount: r.isLiked ? r.likesCount - 1 : r.likesCount + 1
+        };
+      }
+      return r;
+    }));
+  };
+
+  const handleBookmarkReel = (reelId) => {
+    setReels(reels.map(r => {
+      if (r.id === reelId) {
+        return { ...r, isBookmarked: !r.isBookmarked };
+      }
+      return r;
     }));
   };
 
@@ -149,7 +174,6 @@ export default function App() {
   };
 
   const handleSelectHighlight = (highlight) => {
-    // Open story player with this highlight
     const highlightStory = {
       id: highlight.id,
       userId: viewingUser.id,
@@ -244,7 +268,20 @@ export default function App() {
                 }`}
               >
                 <Layers className="w-3.5 h-3.5 text-brand-600" />
-                <span>Feed & Case Studies</span>
+                <span className="hidden sm:inline">Feed & Guides</span>
+                <span className="sm:hidden">Feed</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('reels')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
+                  activeTab === 'reels'
+                    ? 'bg-white text-slate-900 shadow-sm font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Film className="w-3.5 h-3.5 text-rose-600" />
+                <span>Reels ({reels.length})</span>
               </button>
 
               <button
@@ -256,7 +293,7 @@ export default function App() {
                 }`}
               >
                 <Puzzle className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Dilemmas ({challenges.length})</span>
+                <span>Dilemmas</span>
               </button>
 
               <button
@@ -268,7 +305,7 @@ export default function App() {
                 }`}
               >
                 <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
-                <span>Q&A AMAs</span>
+                <span>AMAs</span>
               </button>
             </div>
 
@@ -299,6 +336,16 @@ export default function App() {
                   ))
                 )}
               </div>
+            )}
+
+            {/* REELS TAB CONTENT */}
+            {activeTab === 'reels' && (
+              <ReelsHub
+                reels={reels}
+                onLikeReel={handleLikeReel}
+                onBookmarkReel={handleBookmarkReel}
+                onOpenUserProfile={handleOpenUserProfile}
+              />
             )}
 
             {/* CHALLENGES TAB CONTENT */}
