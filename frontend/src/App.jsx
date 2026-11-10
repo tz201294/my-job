@@ -19,12 +19,10 @@ import {
 } from './data/mockData';
 
 import { 
-  Flame, Sparkles, Filter, Layers, Puzzle, 
-  HelpCircle, Compass, ShieldCheck 
+  Layers, Puzzle, HelpCircle 
 } from 'lucide-react';
 
 export default function App() {
-  const [currentRole, setCurrentRole] = useState('worker'); // 'worker' | 'explorer'
   const [activeTab, setActiveTab] = useState('feed'); // 'feed' | 'challenges' | 'qa'
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -154,10 +152,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Header */}
+      {/* Universal Instagram-Style Header */}
       <Header
-        currentRole={currentRole}
-        onToggleRole={setCurrentRole}
         onOpenCreate={() => setIsCreateOpen(true)}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -165,17 +161,16 @@ export default function App() {
         onTabChange={setActiveTab}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        {/* Story Tray (24h Ephemeral Shifts) */}
+      {/* Main App Container */}
+      <main className="flex-1 max-w-2xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {/* 24h Worklife Story Tray */}
         <StoryTray
           stories={stories}
           onSelectStory={(_, idx) => setActiveStoryIdx(idx)}
-          currentRole={currentRole}
           onOpenAddStory={() => setIsCreateOpen(true)}
         />
 
-        {/* Profession Discovery & Filter Slider */}
+        {/* Profession Discovery & Taxonomy Slider */}
         <ProfessionDiscovery
           categories={categories}
           selectedCategory={selectedCategory}
@@ -183,8 +178,8 @@ export default function App() {
           onSelectRole={(role) => setSearchTerm(role)}
         />
 
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl mb-6 text-xs font-bold border border-slate-300/60 max-w-md">
+        {/* Main Feed Navigation Tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl mb-5 text-xs font-bold border border-slate-300/60">
           <button
             onClick={() => setActiveTab('feed')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
@@ -206,7 +201,7 @@ export default function App() {
             }`}
           >
             <Puzzle className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Work Dilemmas ({challenges.length})</span>
+            <span>Dilemmas ({challenges.length})</span>
           </button>
 
           <button
@@ -256,7 +251,6 @@ export default function App() {
             challenges={challenges}
             onAddSuggestion={handleAddSuggestion}
             onUpvoteSuggestion={handleUpvoteSuggestion}
-            currentRole={currentRole}
             onOpenCreateChallenge={() => setIsCreateOpen(true)}
           />
         )}
@@ -301,7 +295,7 @@ export default function App() {
         />
       )}
 
-      {/* Worker Post/Story/Challenge Creator Studio Modal */}
+      {/* Post/Story/Challenge Creator Studio Modal */}
       {isCreateOpen && (
         <CreatePostModal
           onClose={() => setIsCreateOpen(false)}
