@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { 
-  Puzzle, Lightbulb, CheckCircle2, ShieldCheck, ArrowUp, 
-  MessageSquare, PlusCircle, Sparkles, Send, Wrench
+  Zap, Lightbulb, CheckCircle2, ShieldCheck, ArrowUp, 
+  PlusCircle, Sparkles, Send, Wrench, Radio, Flame
 } from 'lucide-react';
 
 export default function ChallengesHub({ 
   challenges, 
   onAddSuggestion, 
   onUpvoteSuggestion,
-  currentRole,
   onOpenCreateChallenge 
 }) {
   const [activeChallengeId, setActiveChallengeId] = useState(challenges[0]?.id);
@@ -25,7 +24,7 @@ export default function ChallengesHub({
       id: `sug_${Date.now()}`,
       suggesterId: "usr_current",
       suggesterUsername: "curious_peer",
-      suggesterProfession: currentRole === 'worker' ? "Peer Practitioner" : "Community Explorer",
+      suggesterProfession: "Practitioner / Peer",
       suggestionText: suggestionInput,
       suggestedTool: toolInput.trim() || undefined,
       upvotes: 0,
@@ -37,35 +36,38 @@ export default function ChallengesHub({
   };
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm">
-      {/* Top Banner */}
-      <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
+    <div className="bg-white/95 border border-indigo-100 rounded-3xl overflow-hidden shadow-sm backdrop-blur-sm card-glow">
+      {/* Top Banner with Vibrant Flame / Amber Gradient */}
+      <div className="p-5 sm:p-6 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Puzzle className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-extrabold text-base sm:text-lg">Live Work Challenges & Brainstorming</h3>
+            <span className="p-1.5 rounded-xl bg-white/20 backdrop-blur-md text-amber-100">
+              <Zap className="w-5 h-5 fill-amber-300 text-amber-200" />
+            </span>
+            <h3 className="font-black text-lg sm:text-xl tracking-tight">Live Work Hub</h3>
+            <span className="flex items-center gap-1 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-white text-rose-600 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> Live Shifts
+            </span>
           </div>
-          <p className="text-xs text-slate-300">
-            Real workers posting tricky dilemmas — contribute insights, tools, and hypothesis solutions!
+          <p className="text-xs text-amber-100/90 font-medium max-w-lg">
+            Real workers posting live challenges & real-time job scenarios — contribute hypotheses and tools!
           </p>
         </div>
 
-        {currentRole === 'worker' && (
-          <button
-            onClick={onOpenCreateChallenge}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-sm"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Post Challenge</span>
-          </button>
-        )}
+        <button
+          onClick={onOpenCreateChallenge}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-amber-50 text-orange-700 text-xs font-black transition-all shadow-md active:scale-95 flex-shrink-0"
+        >
+          <PlusCircle className="w-4 h-4 stroke-[2.5]" />
+          <span>Post Live Work</span>
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
-        {/* Left Sidebar: Challenges List */}
-        <div className="lg:col-span-5 p-3 space-y-2 bg-slate-50/50">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 px-2 block mb-1">
-            Active Work Dilemmas
+      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-indigo-100">
+        {/* Left Sidebar: Live Work List */}
+        <div className="lg:col-span-5 p-3 space-y-2.5 bg-gradient-to-b from-indigo-50/40 to-slate-50">
+          <span className="text-[11px] font-black uppercase tracking-wider text-indigo-400 px-2 block mb-1">
+            Active Work Shifts
           </span>
           {challenges.map((chal) => {
             const isSelected = chal.id === activeChallenge?.id;
@@ -73,24 +75,24 @@ export default function ChallengesHub({
               <div
                 key={chal.id}
                 onClick={() => setActiveChallengeId(chal.id)}
-                className={`p-3.5 rounded-xl cursor-pointer transition-all border ${
+                className={`p-4 rounded-2xl cursor-pointer transition-all border ${
                   isSelected
-                    ? 'bg-white border-brand-500 shadow-sm ring-1 ring-brand-500/20'
-                    : 'bg-white hover:bg-slate-100/80 border-slate-200/80'
+                    ? 'bg-white border-orange-500 shadow-md ring-2 ring-orange-500/20 scale-[1.01]'
+                    : 'bg-white hover:bg-orange-50/50 border-slate-200/90 hover:border-orange-200'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-2xs">
                     {chal.category}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-medium">{chal.timeAgo}</span>
+                  <span className="text-[10px] text-slate-400 font-bold">{chal.timeAgo}</span>
                 </div>
-                <h4 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 leading-snug mb-1">
+                <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-2 leading-snug mb-1.5">
                   {chal.title}
                 </h4>
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <span>By {chal.workerFullName}</span>
-                  <span className="font-semibold text-brand-600">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-600 font-medium">By {chal.workerFullName}</span>
+                  <span className="font-extrabold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200/60">
                     💡 {chal.suggestions?.length || 0} Ideas
                   </span>
                 </div>
@@ -101,43 +103,46 @@ export default function ChallengesHub({
 
         {/* Right Detail Pane */}
         {activeChallenge && (
-          <div className="lg:col-span-7 p-4 sm:p-6 space-y-5">
+          <div className="lg:col-span-7 p-4 sm:p-6 space-y-5 bg-white">
             {/* Worker Context */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img
-                  src={activeChallenge.workerAvatarUrl}
-                  alt={activeChallenge.workerFullName}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100"
-                />
+                <div className="p-0.5 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500">
+                  <img
+                    src={activeChallenge.workerAvatarUrl}
+                    alt={activeChallenge.workerFullName}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                  />
+                </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-sm text-slate-900">{activeChallenge.workerFullName}</span>
-                    <ShieldCheck className="w-4 h-4 text-brand-600" />
+                    <span className="font-extrabold text-sm text-slate-900">{activeChallenge.workerFullName}</span>
+                    <ShieldCheck className="w-4 h-4 text-sky-500" />
                   </div>
-                  <p className="text-xs text-slate-500">{activeChallenge.workerProfessionTitle}</p>
+                  <p className="text-xs text-orange-700 font-bold">{activeChallenge.workerProfessionTitle}</p>
                 </div>
               </div>
 
-              <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold">
-                Status: {activeChallenge.urgencyLevel}
+              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-orange-900 text-xs font-black border border-orange-200">
+                🔴 {activeChallenge.urgencyLevel}
               </span>
             </div>
 
-            {/* Dilemma Description */}
-            <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                The Practical Challenge
+            {/* Live Scenario Description */}
+            <div className="bg-gradient-to-br from-amber-50/70 via-orange-50/40 to-slate-50 border border-orange-200/80 rounded-2xl p-4 sm:p-5">
+              <h4 className="text-xs font-black uppercase tracking-wider text-orange-800 mb-2 flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-orange-600" />
+                <span>The Live Work Challenge</span>
               </h4>
-              <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+              <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-semibold">
                 {activeChallenge.scenarioDescription}
               </p>
             </div>
 
             {/* Community Suggestions Stream */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <div className="flex items-center justify-between mb-3.5">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                   <Lightbulb className="w-4 h-4 text-amber-500" />
                   Crowdsourced Solution Hypotheses ({activeChallenge.suggestions?.length || 0})
                 </h4>
@@ -147,22 +152,22 @@ export default function ChallengesHub({
                 {activeChallenge.suggestions?.map((sug) => (
                   <div
                     key={sug.id}
-                    className={`p-3.5 rounded-xl border transition-all ${
+                    className={`p-4 rounded-2xl border transition-all ${
                       sug.isAccepted
-                        ? 'bg-emerald-50/70 border-emerald-300 ring-1 ring-emerald-400/30'
-                        : 'bg-white border-slate-200'
+                        ? 'bg-gradient-to-r from-emerald-50/90 to-teal-50/90 border-emerald-300 ring-2 ring-emerald-400/20 shadow-xs'
+                        : 'bg-white border-indigo-100 shadow-2xs'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-1.5">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-slate-900">{sug.suggesterUsername}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
+                          <span className="font-extrabold text-xs text-slate-900">{sug.suggesterUsername}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold">
                             {sug.suggesterProfession}
                           </span>
                           {sug.isAccepted && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-700" />
                               Accepted Solution
                             </span>
                           )}
@@ -172,21 +177,21 @@ export default function ChallengesHub({
                       {/* Upvote button */}
                       <button
                         onClick={() => onUpvoteSuggestion(activeChallenge.id, sug.id)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 text-xs font-bold transition-colors"
+                        className="flex items-center gap-1 px-3 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-800 text-xs font-extrabold transition-all active:scale-95 shadow-2xs"
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
                         <span>{sug.upvotes}</span>
                       </button>
                     </div>
 
-                    <p className="text-xs text-slate-800 leading-relaxed font-medium mb-2">
+                    <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium mb-2.5">
                       {sug.suggestionText}
                     </p>
 
                     {sug.suggestedTool && (
-                      <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">
-                        <Wrench className="w-3 h-3 text-slate-500" />
-                        <span>Suggested: {sug.suggestedTool}</span>
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-900 bg-orange-100/70 border border-orange-200 px-2.5 py-1 rounded-lg">
+                        <Wrench className="w-3 h-3 text-orange-600" />
+                        <span>Recommended: {sug.suggestedTool}</span>
                       </div>
                     )}
                   </div>
@@ -194,16 +199,16 @@ export default function ChallengesHub({
               </div>
 
               {/* Submit Suggestion Form */}
-              <form onSubmit={handleSuggestionSubmit} className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 space-y-2.5">
-                <span className="text-xs font-bold text-slate-800 block">
-                  Contribute your solution or tool idea:
+              <form onSubmit={handleSuggestionSubmit} className="bg-gradient-to-br from-indigo-50/50 to-purple-50/50 border border-indigo-100 rounded-2xl p-4 space-y-3">
+                <span className="text-xs font-extrabold text-indigo-950 block">
+                  Contribute your solution or tool idea to this live shift:
                 </span>
                 <textarea
                   rows={2}
                   placeholder="Describe your hypothesis, precedent, or diagnostic test..."
                   value={suggestionInput}
                   onChange={(e) => setSuggestionInput(e.target.value)}
-                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-brand-500 transition-all"
+                  className="w-full p-3 bg-white border border-indigo-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                   required
                 />
                 <div className="flex items-center gap-2">
@@ -212,11 +217,11 @@ export default function ChallengesHub({
                     placeholder="Optional tool/standard reference (e.g. 1/4-inch arrestor, FRCP Rule 45)..."
                     value={toolInput}
                     onChange={(e) => setToolInput(e.target.value)}
-                    className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 outline-none focus:border-brand-500"
+                    className="flex-1 px-3.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                    className="px-5 py-2 bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-700 hover:to-rose-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Submit Idea</span>

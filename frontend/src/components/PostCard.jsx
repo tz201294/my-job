@@ -1,44 +1,55 @@
 import React, { useState } from 'react';
 import { 
-  Heart, MessageCircle, Bookmark, Star, Wrench, ShieldCheck, 
-  ArrowRight, CheckCircle2, ChevronRight, Share2, Layers, AlertTriangle
-} from 'lucide-react';
+   Heart, MessageCircle, Bookmark, Star, Wrench, ShieldCheck, 
+   ArrowRight, CheckCircle2, ChevronRight, Share2, Layers, AlertTriangle, Sparkles
+ } from 'lucide-react';
 
-export default function PostCard({
-  post,
-  onLike,
-  onBookmark,
-  onOpenCaseStudy,
+const difficultyGradients = {
+  expert: 'from-purple-600 via-fuchsia-600 to-pink-600',
+  advanced: 'from-amber-500 via-orange-500 to-red-500',
+  intermediate: 'from-sky-500 via-blue-600 to-indigo-600',
+  beginner: 'from-emerald-500 to-teal-600',
+};
+
+export default function PostCard({ 
+  post, 
+  onLike, 
+  onBookmark, 
+  onOpenCaseStudy, 
   onOpenReviewModal,
   onOpenUserProfile
 }) {
   const isCaseStudy = post.postType === 'pro_case_study' || post.postType === 'task_walkthrough';
   const task = post.taskDetails;
+  const diffKey = task?.difficulty?.toLowerCase() || 'expert';
+  const diffGradient = difficultyGradients[diffKey] || 'from-indigo-600 to-purple-600';
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+    <div className="bg-white/95 border border-indigo-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 backdrop-blur-sm card-glow">
       {/* Post Author Bar */}
-      <div className="p-4 flex items-center justify-between">
-        <div
+      <div className="p-4 sm:p-5 flex items-center justify-between">
+        <div 
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => onOpenUserProfile && onOpenUserProfile(post.authorUsername)}
         >
-          <img
-            src={post.authorAvatarUrl}
-            alt={post.authorFullName}
-            className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-brand-400 transition-all"
-          />
+          <div className="p-0.5 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-rose-500 group-hover:scale-105 transition-all shadow-xs">
+            <img
+              src={post.authorAvatarUrl}
+              alt={post.authorFullName}
+              className="w-11 h-11 rounded-full object-cover border-2 border-white"
+            />
+          </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sm text-slate-900 group-hover:text-brand-600 transition-colors">
+              <span className="font-extrabold text-sm sm:text-base text-slate-900 group-hover:text-indigo-600 transition-colors">
                 {post.authorFullName}
               </span>
               {post.isAuthorVerified && (
-                <ShieldCheck className="w-4 h-4 text-brand-600 fill-brand-50" />
+                <ShieldCheck className="w-4 h-4 text-sky-500 fill-sky-50" />
               )}
             </div>
-            <p className="text-xs text-slate-500 font-medium">
-              {post.authorProfessionTitle} • <span className="text-slate-400">{post.timeAgo}</span>
+            <p className="text-xs text-indigo-700/80 font-bold">
+              {post.authorProfessionTitle} • <span className="text-slate-400 font-medium">{post.timeAgo}</span>
             </p>
           </div>
         </div>
@@ -46,13 +57,13 @@ export default function PostCard({
         {/* Content Type Badge */}
         <div>
           {isCaseStudy ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-200 text-brand-700 text-xs font-bold shadow-sm">
-              <Layers className="w-3.5 h-3.5 text-brand-600" />
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-black shadow-sm shadow-indigo-500/20">
+              <Layers className="w-3.5 h-3.5" />
               Pro Case Study
             </span>
           ) : (
-            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-              Milestone Update
+            <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-100 to-rose-100 text-amber-900 text-xs font-extrabold border border-amber-200">
+              Milestone
             </span>
           )}
         </div>
@@ -60,27 +71,27 @@ export default function PostCard({
 
       {/* Main Image / Media Banner */}
       <div 
-        className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-slate-100 overflow-hidden cursor-pointer group"
+        className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-slate-900 overflow-hidden cursor-pointer group"
         onClick={() => isCaseStudy && onOpenCaseStudy(post)}
       >
         <img
           src={post.mediaUrl}
           alt={post.title}
-          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 opacity-95 group-hover:opacity-100"
         />
         
         {/* If Case Study: Overlay Banner for Quick Insights */}
         {isCaseStudy && (
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/90 via-slate-950/60 to-transparent p-4 pt-10 text-white">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold uppercase tracking-wider">
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-transparent p-4 sm:p-5 pt-12 text-white">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={`px-2.5 py-0.5 rounded-full bg-gradient-to-r ${diffGradient} text-white text-[10px] font-black uppercase tracking-wider shadow-xs`}>
                 {task?.difficulty || 'Professional'}
               </span>
-              <span className="text-xs text-white/80 font-medium">
+              <span className="text-xs text-white/90 font-bold bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full">
                 ⏱️ {task?.estimatedDuration || 'Workflow Guide'}
               </span>
             </div>
-            <h3 className="font-bold text-base sm:text-lg text-white leading-snug line-clamp-2">
+            <h3 className="font-extrabold text-base sm:text-lg text-white leading-snug line-clamp-2 drop-shadow-sm">
               {post.title}
             </h3>
           </div>
@@ -90,24 +101,24 @@ export default function PostCard({
       {/* Post Body & Context */}
       <div className="p-4 sm:p-5">
         {!isCaseStudy && (
-          <h3 className="font-bold text-base text-slate-900 mb-2">
+          <h3 className="font-extrabold text-base sm:text-lg text-slate-900 mb-2">
             {post.title}
           </h3>
         )}
 
-        <p className="text-sm text-slate-700 leading-relaxed mb-3">
+        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed mb-3.5 font-medium">
           {post.caption}
         </p>
 
         {/* Structured Task Mini-Preview (For Case Studies) */}
         {isCaseStudy && task && (
-          <div className="mb-4 bg-slate-50 border border-slate-200/80 rounded-xl p-3.5">
-            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200/60">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                <Wrench className="w-3.5 h-3.5 text-brand-600" />
+          <div className="mb-4 bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-slate-50 border border-indigo-100 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-indigo-100">
+              <div className="flex items-center gap-1.5 text-xs font-black text-indigo-950">
+                <Wrench className="w-4 h-4 text-indigo-600" />
                 <span>Tools & Reference Standards</span>
               </div>
-              <span className="text-[11px] font-medium text-slate-500">
+              <span className="text-[11px] font-bold text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-200 shadow-2xs">
                 {task.steps?.length || 0} Step Workflow
               </span>
             </div>
@@ -115,12 +126,12 @@ export default function PostCard({
             {/* Tool Chips */}
             <div className="flex flex-wrap gap-1.5 mb-3">
               {task.toolsUsed?.slice(0, 3).map((tool, idx) => (
-                <span key={idx} className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-semibold text-slate-700 shadow-2xs">
+                <span key={idx} className="px-2.5 py-1 rounded-lg bg-white border border-indigo-200/80 text-[11px] font-bold text-indigo-900 shadow-2xs">
                   {tool}
                 </span>
               ))}
               {task.toolsUsed?.length > 3 && (
-                <span className="px-2 py-0.5 rounded-md bg-slate-200/70 text-[11px] font-semibold text-slate-600">
+                <span className="px-2 py-1 rounded-lg bg-indigo-100 text-[11px] font-bold text-indigo-700">
                   +{task.toolsUsed.length - 3} more
                 </span>
               )}
@@ -128,12 +139,12 @@ export default function PostCard({
 
             {/* Quick Step Teaser */}
             {task.steps && task.steps[0] && (
-              <div className="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-slate-200/70 text-xs text-slate-600">
-                <span className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 font-extrabold flex items-center justify-center flex-shrink-0 text-[10px]">
+              <div className="flex items-start gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs text-slate-700 shadow-2xs">
+                <span className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-black flex items-center justify-center flex-shrink-0 text-xs shadow-xs">
                   1
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-slate-800 truncate">{task.steps[0].title}</p>
+                  <p className="font-extrabold text-slate-900 truncate">{task.steps[0].title}</p>
                   <p className="text-[11px] text-slate-500 truncate">{task.steps[0].description}</p>
                 </div>
               </div>
@@ -142,41 +153,41 @@ export default function PostCard({
             {/* CTA to Open Full Workflow */}
             <button
               onClick={() => onOpenCaseStudy(post)}
-              className="mt-3 w-full py-2 bg-white hover:bg-brand-50 border border-brand-200 text-brand-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+              className="mt-3.5 w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-indigo-500/20 active:scale-[0.99]"
             >
               <span>Explore Full Step-by-Step Execution</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
         )}
 
-        {/* Tags */}
+        {/* Tags with colorful pills */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {post.tags?.map((tag, idx) => (
-            <span key={idx} className="text-xs font-semibold text-brand-700 hover:underline cursor-pointer">
+            <span key={idx} className="text-xs font-bold text-indigo-600 hover:text-purple-600 bg-indigo-50/80 px-2.5 py-0.5 rounded-lg border border-indigo-100 hover:border-indigo-300 transition-colors cursor-pointer">
               #{tag}
             </span>
           ))}
         </div>
 
         {/* Social Actions & Community Ratings Bar */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-slate-600 text-xs font-semibold">
+        <div className="pt-3.5 border-t border-indigo-100/70 flex items-center justify-between text-slate-600 text-xs font-bold">
           <div className="flex items-center gap-4">
             {/* Like */}
             <button
               onClick={() => onLike(post.id)}
-              className={`flex items-center gap-1.5 transition-colors ${
-                post.isLiked ? 'text-rose-600' : 'hover:text-rose-600'
+              className={`flex items-center gap-1.5 transition-all active:scale-125 ${
+                post.isLiked ? 'text-rose-600' : 'hover:text-rose-600 text-slate-600'
               }`}
             >
-              <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-rose-600 text-rose-600' : ''}`} />
+              <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
               <span>{post.likesCount}</span>
             </button>
 
             {/* Comments */}
             <button 
               onClick={() => onOpenCaseStudy(post)}
-              className="flex items-center gap-1.5 hover:text-brand-600 transition-colors"
+              className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"
             >
               <MessageCircle className="w-4 h-4" />
               <span>{post.commentsCount}</span>
@@ -186,11 +197,11 @@ export default function PostCard({
             {isCaseStudy && (
               <button
                 onClick={() => onOpenReviewModal(post)}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-amber-800 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-300 text-amber-900 transition-colors shadow-2xs"
               >
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                <span className="font-bold">{post.rating || '4.9'}</span>
-                <span className="text-[10px] text-amber-700/80">({post.reviewsCount || 12} reviews)</span>
+                <span className="font-black">{post.rating || '4.9'}</span>
+                <span className="text-[10px] text-amber-800 font-semibold">({post.reviewsCount || 12})</span>
               </button>
             )}
           </div>
@@ -198,13 +209,13 @@ export default function PostCard({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onBookmark(post.id)}
-              className={`p-1.5 rounded-lg hover:bg-slate-100 transition-colors ${
-                post.isBookmarked ? 'text-brand-600' : 'text-slate-400 hover:text-slate-600'
+              className={`p-2 rounded-xl hover:bg-indigo-50 transition-colors ${
+                post.isBookmarked ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-slate-600'
               }`}
             >
-              <Bookmark className={`w-4 h-4 ${post.isBookmarked ? 'fill-brand-600' : ''}`} />
+              <Bookmark className={`w-4 h-4 ${post.isBookmarked ? 'fill-indigo-600' : ''}`} />
             </button>
-            <button className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <button className="p-2 rounded-xl hover:bg-indigo-50 text-slate-400 hover:text-slate-600 transition-colors">
               <Share2 className="w-4 h-4" />
             </button>
           </div>

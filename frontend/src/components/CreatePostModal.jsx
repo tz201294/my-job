@@ -223,11 +223,11 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
             onClick={() => setContentType('challenge')}
             className={`py-2 px-2 rounded-xl transition-all ${
               contentType === 'challenge'
-                ? 'bg-brand-600 text-white shadow-sm'
-                : 'bg-white text-slate-700 hover:bg-slate-200'
+                ? 'bg-gradient-to-r from-orange-600 to-rose-600 text-white shadow-sm font-black'
+                : 'bg-white text-slate-700 hover:bg-slate-200 font-bold'
             }`}
           >
-            🧩 Live Dilemma
+            ⚡ Live Work
           </button>
         </div>
 
@@ -292,20 +292,20 @@ export default function CreatePostModal({ onClose, onCreatePost, onCreateStory, 
           {contentType === 'challenge' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Work Dilemma Title
+                <label className="block text-xs font-black text-slate-800 mb-1">
+                  Live Work Scenario Title
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Rare HVAC error code on inverter unit / Conflicting statutory timeline"
+                  placeholder="e.g. Live shift: Rare HVAC error code on inverter unit / Conflicting statutory timeline"
                   value={challengeTitle}
                   onChange={(e) => setChallengeTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-indigo-200 rounded-xl text-xs outline-none focus:border-orange-500 font-medium"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
+                <label className="block text-xs font-black text-slate-800 mb-1">
                   Detailed Scenario & What You've Tested So Far
                 </label>
                 <textarea
