@@ -14,6 +14,23 @@ Every worker account has three distinct modes of publishing:
    - High-value, structured professional breakdowns where true expertise is demonstrated (e.g., *"How to draft and serve an enforceable Subpoena Duces Tecum"*, *"Diagnosing hydraulic water hammer in high-rise plumbing"*, *"Handling emergency detour dispatching"*).
    - Includes: Problem context, statutory/tool references, step-by-step methodology, and expert pro-tips.
 
+### 1.2 The Explorer / Follower Experience & Community Collaboration
+The average user on MyJob is an explorer, learner, peer, or client who interacts with professionals in rich, structured ways:
+
+1. **Profession Observation & Career Discovery**:
+   - Follow specific practitioners (e.g., litigators, HVAC technicians, bus drivers) or whole profession tags (`#Plumbing`, `#Litigation`).
+   - Watch authentic behind-the-scenes stories to understand the daily routine, stress points, and joys of any career.
+2. **Professional Ratings & Peer Reviews**:
+   - Rate the clarity and technical accuracy of published task walkthroughs and case studies (1-5 stars with feedback).
+   - Peer badges distinguish general feedback from verified peer reviews (e.g. another verified lawyer reviewing a legal brief strategy).
+3. **Interactive Worker Q&A Segments (AMA)**:
+   - Followers submit targeted questions about career path, required certifications, salary expectations, tool choices, or case advice.
+   - Workers answer via text or short video clips that attach directly to their profession hub.
+4. **Crowdsourced Challenges & Live Problem Solving**:
+   - Workers can post live or stubborn workplace dilemmas (e.g., *"Unexplained hydraulic noise at 3 AM"*, *"Rare contract indemnification loophole"*).
+   - Followers and peers submit solution hypotheses, tool recommendations, and feedback.
+   - The worker can formally accept the winning solution and award community credibility points.
+
 ---
 
 ## 2. High-Level Architecture Diagram
