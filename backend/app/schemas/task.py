@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from enum import Enum
 
@@ -33,8 +33,7 @@ class TaskDetailsCreate(TaskDetailsBase):
 
 
 class TaskDetailsResponse(TaskDetailsBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     post_id: str
-
-    class Config:
-        from_attributes = True

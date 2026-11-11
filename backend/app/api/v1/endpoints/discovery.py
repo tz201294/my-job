@@ -1,75 +1,50 @@
-from fastapi import APIRouter, Query
-from typing import List, Optional
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.taxonomy import CATEGORIES
+from app.core.time import utcnow
+from app.db.session import get_db
+from app.models import ProfessionProfile, Story
 
 router = APIRouter()
 
-CATEGORIES = [
-    {
-        "id": "cat_trades",
-        "name": "Trades & Craftsmanship",
-        "slug": "trades",
-        "icon": "wrench",
-        "professions_count": 48,
-        "active_stories_count": 120,
-        "popular_roles": ["Plumber", "Electrician", "HVAC Tech", "Carpenter", "Welder"]
-    },
-    {
-        "id": "cat_transit",
-        "name": "Transportation & Logistics",
-        "slug": "transportation",
-        "icon": "truck",
-        "professions_count": 32,
-        "active_stories_count": 85,
-        "popular_roles": ["Bus Driver", "Airline Pilot", "Locomotive Engineer", "Heavy Freight Driver"]
-    },
-    {
-        "id": "cat_legal_finance",
-        "name": "Legal & Finance",
-        "slug": "legal-finance",
-        "icon": "briefcase",
-        "professions_count": 28,
-        "active_stories_count": 64,
-        "popular_roles": ["Corporate Lawyer", "Auditor", "Tax Accountant", "Financial Analyst"]
-    },
-    {
-        "id": "cat_tech",
-        "name": "Technology & Engineering",
-        "slug": "technology",
-        "icon": "code",
-        "professions_count": 65,
-        "active_stories_count": 210,
-        "popular_roles": ["DevOps Engineer", "Frontend Developer", "Cybersecurity Analyst", "Site Reliability Engineer"]
-    },
-    {
-        "id": "cat_healthcare",
-        "name": "Healthcare & Medicine",
-        "slug": "healthcare",
-        "icon": "heart-pulse",
-        "professions_count": 40,
-        "active_stories_count": 150,
-        "popular_roles": ["ER Nurse", "Surgical Tech", "Paramedic", "Radiologist", "Physical Therapist"]
-    }
-]
-
 
 @router.get("/categories")
-async def get_profession_categories():
-    """Returns available profession taxonomy and industry categories."""
-    return CATEGORIES
+async def get_profession_categories(db: AsyncSession = Depends(get_db)):
+    """Returns the profession taxonomy with live counts of registered professionals and active stories."""
+    prof_counts = dict(
+        (await db.execute(
+            select(ProfessionProfile.industry, func.count()).group_by(ProfessionProfile.industry)
+        )).all()
+    )
+    now = utcnow()
+    story_counts = dict(
+        (await db.execute(
+            select(ProfessionProfile.industry, func.count(Story.id))
+            .join(Story, Story.user_id == ProfessionProfile.user_id)
+            .where(Story.expires_at > now)
+            .group_by(ProfessionProfile.industry)
+        )).all()
+    )
+    return [
+        {
+            **c,
+            "professions_count": prof_counts.get(c["name"], 0),
+            "active_stories_count": story_counts.get(c["name"], 0),
+        }
+        for c in CATEGORIES
+    ]
 
 
 @router.get("/search")
 async def search_professions_and_tasks(
-    q: str = Query(..., min_length=1, description="Search term for profession, task, or tool")
+    q: str = Query(..., min_length=1, description="Search term for profession, task, or tool"),
 ):
-    """Searches across professions, job titles, and workflow topics."""
+    """Searches across profession categories and their popular roles."""
     query_lower = q.lower()
     matching_categories = [
-        c for c in CATEGORIES 
+        c for c in CATEGORIES
         if query_lower in c["name"].lower() or any(query_lower in r.lower() for r in c["popular_roles"])
     ]
-    return {
-        "query": q,
-        "matching_categories": matching_categories
-    }
+    return {"query": q, "matching_categories": matching_categories}

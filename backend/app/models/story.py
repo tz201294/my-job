@@ -1,7 +1,8 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey
 from sqlalchemy.orm import relationship
+from app.core.time import utcnow
 from app.db.base import Base
 
 
@@ -14,10 +15,10 @@ class Story(Base):
     media_type = Column(String(32), default="image")  # "image" | "video"
     caption = Column(Text, nullable=True)
     profession_tag = Column(String(64), index=True, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    expires_at = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(hours=24), index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
+    expires_at = Column(DateTime, default=lambda: utcnow() + timedelta(hours=24), index=True)
     is_pinned_highlight = Column(Boolean, default=False)
     highlight_collection_name = Column(String(64), nullable=True)
     views_count = Column(Integer, default=0)
 
-    author = relationship("User", back_populates="stories")
+    author = relationship("User", back_populates="stories", lazy="selectin")

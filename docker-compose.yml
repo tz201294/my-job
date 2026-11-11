@@ -45,7 +45,9 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/myjob_db
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=development-secret-key-change-in-prod
+      - SECRET_KEY=${SECRET_KEY:-development-secret-key-change-in-prod}
+      # Development only: seeds demo accounts (password: demo1234) into an empty DB
+      - SEED_DEMO_DATA=${SEED_DEMO_DATA:-true}
     ports:
       - "8000:8000"
     depends_on:

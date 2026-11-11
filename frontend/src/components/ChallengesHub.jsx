@@ -13,26 +13,28 @@ export default function ChallengesHub({
   const [activeChallengeId, setActiveChallengeId] = useState(challenges[0]?.id);
   const [suggestionInput, setSuggestionInput] = useState('');
   const [toolInput, setToolInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   const activeChallenge = challenges.find((c) => c.id === activeChallengeId) || challenges[0];
 
-  const handleSuggestionSubmit = (e) => {
+  const handleSuggestionSubmit = async (e) => {
     e.preventDefault();
     if (!suggestionInput.trim()) return;
-
-    onAddSuggestion(activeChallenge.id, {
-      id: `sug_${Date.now()}`,
-      suggesterId: "usr_current",
-      suggesterUsername: "curious_peer",
-      suggesterProfession: "Practitioner / Peer",
-      suggestionText: suggestionInput,
-      suggestedTool: toolInput.trim() || undefined,
-      upvotes: 0,
-      isAccepted: false
-    });
-
-    setSuggestionInput('');
-    setToolInput('');
+    setError('');
+    setBusy(true);
+    try {
+      await onAddSuggestion(activeChallenge.id, {
+        suggestionText: suggestionInput.trim(),
+        suggestedTool: toolInput.trim() || undefined,
+      });
+      setSuggestionInput('');
+      setToolInput('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -63,6 +65,9 @@ export default function ChallengesHub({
         </button>
       </div>
 
+      {challenges.length === 0 && (
+        <p className="text-center text-xs font-medium text-slate-500 py-10">No live work posted yet — be the first.</p>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-indigo-100">
         {/* Left Sidebar: Live Work List */}
         <div className="lg:col-span-5 p-3 space-y-2.5 bg-gradient-to-b from-indigo-50/40 to-slate-50">
@@ -177,7 +182,12 @@ export default function ChallengesHub({
                       {/* Upvote button */}
                       <button
                         onClick={() => onUpvoteSuggestion(activeChallenge.id, sug.id)}
-                        className="flex items-center gap-1 px-3 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-800 text-xs font-extrabold transition-all active:scale-95 shadow-2xs"
+                        aria-pressed={sug.upvotedByMe}
+                        className={`flex items-center gap-1 px-3 py-1 rounded-xl border text-xs font-extrabold transition-all active:scale-95 shadow-2xs ${
+                          sug.upvotedByMe
+                            ? 'bg-orange-600 border-orange-600 text-white'
+                            : 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-800'
+                        }`}
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
                         <span>{sug.upvotes}</span>
@@ -221,12 +231,14 @@ export default function ChallengesHub({
                   />
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-700 hover:to-rose-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95"
+                    disabled={busy}
+                    className="px-5 py-2 bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-700 hover:to-rose-700 disabled:opacity-60 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Submit Idea</span>
                   </button>
                 </div>
+                {error && <p role="alert" className="text-xs font-bold text-rose-600">{error}</p>}
               </form>
             </div>
           </div>

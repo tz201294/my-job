@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey, JSON
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey
 from sqlalchemy.orm import relationship
+from app.core.time import utcnow
 from app.db.base import Base
 
 
@@ -16,7 +16,9 @@ class TaskReview(Base):
     feedback_text = Column(Text, nullable=False)
     reviewer_profession = Column(String(128), nullable=True)
     is_peer_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+
+    user = relationship("User", lazy="selectin")
 
 
 class QAQuestion(Base):
@@ -31,8 +33,27 @@ class QAQuestion(Base):
     video_response_url = Column(String(512), nullable=True)
     is_answered = Column(Boolean, default=False)
     upvotes_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     answered_at = Column(DateTime, nullable=True)
+
+    worker = relationship("User", foreign_keys=[worker_id], lazy="selectin")
+    asker = relationship("User", foreign_keys=[asker_id], lazy="selectin")
+
+
+class QAUpvote(Base):
+    __tablename__ = "qa_upvotes"
+
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    question_id = Column(String, ForeignKey("qa_questions.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(DateTime, default=utcnow)
+
+
+class SuggestionUpvote(Base):
+    __tablename__ = "suggestion_upvotes"
+
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    suggestion_id = Column(String, ForeignKey("challenge_suggestions.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(DateTime, default=utcnow)
 
 
 class WorkChallenge(Base):
@@ -46,9 +67,13 @@ class WorkChallenge(Base):
     media_url = Column(String(512), nullable=True)
     urgency_level = Column(String(64), default="Brainstorming")
     is_solved = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
-    suggestions = relationship("ChallengeSuggestion", back_populates="challenge", cascade="all, delete-orphan")
+    worker = relationship("User", lazy="selectin")
+    suggestions = relationship(
+        "ChallengeSuggestion", back_populates="challenge",
+        cascade="all, delete-orphan", lazy="selectin", order_by="ChallengeSuggestion.created_at",
+    )
 
 
 class ChallengeSuggestion(Base):
@@ -61,6 +86,7 @@ class ChallengeSuggestion(Base):
     suggested_tool_or_reference = Column(String(255), nullable=True)
     upvotes_count = Column(Integer, default=0)
     is_accepted_by_worker = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     challenge = relationship("WorkChallenge", back_populates="suggestions")
+    suggester = relationship("User", lazy="selectin")

@@ -1,7 +1,8 @@
 import React from 'react';
-import { 
-  Briefcase, Scale, Wrench, Truck, Code, HeartPulse, 
-  ChevronRight, Users, Sparkles, Compass 
+import {
+  Briefcase, Scale, Wrench, Truck, Code, HeartPulse,
+  GraduationCap, ChefHat, Palette, FlaskConical, Shield,
+  Compass
 } from 'lucide-react';
 
 const iconMap = {
@@ -10,16 +11,26 @@ const iconMap = {
   wrench: Wrench,
   truck: Truck,
   code: Code,
-  'heart-pulse': HeartPulse
+  'heart-pulse': HeartPulse,
+  'graduation-cap': GraduationCap,
+  'chef-hat': ChefHat,
+  palette: Palette,
+  'flask-conical': FlaskConical,
+  shield: Shield,
 };
 
 const categoryGradients = {
   all: 'from-slate-900 to-indigo-900',
-  legal: 'from-indigo-600 via-purple-600 to-pink-600',
   trades: 'from-amber-600 via-orange-600 to-red-600',
   transportation: 'from-emerald-600 via-teal-600 to-cyan-600',
+  'legal-finance': 'from-indigo-600 via-purple-600 to-pink-600',
   technology: 'from-sky-600 via-blue-600 to-indigo-600',
   healthcare: 'from-rose-600 via-pink-600 to-purple-600',
+  education: 'from-violet-600 via-purple-600 to-fuchsia-600',
+  hospitality: 'from-yellow-600 via-amber-600 to-orange-600',
+  creative: 'from-pink-600 via-rose-600 to-red-500',
+  science: 'from-teal-600 via-cyan-600 to-sky-600',
+  'public-service': 'from-slate-700 via-slate-600 to-blue-700',
 };
 
 export default function ProfessionDiscovery({ 
@@ -75,7 +86,7 @@ export default function ProfessionDiscovery({
       {selectedCategory !== 'all' && (
         <div className="mt-3.5 pt-3 border-t border-indigo-100/70 flex items-center gap-2 flex-wrap animate-fade-in">
           <span className="text-[11px] font-black text-indigo-400 uppercase tracking-wider">
-            Popular in {selectedCategory}:
+            Popular in {categories.find((c) => c.slug === selectedCategory)?.name}:
           </span>
           {categories
             .find((c) => c.slug === selectedCategory)

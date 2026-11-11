@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -19,9 +19,9 @@ class MediaItem(BaseModel):
 
 
 class PostBase(BaseModel):
-    title: str
-    caption: str
-    post_type: PostType = PostType.STANDARD
+    title: str = Field(min_length=1, max_length=255)
+    caption: str = Field(min_length=1)
+    post_type: PostType = PostType.GENERAL_POST
     media: List[MediaItem] = []
     tags: List[str] = []
 
@@ -31,13 +31,18 @@ class PostCreate(PostBase):
 
 
 class PostResponse(PostBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     author_id: str
     author_username: str
     author_full_name: str
     author_avatar_url: Optional[str] = None
     author_profession_title: Optional[str] = None
+    author_industry: Optional[str] = None
     is_author_verified: bool = False
+    rating: Optional[float] = None  # None until the post has at least one review
+    reviews_count: int = 0
     likes_count: int = 0
     comments_count: int = 0
     is_liked_by_me: bool = False
@@ -45,6 +50,3 @@ class PostResponse(PostBase):
     task_details: Optional[TaskDetailsResponse] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True

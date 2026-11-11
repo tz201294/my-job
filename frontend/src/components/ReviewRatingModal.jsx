@@ -7,22 +7,28 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
   const [feedback, setFeedback] = useState('');
   const [role, setRole] = useState('Explorer / Student');
   const [submitted, setSubmitted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!feedback.trim()) return;
-    
-    onSubmitReview({
-      postId: post.id,
-      clarityScore: clarity,
-      accuracyScore: accuracy,
-      feedbackText: feedback,
-      reviewerRole: role
-    });
-    setSubmitted(true);
-    setTimeout(() => {
-      onClose();
-    }, 1500);
+    setError('');
+    setBusy(true);
+    try {
+      await onSubmitReview({
+        postId: post.id,
+        clarityScore: clarity,
+        accuracyScore: accuracy,
+        feedbackText: feedback,
+        reviewerRole: role
+      });
+      setSubmitted(true);
+      setTimeout(onClose, 1500);
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
   };
 
   return (
@@ -125,6 +131,12 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
               />
             </div>
 
+            {error && (
+              <p role="alert" className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+                {error}
+              </p>
+            )}
+
             {/* Actions */}
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
               <button
@@ -136,9 +148,10 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-sm transition-all"
+                disabled={busy}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white shadow-sm transition-all"
               >
-                Publish Review
+                {busy ? 'Publishing…' : 'Publish Review'}
               </button>
             </div>
           </form>

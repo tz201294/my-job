@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -21,6 +21,8 @@ class TaskReviewCreate(BaseModel):
 
 
 class TaskReviewResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     post_id: str
     user_id: str
@@ -32,9 +34,6 @@ class TaskReviewResponse(BaseModel):
     accuracy_score: int
     feedback_text: str
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # Q&A Segment Schemas
@@ -49,22 +48,27 @@ class QAAnswerCreate(BaseModel):
 
 
 class QAQuestionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     worker_id: str
     asker_id: str
     asker_username: str
+    asker_full_name: Optional[str] = None
     asker_avatar_url: Optional[str] = None
+    worker_username: Optional[str] = None
+    worker_full_name: Optional[str] = None
+    worker_profession_title: Optional[str] = None
+    worker_avatar_url: Optional[str] = None
     question_text: str
     topic_tag: Optional[str] = None
     answer_text: Optional[str] = None
     video_response_url: Optional[str] = None
     is_answered: bool = False
     upvotes_count: int = 0
+    upvoted_by_me: bool = False
     created_at: datetime
     answered_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
 
 
 class QASessionResponse(BaseModel):
@@ -83,6 +87,8 @@ class ChallengeSuggestionCreate(BaseModel):
 
 
 class ChallengeSuggestionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     challenge_id: str
     suggester_id: str
@@ -91,11 +97,9 @@ class ChallengeSuggestionResponse(BaseModel):
     suggestion_text: str
     suggested_tool_or_reference: Optional[str] = None
     upvotes_count: int = 0
+    upvoted_by_me: bool = False
     is_accepted_by_worker: bool = False
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class WorkChallengeCreate(BaseModel):
@@ -107,9 +111,12 @@ class WorkChallengeCreate(BaseModel):
 
 
 class WorkChallengeResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     worker_id: str
     worker_username: str
+    worker_full_name: Optional[str] = None
     worker_profession_title: str
     worker_avatar_url: Optional[str] = None
     title: str
@@ -120,6 +127,3 @@ class WorkChallengeResponse(BaseModel):
     is_solved: bool = False
     suggestions: List[ChallengeSuggestionResponse] = []
     created_at: datetime
-
-    class Config:
-        from_attributes = True

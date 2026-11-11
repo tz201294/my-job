@@ -200,8 +200,14 @@ export default function PostCard({
                 className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-300 text-amber-900 transition-colors shadow-2xs"
               >
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                <span className="font-black">{post.rating || '4.9'}</span>
-                <span className="text-[10px] text-amber-800 font-semibold">({post.reviewsCount || 12})</span>
+                {post.rating != null ? (
+                  <>
+                    <span className="font-black">{post.rating}</span>
+                    <span className="text-[10px] text-amber-800 font-semibold">({post.reviewsCount})</span>
+                  </>
+                ) : (
+                  <span className="font-black text-[11px]">Be the first to review</span>
+                )}
               </button>
             )}
           </div>

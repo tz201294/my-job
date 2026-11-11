@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -21,9 +21,12 @@ class StoryCreate(StoryBase):
 
 
 class StoryResponse(StoryBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     user_id: str
     author_username: str
+    author_full_name: Optional[str] = None
     author_avatar_url: Optional[str] = None
     author_profession_title: Optional[str] = None
     created_at: datetime
@@ -31,9 +34,6 @@ class StoryResponse(StoryBase):
     is_pinned_highlight: bool = False
     highlight_collection_name: Optional[str] = None
     views_count: int = 0
-
-    class Config:
-        from_attributes = True
 
 
 class UserStoryGroup(BaseModel):

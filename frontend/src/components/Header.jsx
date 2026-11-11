@@ -1,7 +1,11 @@
 import React from 'react';
-import { Briefcase, Search, PlusSquare, Bell, Sparkles } from 'lucide-react';
+import { Briefcase, Search, PlusSquare, Bell, LogOut } from 'lucide-react';
 
-export default function Header({ 
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80';
+
+export default function Header({
+  currentUser,
+  onLogout,
   onOpenCreate, 
   searchTerm, 
   onSearchChange,
@@ -61,14 +65,23 @@ export default function Header({
           </button>
 
           {/* User Profile Avatar with colorful border */}
-          <div className="cursor-pointer" onClick={onOpenMyProfile}>
+          <button type="button" className="cursor-pointer" onClick={onOpenMyProfile} title={`View your profile (@${currentUser.username})`}>
             <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
-              alt="Elena Vance"
+              src={currentUser.avatar_url || DEFAULT_AVATAR}
+              alt={`${currentUser.full_name} — your profile`}
               className="w-9 h-9 rounded-full object-cover ring-2 ring-indigo-500 hover:ring-rose-500 shadow-sm hover:scale-105 transition-all"
-              title="View Your Profile & Portfolio (Elena Vance, Esq.)"
             />
-          </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className="p-2 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors"
+            title="Log out"
+            aria-label="Log out"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </header>

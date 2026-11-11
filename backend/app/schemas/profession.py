@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
 
@@ -12,22 +12,8 @@ class ProfessionBase(BaseModel):
     key_tools: List[str] = []
 
 
-class ProfessionCreate(ProfessionBase):
-    pass
-
-
-class ProfessionUpdate(BaseModel):
-    industry: Optional[str] = None
-    title: Optional[str] = None
-    specialization: Optional[str] = None
-    years_of_experience: Optional[int] = None
-    company_or_freelance: Optional[str] = None
-    key_tools: Optional[List[str]] = None
-
-
 class ProfessionResponse(ProfessionBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     user_id: str
-
-    class Config:
-        from_attributes = True
