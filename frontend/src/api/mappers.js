@@ -38,6 +38,7 @@ export function formatDuration(mins) {
 // ---------- API -> UI ----------
 
 export function toPost(p) {
+  if (p.authorUsername && p.mediaUrl !== undefined) return p;
   const td = p.task_details;
   return {
     id: p.id,
@@ -81,6 +82,7 @@ export function toPost(p) {
 }
 
 export function toStory(s) {
+  if (s.userId && s.professionTag !== undefined) return s;
   return {
     id: s.id,
     userId: s.user_id,
@@ -96,9 +98,10 @@ export function toStory(s) {
 }
 
 // The tray shows one flat list, so story groups are flattened (newest first as sent by the API).
-export const toStories = (groups) => groups.flatMap((g) => g.stories.map(toStory));
+export const toStories = (groups) => Array.isArray(groups) ? (groups[0]?.stories ? groups.flatMap((g) => g.stories.map(toStory)) : groups.map(toStory)) : [];
 
 export function toSuggestion(s) {
+  if (s.suggesterUsername && s.suggestionText !== undefined) return s;
   return {
     id: s.id,
     suggesterId: s.suggester_id,
@@ -113,6 +116,7 @@ export function toSuggestion(s) {
 }
 
 export function toChallenge(c) {
+  if (c.workerUsername && c.scenarioDescription !== undefined) return c;
   return {
     id: c.id,
     workerId: c.worker_id,
@@ -131,6 +135,7 @@ export function toChallenge(c) {
 }
 
 export function toQuestion(q) {
+  if (q.workerUsername && q.questionText !== undefined) return q;
   return {
     id: q.id,
     workerId: q.worker_id,
@@ -150,6 +155,8 @@ export function toQuestion(q) {
 }
 
 export function toCategories(list) {
+  if (!Array.isArray(list)) return [{ id: 'cat_all', name: 'All Professions', slug: 'all', icon: 'briefcase' }];
+  if (list.some((c) => c.slug === 'all')) return list;
   const all = { id: 'cat_all', name: 'All Professions', slug: 'all', icon: 'briefcase' };
   return [
     all,
@@ -158,13 +165,14 @@ export function toCategories(list) {
       name: c.name,
       slug: c.slug,
       icon: c.icon,
-      activePros: c.professions_count ? `${c.professions_count} ${c.professions_count === 1 ? 'Pro' : 'Pros'}` : null,
-      popularRoles: c.popular_roles,
+      activePros: c.activePros || (c.professions_count ? `${c.professions_count} ${c.professions_count === 1 ? 'Pro' : 'Pros'}` : null),
+      popularRoles: c.popularRoles || c.popular_roles,
     })),
   ];
 }
 
 export function toProfileUser(u) {
+  if (u.username && u.professionTitle !== undefined) return u;
   const p = u.profession;
   return {
     id: u.id,
