@@ -148,6 +148,8 @@ export function toQuestion(q) {
     questionText: q.question_text,
     topicTag: q.topic_tag || 'General Inquiry',
     answerText: q.answer_text,
+    videoResponseUrl: q.video_response_url || null,
+    answeredTimeAgo: q.answered_at ? timeAgo(q.answered_at) : null,
     upvotes: q.upvotes_count,
     upvotedByMe: q.upvoted_by_me,
     timeAgo: timeAgo(q.created_at),

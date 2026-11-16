@@ -109,12 +109,13 @@ async def test_qa_and_challenges_flow(client, seeded, auth_headers):
     elena = (await client.get(f"{API}/auth/users/elena_lawyer")).json()
     qa = (await client.get(f"{API}/community/qa/{elena['id']}")).json()
     assert qa["worker_name"] == "Elena Vance, Esq." and qa["answered_questions"] == 1
+    before = qa["total_questions"]
 
     r = await client.post(
         f"{API}/community/qa/{elena['id']}/ask", json={"question_text": "How do you start your day?"}, headers=auth_headers
     )
     assert r.status_code == 201 and r.json()["asker_username"] == "new_user1" and r.json()["is_answered"] is False
-    assert (await client.get(f"{API}/community/qa/{elena['id']}")).json()["total_questions"] == 2
+    assert (await client.get(f"{API}/community/qa/{elena['id']}")).json()["total_questions"] == before + 1
     assert (await client.get(f"{API}/community/qa/missing")).status_code == 404
 
     chal = await client.post(

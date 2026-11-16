@@ -1,17 +1,222 @@
-import React, { useState } from 'react';
-import { 
-  HelpCircle, MessageCircle, Send, ShieldCheck, ArrowUp, 
-  Sparkles, Video, UserCheck, CheckCircle2, MessageSquareText 
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Send, ShieldCheck, ArrowUp, MessageSquareText, Video, Pencil, Inbox, Loader2
 } from 'lucide-react';
+import { api } from '../api/client';
+import { toQuestion } from '../api/mappers';
 
-export default function QAHub({ qaItems, professionals = [], onAskQuestion, onUpvoteQA }) {
+const MAX_ANSWER = 5000;
+
+// Inline form the asked worker uses to answer, or to edit an existing answer.
+function AnswerForm({ qa, onSubmit, onCancel }) {
+  const [answerText, setAnswerText] = useState(qa.answerText || '');
+  const [videoResponseUrl, setVideoResponseUrl] = useState(qa.videoResponseUrl || '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const editing = !!qa.answerText;
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const text = answerText.trim();
+    if (!text) return;
+    setError('');
+    setBusy(true);
+    try {
+      await onSubmit({ answerText: text, videoResponseUrl: videoResponseUrl.trim() });
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="bg-indigo-50/60 border border-indigo-200 rounded-2xl p-3.5 space-y-2.5">
+      <label htmlFor={`answer-${qa.id}`} className="block text-xs font-black text-indigo-950">
+        {editing ? 'Edit your answer' : 'Your answer'}
+      </label>
+      <textarea
+        id={`answer-${qa.id}`}
+        rows={4}
+        maxLength={MAX_ANSWER}
+        required
+        value={answerText}
+        onChange={(e) => setAnswerText(e.target.value)}
+        placeholder="Share what the work is really like..."
+        className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium resize-y"
+      />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <label className="sr-only" htmlFor={`answer-video-${qa.id}`}>Video answer link (optional)</label>
+        <input
+          id={`answer-video-${qa.id}`}
+          type="url"
+          pattern="https?://.+"
+          title="A link starting with http:// or https://"
+          value={videoResponseUrl}
+          onChange={(e) => setVideoResponseUrl(e.target.value)}
+          placeholder="Optional video answer link (https://...)"
+          className="flex-1 px-3.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500 font-medium"
+        />
+        <div className="flex gap-2 justify-end">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={busy}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={busy || !answerText.trim()}
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5"
+          >
+            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            <span>{editing ? 'Save answer' : 'Post answer'}</span>
+          </button>
+        </div>
+      </div>
+      <div className="flex justify-between text-[10px] font-semibold">
+        <span role="alert" className="text-rose-600">{error}</span>
+        <span className="text-slate-400">{answerText.length}/{MAX_ANSWER}</span>
+      </div>
+    </form>
+  );
+}
+
+function QuestionCard({ qa, isMine, onUpvoteQA, onAnswer }) {
+  const [editing, setEditing] = useState(false);
+  const answered = !!qa.answerText;
+
+  const submitAnswer = async (draft) => {
+    await onAnswer(qa.id, draft);
+    setEditing(false);
+  };
+
+  return (
+    <div className="border border-indigo-100 rounded-3xl p-4 sm:p-5 bg-white hover:border-indigo-200 transition-all shadow-2xs">
+      {/* Question Header */}
+      <div className="flex items-start justify-between gap-3 mb-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-800 border border-indigo-200 font-extrabold shadow-2xs">
+            {qa.topicTag}
+          </span>
+          <span className="text-xs text-slate-400 font-medium">
+            {qa.askerUsername ? `@${qa.askerUsername} asked ` : 'Asked '}
+            {isMine ? 'you' : qa.workerFullName} · {qa.timeAgo}
+          </span>
+        </div>
+
+        <button
+          onClick={() => onUpvoteQA(qa.id)}
+          aria-pressed={qa.upvotedByMe}
+          aria-label={`Upvote question (${qa.upvotes})`}
+          className={`flex items-center gap-1 px-3 py-1 rounded-xl border text-xs font-black transition-colors ${
+            qa.upvotedByMe
+              ? 'bg-indigo-600 border-indigo-600 text-white'
+              : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800'
+          }`}
+        >
+          <ArrowUp className="w-3.5 h-3.5" />
+          <span>{qa.upvotes}</span>
+        </button>
+      </div>
+
+      {/* Question Text */}
+      <h4 className="font-extrabold text-sm sm:text-base text-slate-900 mb-3 leading-snug">
+        "{qa.questionText}"
+      </h4>
+
+      {/* Worker Response Box */}
+      {isMine && (!answered || editing) ? (
+        <AnswerForm qa={qa} onSubmit={submitAnswer} onCancel={answered ? () => setEditing(false) : null} />
+      ) : answered ? (
+        <div className="bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 border border-indigo-100 rounded-2xl p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-0.5 rounded-full bg-gradient-to-tr from-indigo-500 to-rose-500">
+                <img
+                  src={qa.workerAvatarUrl}
+                  alt={qa.workerFullName}
+                  className="w-7 h-7 rounded-full object-cover border border-white"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="font-extrabold text-xs text-slate-900">{qa.workerFullName}</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-500" />
+                <span className="text-[10px] text-indigo-700 font-bold">({qa.workerProfessionTitle})</span>
+                {qa.answeredTimeAgo && (
+                  <span className="text-[10px] text-slate-400 font-medium">· answered {qa.answeredTimeAgo}</span>
+                )}
+              </div>
+            </div>
+            {isMine && (
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-indigo-700 hover:bg-indigo-100"
+              >
+                <Pencil className="w-3 h-3" />
+                Edit
+              </button>
+            )}
+          </div>
+
+          <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium whitespace-pre-line">
+            {qa.answerText}
+          </p>
+          {qa.videoResponseUrl && /^https?:\/\//i.test(qa.videoResponseUrl) && (
+            <a
+              href={qa.videoResponseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 hover:underline"
+            >
+              <Video className="w-3.5 h-3.5" />
+              Watch video answer
+            </a>
+          )}
+        </div>
+      ) : (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs text-amber-900 font-bold flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+          <span>Waiting for {qa.workerFullName} to answer</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function QAHub({
+  qaItems, professionals = [], currentUserId, onAskQuestion, onAnswerQuestion, onUpvoteQA,
+}) {
   const [questionText, setQuestionText] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('Daily Routine & Worklife');
   const [targetWorker, setTargetWorker] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const workerId = targetWorker || professionals[0]?.id || '';
+  const [view, setView] = useState('all'); // 'all' | 'inbox'
+  const [inbox, setInbox] = useState(null); // questions waiting for my answer; null = not loaded
+  const [inboxError, setInboxError] = useState('');
+
+  // You can't ask yourself a question.
+  const askable = professionals.filter((p) => p.id !== currentUserId);
+  const workerId = targetWorker || askable[0]?.id || '';
+
+  const loadInbox = useCallback(async () => {
+    if (!currentUserId) return;
+    setInboxError('');
+    try {
+      const list = await api.getQuestions({ worker_id: currentUserId, answered: false, limit: 100 });
+      setInbox(list.map(toQuestion));
+    } catch (err) {
+      setInboxError(err.message);
+    }
+  }, [currentUserId]);
+
+  // Loaded up front so the tab can show how many questions are waiting.
+  useEffect(() => { loadInbox(); }, [loadInbox]);
 
   const handleAsk = async (e) => {
     e.preventDefault();
@@ -27,6 +232,25 @@ export default function QAHub({ qaItems, professionals = [], onAskQuestion, onUp
       setBusy(false);
     }
   };
+
+  const handleAnswer = async (qaId, draft) => {
+    await onAnswerQuestion(qaId, draft);
+    setInbox((list) => (list ? list.filter((q) => q.id !== qaId) : list));
+  };
+
+  // Keep upvotes on inbox cards in step with the main list.
+  const handleUpvote = (qaId) => {
+    onUpvoteQA(qaId);
+    setInbox((list) => list && list.map((q) => (q.id === qaId
+      ? { ...q, upvotedByMe: !q.upvotedByMe, upvotes: q.upvotes + (q.upvotedByMe ? -1 : 1) }
+      : q)));
+  };
+
+  const inboxCount = inbox?.length || 0;
+  const shown = view === 'inbox' ? inbox || [] : qaItems;
+  const tabCls = (v) => `flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-colors ${
+    view === v ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-800 hover:bg-indigo-50'
+  }`;
 
   return (
     <div className="bg-white/95 border border-indigo-100 rounded-3xl p-5 sm:p-6 shadow-sm mb-6 backdrop-blur-sm card-glow">
@@ -52,13 +276,14 @@ export default function QAHub({ qaItems, professionals = [], onAskQuestion, onUp
           <span className="text-xs font-black text-indigo-950">
             Ask a Verified Practitioner:
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={workerId}
               onChange={(e) => setTargetWorker(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:border-indigo-500 shadow-2xs"
+              aria-label="Professional to ask"
+              className="px-3 py-1.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:border-indigo-500 shadow-2xs max-w-full"
             >
-              {professionals.map((p) => (
+              {askable.map((p) => (
                 <option key={p.id} value={p.id}>{p.fullName} ({p.professionTitle})</option>
               ))}
             </select>
@@ -66,6 +291,7 @@ export default function QAHub({ qaItems, professionals = [], onAskQuestion, onUp
             <select
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
+              aria-label="Topic"
               className="px-3 py-1.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:border-indigo-500 shadow-2xs"
             >
               <option value="Daily Routine & Worklife">Daily Routine & Worklife</option>
@@ -79,10 +305,11 @@ export default function QAHub({ qaItems, professionals = [], onAskQuestion, onUp
         <div className="flex gap-2">
           <input
             type="text"
+            aria-label="Your question"
             placeholder="e.g. What is the hardest part of managing depositions? How do you handle 40-ton buses in snow?"
             value={questionText}
             onChange={(e) => setQuestionText(e.target.value)}
-            className="flex-1 px-4 py-2.5 bg-white border border-indigo-200 rounded-2xl text-xs text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
+            className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-indigo-200 rounded-2xl text-xs text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
             required
           />
           <button
@@ -97,73 +324,51 @@ export default function QAHub({ qaItems, professionals = [], onAskQuestion, onUp
         {error && <p role="alert" className="text-xs font-bold text-rose-600">{error}</p>}
       </form>
 
-      {qaItems.length === 0 && (
+      {/* All questions / my inbox */}
+      <div className="flex items-center gap-2 mb-4" role="tablist" aria-label="Questions">
+        <button role="tab" aria-selected={view === 'all'} onClick={() => setView('all')} className={tabCls('all')}>
+          All questions
+        </button>
+        <button
+          role="tab"
+          aria-selected={view === 'inbox'}
+          onClick={() => { setView('inbox'); loadInbox(); }}
+          className={tabCls('inbox')}
+        >
+          <Inbox className="w-3.5 h-3.5" />
+          Waiting for my answer
+          {inboxCount > 0 && (
+            <span className={`ml-0.5 px-1.5 rounded-full text-[10px] ${view === 'inbox' ? 'bg-white text-indigo-700' : 'bg-rose-500 text-white'}`}>
+              {inboxCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {view === 'inbox' && inboxError && (
+        <p role="alert" className="text-center text-xs font-bold text-rose-600 py-4">Couldn't load your questions: {inboxError}</p>
+      )}
+      {view === 'inbox' && !inboxError && inbox === null && (
+        <p className="text-center text-xs font-medium text-slate-500 py-6">Loading…</p>
+      )}
+      {view === 'inbox' && !inboxError && inbox?.length === 0 && (
+        <p className="text-center text-xs font-medium text-slate-500 py-6">
+          No questions waiting for you. When someone asks you something, it shows up here.
+        </p>
+      )}
+      {view === 'all' && qaItems.length === 0 && (
         <p className="text-center text-xs font-medium text-slate-500 py-6">No questions yet — ask the first one.</p>
       )}
 
-      {/* Answered Questions Stream */}
       <div className="space-y-4">
-        {qaItems.map((qa) => (
-          <div key={qa.id} className="border border-indigo-100 rounded-3xl p-4 sm:p-5 bg-white hover:border-indigo-200 transition-all shadow-2xs">
-            {/* Question Header */}
-            <div className="flex items-start justify-between gap-3 mb-2.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-800 border border-indigo-200 font-extrabold shadow-2xs">
-                  {qa.topicTag}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">Asked {qa.timeAgo}</span>
-              </div>
-
-              <button
-                onClick={() => onUpvoteQA(qa.id)}
-                aria-pressed={qa.upvotedByMe}
-                className={`flex items-center gap-1 px-3 py-1 rounded-xl border text-xs font-black transition-colors ${
-                  qa.upvotedByMe
-                    ? 'bg-indigo-600 border-indigo-600 text-white'
-                    : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800'
-                }`}
-              >
-                <ArrowUp className="w-3.5 h-3.5" />
-                <span>{qa.upvotes}</span>
-              </button>
-            </div>
-
-            {/* Question Text */}
-            <h4 className="font-extrabold text-sm sm:text-base text-slate-900 mb-3 leading-snug">
-              "{qa.questionText}"
-            </h4>
-
-            {/* Worker Response Box */}
-            {qa.answerText ? (
-              <div className="bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 border border-indigo-100 rounded-2xl p-4 space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-0.5 rounded-full bg-gradient-to-tr from-indigo-500 to-rose-500">
-                    <img
-                      src={qa.workerAvatarUrl}
-                      alt={qa.workerFullName}
-                      className="w-7 h-7 rounded-full object-cover border border-white"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-extrabold text-xs text-slate-900">{qa.workerFullName}</span>
-                      <ShieldCheck className="w-3.5 h-3.5 text-sky-500" />
-                      <span className="text-[10px] text-indigo-700 font-bold">({qa.workerProfessionTitle})</span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                  {qa.answerText}
-                </p>
-              </div>
-            ) : (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs text-amber-900 font-bold flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                <span>Question queued for {qa.workerFullName}'s next Q&A response shift!</span>
-              </div>
-            )}
-          </div>
+        {shown.map((qa) => (
+          <QuestionCard
+            key={qa.id}
+            qa={qa}
+            isMine={!!currentUserId && qa.workerId === currentUserId}
+            onUpvoteQA={handleUpvote}
+            onAnswer={handleAnswer}
+          />
         ))}
       </div>
     </div>

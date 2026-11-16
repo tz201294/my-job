@@ -272,6 +272,18 @@ export default function App() {
     setQaItems((qs) => [created, ...qs]);
   };
 
+  // Only the worker who was asked can answer; sending again edits the answer. Returns the updated question.
+  const handleAnswerQuestion = async (qaId, draft) => {
+    const updated = toQuestion(
+      await api.answerQuestion(qaId, {
+        answer_text: draft.answerText,
+        video_response_url: draft.videoResponseUrl || null,
+      })
+    );
+    setQaItems((qs) => mapById(qs, qaId, () => updated));
+    return updated;
+  };
+
   const handleUpvoteQA = async (qaId) => {
     const flip = (q) => ({ ...q, upvotedByMe: !q.upvotedByMe, upvotes: q.upvotes + (q.upvotedByMe ? -1 : 1) });
     setQaItems((qs) => mapById(qs, qaId, flip));
@@ -545,7 +557,9 @@ export default function App() {
               <QAHub
                 qaItems={qaItems}
                 professionals={professionals}
+                currentUserId={me.id}
                 onAskQuestion={handleAskQuestion}
+                onAnswerQuestion={handleAnswerQuestion}
                 onUpvoteQA={handleUpvoteQA}
               />
             )}

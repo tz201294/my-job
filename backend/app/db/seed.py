@@ -213,6 +213,19 @@ async def seed_demo_data(db: AsyncSession) -> bool:
         topic_tag="DIY Pitfalls", is_answered=True, upvotes_count=91, answered_at=now,
         answer_text="Over-tightening PVC slip nuts until the rubber washer cracks, and pouring caustic chemical cleaners into old corroded pipes.",
     ))
+    # Still waiting for an answer, so each demo professional has something in their Q&A inbox.
+    for worker, asker, text, topic in [
+        ("sarah_plumber", "law_student_sam",
+         "Is it worth getting a master plumber licence, or do most jobs only need a journeyman?", "Career & Salary Advice"),
+        ("alex_driver", "homeowner_dave",
+         "How do you stay alert on the last loop of a split shift?", "Daily Routine & Worklife"),
+        ("elena_lawyer", "homeowner_dave",
+         "Which legal research tool would you pick if you could only keep one?", "Tools & Software"),
+    ]:
+        db.add(QAQuestion(
+            worker_id=users[worker].id, asker_id=users[asker].id, question_text=text, topic_tag=topic,
+            is_answered=False, upvotes_count=0,
+        ))
 
     chal = WorkChallenge(
         worker_id=users["sarah_plumber"].id,

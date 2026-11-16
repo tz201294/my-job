@@ -79,6 +79,10 @@ Q&A questions and upvotes, live-work challenges, suggestions and upvotes, real p
 Still sample/local only: **Reels** (labelled in the UI), story highlights and post comments. Media is
 link-only for now (no file uploads).
 
+Q&A: `POST /community/qa/questions/{id}/answer` (`answer_text`, optional `video_response_url`) lets the
+professional who was asked answer, or edit their answer (403 for anyone else). `GET /community/qa?worker_id=…&answered=false`
+lists a worker's unanswered questions; the Q&A tab shows them under "Waiting for my answer".
+
 Social endpoints: `POST`/`DELETE /auth/users/{username}/follow` (idempotent; you can't follow yourself),
 `GET /posts/feed?following=true`, `POST /posts/{id}/bookmark` (toggle), `GET /posts/bookmarks`.
 Existing databases need `python -m alembic upgrade head` (`0002` adds upvotes, `0003` adds follows and

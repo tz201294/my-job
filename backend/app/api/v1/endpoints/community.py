@@ -9,12 +9,13 @@ from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import (
     challenge_out, question_out, review_out, suggestion_out, upvoted_question_ids, upvoted_suggestion_ids,
 )
+from app.core.time import utcnow
 from app.db.session import get_db
 from app.models import (
     ChallengeSuggestion, Post, QAQuestion, QAUpvote, SuggestionUpvote, TaskReview, User, WorkChallenge,
 )
 from app.schemas.community import (
-    ChallengeSuggestionCreate, ChallengeSuggestionResponse, QAQuestionCreate, QAQuestionResponse,
+    ChallengeSuggestionCreate, ChallengeSuggestionResponse, QAAnswerCreate, QAQuestionCreate, QAQuestionResponse,
     QASessionResponse, TaskReviewCreate, TaskReviewResponse, WorkChallengeCreate, WorkChallengeResponse,
 )
 
@@ -83,15 +84,24 @@ async def create_task_review(
 # Q&A Segments
 @router.get("/qa", response_model=List[QAQuestionResponse])
 async def list_questions(
+    worker_id: Optional[str] = None,
+    answered: Optional[bool] = None,
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     user: Optional[User] = Depends(get_optional_user),
 ):
-    """All AMA questions across professionals, newest first."""
-    rows = (
-        await db.execute(select(QAQuestion).order_by(QAQuestion.created_at.desc()).limit(limit).offset(offset))
-    ).scalars().all()
+    """AMA questions across professionals, newest first.
+
+    `worker_id` limits the list to questions addressed to one worker; `answered=false` lists only
+    questions still waiting for an answer (e.g. a worker's inbox).
+    """
+    stmt = select(QAQuestion).order_by(QAQuestion.created_at.desc()).limit(limit).offset(offset)
+    if worker_id:
+        stmt = stmt.where(QAQuestion.worker_id == worker_id)
+    if answered is not None:
+        stmt = stmt.where(QAQuestion.is_answered.is_(True) if answered else QAQuestion.is_answered.isnot(True))
+    rows = (await db.execute(stmt)).scalars().all()
     voted = await upvoted_question_ids(db, user, rows)
     return [question_out(q, voted) for q in rows]
 
@@ -141,6 +151,32 @@ async def ask_worker_question(
     await db.commit()
     q = (await db.execute(select(QAQuestion).where(QAQuestion.id == q.id))).scalar_one()
     return question_out(q)
+
+
+@router.post("/qa/questions/{question_id}/answer", response_model=QAQuestionResponse)
+async def answer_question(
+    question_id: str,
+    a_in: QAAnswerCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The worker a question was addressed to answers it. Sending again edits the answer."""
+    q = (await db.execute(select(QAQuestion).where(QAQuestion.id == question_id))).scalar_one_or_none()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+    if q.worker_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the professional who was asked can answer this question")
+
+    q.answer_text = a_in.answer_text
+    q.video_response_url = a_in.video_response_url
+    if not q.is_answered:
+        q.is_answered = True
+        q.answered_at = utcnow()
+    await db.commit()
+
+    q = (await db.execute(select(QAQuestion).where(QAQuestion.id == question_id))).scalar_one()
+    voted = await upvoted_question_ids(db, user, [q])
+    return question_out(q, voted)
 
 
 @router.post("/qa/questions/{question_id}/upvote")

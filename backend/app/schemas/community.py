@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional, List
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from typing import Annotated, Optional, List
 from datetime import datetime
 from enum import Enum
 
@@ -45,7 +45,7 @@ class QAQuestionCreate(BaseModel):
 
 
 class QAAnswerCreate(BaseModel):
-    answer_text: str
+    answer_text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=5000)]
     video_response_url: OptionalHttpUrlStr = None
 
 

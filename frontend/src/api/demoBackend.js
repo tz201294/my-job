@@ -14,7 +14,8 @@ import { DEFAULT_AVATAR, toChallenge, toPost, toQuestion, toStory, toSuggestion 
 export const DEMO_PASSWORD = 'demo1234';
 export const DEMO_TOKEN = 'demo_token';
 
-const STORE_KEY = 'myjob_demo_store_v1';
+// Bump the version when the sample data changes so returning visitors get the new data.
+const STORE_KEY = 'myjob_demo_store_v2';
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 const SIGNUP_OPTIONS = {
@@ -325,6 +326,35 @@ function toggleUpvote(item, notFound) {
   return { id: item.id, upvoted: item.upvotedByMe, upvotes_count: item.upvotes };
 }
 
+function listQuestions(params) {
+  let qs = load().questions;
+  const workerId = params.get('worker_id');
+  if (workerId) qs = qs.filter((q) => q.workerId === workerId);
+  const answered = params.get('answered');
+  if (answered === 'true') qs = qs.filter((q) => !!q.answerText);
+  if (answered === 'false') qs = qs.filter((q) => !q.answerText);
+  const limit = Number(params.get('limit')) || 50;
+  return qs.slice(0, limit);
+}
+
+function answerQuestion(questionId, body) {
+  const u = me();
+  const q = byId(load().questions, questionId) || fail(404, 'Question not found');
+  if (q.workerId !== u.id) fail(403, 'Only the professional who was asked can answer this question');
+  const text = String(body?.answer_text || '').trim();
+  if (!text) fail(422, 'answer_text: String should have at least 1 character');
+  if (text.length > 5000) fail(422, 'answer_text: String should have at most 5000 characters');
+  const video = body?.video_response_url ? String(body.video_response_url).trim() : null;
+  if (video && !/^https?:\/\/[^/\s]+/i.test(video)) {
+    fail(422, 'video_response_url: must be a link starting with http:// or https://');
+  }
+  q.answerText = text;
+  q.videoResponseUrl = video;
+  if (!q.answeredTimeAgo) q.answeredTimeAgo = 'Just now';
+  save();
+  return q;
+}
+
 function askQuestion(workerId, body) {
   const s = load();
   const u = me();
@@ -444,7 +474,10 @@ function handle(endpoint, options) {
       const sug = s.challenges.flatMap((c) => c.suggestions).find((x) => x.id === parts[2]);
       return toggleUpvote(sug, 'Suggestion not found');
     }
-    if (route === 'GET /community/qa') return s.questions;
+    if (route === 'GET /community/qa') return listQuestions(url.searchParams);
+    if (parts[1] === 'qa' && parts[2] === 'questions' && parts[4] === 'answer' && method === 'POST') {
+      return answerQuestion(parts[3], body);
+    }
     if (parts[1] === 'qa' && parts[2] === 'questions' && parts[4] === 'upvote' && method === 'POST') {
       return toggleUpvote(byId(s.questions, parts[3]), 'Question not found');
     }

@@ -474,6 +474,52 @@ export const INITIAL_QA_ITEMS = [
     answerText: "The hardest part is mental: you have to train yourself not to steer into the turn until the articulation accordion reaches the curb edge. Once you master the pivot point geometry, it's actually smoother than a rigid 40-footer!",
     upvotes: 67,
     timeAgo: "3 days ago"
+  },
+  // Unanswered, so each demo professional has something waiting in their Q&A inbox.
+  {
+    id: "qa_04",
+    workerId: "usr_101",
+    workerUsername: "sarah_plumber",
+    workerFullName: "Sarah Jenkins",
+    workerProfessionTitle: "Master Plumber",
+    workerAvatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+    askerUsername: "law_student_sam",
+    askerAvatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+    questionText: "Is it worth getting a master plumber licence, or do most jobs only need a journeyman?",
+    topicTag: "Career & Salary Advice",
+    answerText: null,
+    upvotes: 5,
+    timeAgo: "40m ago"
+  },
+  {
+    id: "qa_05",
+    workerId: "usr_102",
+    workerUsername: "alex_driver",
+    workerFullName: "Alex Rivera",
+    workerProfessionTitle: "Transit Bus Operator",
+    workerAvatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    askerUsername: "homeowner_dave",
+    askerAvatarUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=400&q=80",
+    questionText: "How do you stay alert on the last loop of a split shift?",
+    topicTag: "Daily Routine & Worklife",
+    answerText: null,
+    upvotes: 3,
+    timeAgo: "2h ago"
+  },
+  {
+    id: "qa_06",
+    workerId: "usr_103",
+    workerUsername: "elena_lawyer",
+    workerFullName: "Elena Vance, Esq.",
+    workerProfessionTitle: "Commercial Litigation Attorney",
+    workerAvatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    askerUsername: "homeowner_dave",
+    askerAvatarUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=400&q=80",
+    questionText: "Which legal research tool would you pick if you could only keep one?",
+    topicTag: "Tools & Software",
+    answerText: null,
+    upvotes: 8,
+    timeAgo: "5h ago"
   }
 ];
 

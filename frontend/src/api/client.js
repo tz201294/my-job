@@ -111,9 +111,13 @@ export const api = {
   upvoteSuggestion: (suggestionId) => post(`/community/suggestions/${suggestionId}/upvote`),
 
   // Community: Q&A AMAs
-  getQuestions: () => request('/community/qa'),
+  getQuestions: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/community/qa${query ? `?${query}` : ''}`);
+  },
   askQuestion: (workerId, data) => post(`/community/qa/${workerId}/ask`, data),
   upvoteQuestion: (questionId) => post(`/community/qa/questions/${questionId}/upvote`),
+  answerQuestion: (questionId, data) => post(`/community/qa/questions/${questionId}/answer`, data),
 
   // Community: Reviews & Ratings
   getReviews: (postId) => request(`/community/reviews/${postId}`),
