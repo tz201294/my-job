@@ -1,0 +1,464 @@
+// In-browser stand-in for the API, used only in demo mode (static hosting such as GitHub Pages).
+// It keeps state for this browser (saved to localStorage) and returns the same response shapes as
+// the real backend for every endpoint the app calls, so the rest of the app behaves identically.
+import {
+  INITIAL_CATEGORIES,
+  INITIAL_CHALLENGES,
+  INITIAL_POSTS,
+  INITIAL_QA_ITEMS,
+  INITIAL_STORIES,
+  INITIAL_USERS,
+} from '../data/mockData';
+import { DEFAULT_AVATAR, toChallenge, toPost, toQuestion, toStory, toSuggestion } from './mappers';
+
+export const DEMO_PASSWORD = 'demo1234';
+export const DEMO_TOKEN = 'demo_token';
+
+const STORE_KEY = 'myjob_demo_store_v1';
+const clone = (x) => JSON.parse(JSON.stringify(x));
+
+const SIGNUP_OPTIONS = {
+  industries: [
+    'Trades & Craftsmanship', 'Transportation & Logistics', 'Legal & Finance', 'Technology & Engineering',
+    'Healthcare & Medicine', 'Education & Training', 'Food & Hospitality', 'Arts, Media & Design',
+    'Science & Research', 'Public Service & Safety', 'Other',
+  ],
+  interests: [
+    'Trades & Craftsmanship', 'Transportation & Logistics', 'Legal & Finance', 'Technology & Engineering',
+    'Healthcare & Medicine', 'Education & Training', 'Food & Hospitality', 'Arts, Media & Design',
+    'Science & Research', 'Public Service & Safety',
+  ],
+  genders: ['female', 'male', 'non_binary', 'prefer_not_to_say'],
+  non_working_statuses: ['student', 'unemployed', 'retired', 'other'],
+  education_levels: ['high_school', 'vocational', 'bachelors', 'masters', 'doctorate', 'other'],
+};
+
+function freshStore() {
+  return {
+    // Every account, in the API's user shape (snake_case), keyed by username.
+    users: Object.fromEntries(Object.values(INITIAL_USERS).map((u) => [u.username, uiUserToApi(u)])),
+    passwords: {}, // username -> password, for accounts registered in this browser
+    meUsername: null,
+    following: [], // usernames the signed-in user follows
+    posts: clone(INITIAL_POSTS),
+    stories: clone(INITIAL_STORIES),
+    challenges: clone(INITIAL_CHALLENGES),
+    questions: clone(INITIAL_QA_ITEMS),
+    reviews: [], // API shape, as CaseStudyDetailModal renders them directly
+  };
+}
+
+let store = null;
+
+function load() {
+  if (store) return store;
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY));
+    if (saved && saved.users && saved.posts) store = saved;
+  } catch {}
+  if (!store) store = freshStore();
+  return store;
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(store));
+  } catch {}
+}
+
+function uiUserToApi(u) {
+  return {
+    id: u.id,
+    username: u.username,
+    full_name: u.fullName,
+    avatar_url: u.avatarUrl,
+    bio: u.bio || null,
+    profession: u.professionTitle
+      ? {
+          title: u.professionTitle,
+          industry: u.industry,
+          specialization: u.specialization || null,
+          years_of_experience: u.yearsExp ?? null,
+          is_verified_pro: !!u.isVerified,
+          company_or_freelance: null,
+          key_tools: u.keyTools || [],
+        }
+      : null,
+    followers_count: u.followersCount ?? 0,
+    following_count: u.followingCount ?? 0,
+    posts_count: u.postsCount ?? 0,
+    rating: u.rating ?? null,
+    is_following: false,
+  };
+}
+
+class DemoError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+const fail = (status, message) => { throw new DemoError(status, message); };
+
+function me() {
+  const s = load();
+  const u = s.meUsername && s.users[s.meUsername];
+  if (!u) fail(401, 'Not authenticated');
+  return u;
+}
+
+const byId = (list, id) => list.find((x) => x.id === id);
+const nowIso = () => new Date().toISOString();
+const newId = (prefix) => `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+function publicUser(u) {
+  const s = load();
+  const posts = s.posts.filter((p) => p.authorUsername === u.username).length;
+  return {
+    ...u,
+    is_following: s.following.includes(u.username),
+    posts_count: Math.max(u.posts_count || 0, posts),
+  };
+}
+
+function authResult(u) {
+  const s = load();
+  s.meUsername = u.username;
+  save();
+  return { access_token: DEMO_TOKEN, token_type: 'bearer', user: publicUser(u) };
+}
+
+// ---------- endpoint handlers ----------
+
+function login(body) {
+  const s = load();
+  const ident = String(body?.username_or_email || '').trim().toLowerCase();
+  const u = s.users[ident];
+  const expected = s.passwords[ident] ?? DEMO_PASSWORD;
+  if (!u || body?.password !== expected) fail(401, 'Invalid username or password');
+  return authResult(u);
+}
+
+function register(body) {
+  const s = load();
+  const username = String(body?.username || '').trim().toLowerCase();
+  if (!username) fail(422, 'username: Field required');
+  if (s.users[username]) fail(409, 'Username already taken');
+  const p = body.profession;
+  const u = {
+    id: newId('usr'),
+    username,
+    full_name: body.full_name || username,
+    avatar_url: DEFAULT_AVATAR,
+    bio: null,
+    profession: p
+      ? {
+          title: p.title,
+          industry: p.industry,
+          specialization: p.specialization || null,
+          years_of_experience: p.years_of_experience ?? null,
+          is_verified_pro: false,
+          company_or_freelance: p.company_or_freelance || null,
+          key_tools: [],
+        }
+      : null,
+    followers_count: 0,
+    following_count: 0,
+    posts_count: 0,
+    rating: null,
+    is_following: false,
+  };
+  s.users[username] = u;
+  s.passwords[username] = body.password;
+  return authResult(u);
+}
+
+function setFollow(username, follow) {
+  const s = load();
+  const self = me();
+  const target = s.users[username];
+  if (!target) fail(404, 'User not found');
+  if (target.username === self.username) fail(400, "You can't follow yourself");
+  const was = s.following.includes(username);
+  if (follow && !was) {
+    s.following.push(username);
+    target.followers_count += 1;
+    self.following_count += 1;
+  } else if (!follow && was) {
+    s.following = s.following.filter((x) => x !== username);
+    target.followers_count = Math.max(0, target.followers_count - 1);
+    self.following_count = Math.max(0, self.following_count - 1);
+  }
+  save();
+  return { username, is_following: follow, followers_count: target.followers_count };
+}
+
+function feed(params) {
+  const s = load();
+  let posts = s.posts;
+  if (params.get('following') === 'true') {
+    const self = me();
+    posts = posts.filter((p) => p.authorUsername === self.username || s.following.includes(p.authorUsername));
+  }
+  const author = params.get('author_username');
+  if (author) posts = posts.filter((p) => p.authorUsername === author.toLowerCase());
+  const type = params.get('post_type');
+  if (type) posts = posts.filter((p) => p.postType === type);
+  const limit = Number(params.get('limit')) || 20;
+  const offset = Number(params.get('offset')) || 0;
+  return posts.slice(offset, offset + limit);
+}
+
+function authorFields(u) {
+  return {
+    author_id: u.id,
+    author_username: u.username,
+    author_full_name: u.full_name,
+    author_avatar_url: u.avatar_url,
+    author_profession_title: u.profession?.title || null,
+    author_industry: u.profession?.industry || null,
+    is_author_verified: !!u.profession?.is_verified_pro,
+  };
+}
+
+function createPost(body) {
+  const s = load();
+  const u = me();
+  const post = toPost({
+    ...body,
+    ...authorFields(u),
+    id: newId('post'),
+    likes_count: 0,
+    comments_count: 0,
+    is_liked_by_me: false,
+    is_bookmarked_by_me: false,
+    rating: null,
+    reviews_count: 0,
+    created_at: nowIso(),
+  });
+  s.posts.unshift(post);
+  save();
+  return post;
+}
+
+function toggleLike(postId) {
+  me();
+  const p = byId(load().posts, postId) || fail(404, 'Post not found');
+  p.isLiked = !p.isLiked;
+  p.likesCount = Math.max(0, (p.likesCount || 0) + (p.isLiked ? 1 : -1));
+  save();
+  return { post_id: postId, is_liked: p.isLiked, likes_count: p.likesCount };
+}
+
+function toggleBookmark(postId) {
+  me();
+  const p = byId(load().posts, postId) || fail(404, 'Post not found');
+  p.isBookmarked = !p.isBookmarked;
+  save();
+  return { post_id: postId, is_bookmarked: p.isBookmarked };
+}
+
+function createStory(body) {
+  const s = load();
+  const u = me();
+  const story = toStory({
+    id: newId('story'),
+    user_id: u.id,
+    author_username: u.username,
+    author_full_name: u.full_name,
+    author_avatar_url: u.avatar_url,
+    author_profession_title: u.profession?.title || null,
+    media_url: body.media_url,
+    caption: body.caption,
+    profession_tag: body.profession_tag,
+    created_at: nowIso(),
+  });
+  s.stories.unshift(story);
+  save();
+  return story;
+}
+
+function createChallenge(body) {
+  const s = load();
+  const u = me();
+  const chal = toChallenge({
+    ...body,
+    id: newId('chal'),
+    worker_id: u.id,
+    worker_username: u.username,
+    worker_full_name: u.full_name,
+    worker_profession_title: u.profession?.title || null,
+    worker_avatar_url: u.avatar_url,
+    is_solved: false,
+    suggestions: [],
+    created_at: nowIso(),
+  });
+  s.challenges.unshift(chal);
+  save();
+  return chal;
+}
+
+function suggest(challengeId, body) {
+  const u = me();
+  const chal = byId(load().challenges, challengeId) || fail(404, 'Challenge not found');
+  const sug = toSuggestion({
+    ...body,
+    id: newId('sug'),
+    suggester_id: u.id,
+    suggester_username: u.username,
+    suggester_profession: u.profession?.title || null,
+    upvotes_count: 0,
+    upvoted_by_me: false,
+    is_accepted_by_worker: false,
+  });
+  chal.suggestions.unshift(sug);
+  save();
+  return sug;
+}
+
+function toggleUpvote(item, notFound) {
+  me();
+  if (!item) fail(404, notFound);
+  item.upvotedByMe = !item.upvotedByMe;
+  item.upvotes = Math.max(0, (item.upvotes || 0) + (item.upvotedByMe ? 1 : -1));
+  save();
+  return { id: item.id, upvoted: item.upvotedByMe, upvotes_count: item.upvotes };
+}
+
+function askQuestion(workerId, body) {
+  const s = load();
+  const u = me();
+  const worker = Object.values(s.users).find((x) => x.id === workerId) || fail(404, 'Worker not found');
+  const q = toQuestion({
+    ...body,
+    topic_tag: body.topic_tag || 'General Inquiry',
+    id: newId('qa'),
+    worker_id: worker.id,
+    worker_username: worker.username,
+    worker_full_name: worker.full_name,
+    worker_profession_title: worker.profession?.title || null,
+    worker_avatar_url: worker.avatar_url,
+    asker_username: u.username,
+    asker_avatar_url: u.avatar_url,
+    answer_text: null,
+    upvotes_count: 0,
+    upvoted_by_me: false,
+    created_at: nowIso(),
+  });
+  s.questions.unshift(q);
+  save();
+  return q;
+}
+
+function submitReview(body) {
+  const s = load();
+  const u = me();
+  const post = byId(s.posts, body.post_id) || fail(404, 'Post not found');
+  if (post.authorUsername === u.username) fail(400, "You can't review your own post");
+  if (s.reviews.some((r) => r.post_id === post.id && r.username === u.username)) {
+    fail(409, 'You already reviewed this post');
+  }
+  const review = {
+    id: newId('rev'),
+    post_id: post.id,
+    user_id: u.id,
+    username: u.username,
+    user_avatar_url: u.avatar_url,
+    is_peer_verified: !!u.profession?.is_verified_pro,
+    reviewer_profession: body.reviewer_profession,
+    clarity_score: body.clarity_score,
+    accuracy_score: body.accuracy_score,
+    feedback_text: body.feedback_text,
+    created_at: nowIso(),
+  };
+  s.reviews.unshift(review);
+  // Fold the new score into the post's average, as the server does.
+  const score = (body.clarity_score + body.accuracy_score) / 2;
+  const n = post.reviewsCount || 0;
+  post.rating = Math.round((((post.rating || 0) * n + score) / (n + 1)) * 10) / 10;
+  post.reviewsCount = n + 1;
+  save();
+  return review;
+}
+
+// ---------- router ----------
+
+// Returns a copy, like a network response would, so callers never share objects with the store.
+export async function demoRequest(endpoint, options = {}) {
+  return clone(handle(endpoint, options));
+}
+
+function handle(endpoint, options) {
+  const method = (options.method || 'GET').toUpperCase();
+  let body = null;
+  if (options.body) {
+    try { body = JSON.parse(options.body); } catch {}
+  }
+  const url = new URL(endpoint, 'http://demo.local');
+  const path = url.pathname.replace(/\/+$/, '');
+  const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
+  const s = load();
+  const route = `${method} ${path}`;
+
+  // Auth
+  if (route === 'GET /auth/signup-options') return SIGNUP_OPTIONS;
+  if (route === 'POST /auth/login') return login(body);
+  if (route === 'POST /auth/register') return register(body);
+  if (route === 'GET /auth/me') return publicUser(me());
+  if (route === 'GET /auth/professionals') {
+    return Object.values(s.users).filter((u) => u.profession).map(publicUser);
+  }
+  if (parts[0] === 'auth' && parts[1] === 'users' && parts[2]) {
+    const username = parts[2].toLowerCase();
+    if (parts[3] === 'follow' && method === 'POST') return setFollow(username, true);
+    if (parts[3] === 'follow' && method === 'DELETE') return setFollow(username, false);
+    if (!parts[3] && method === 'GET') {
+      const u = s.users[username] || fail(404, 'User not found');
+      return publicUser(u);
+    }
+  }
+
+  // Stories
+  if (route === 'GET /stories/feed') return s.stories;
+  if (route === 'POST /stories') return createStory(body);
+
+  // Posts
+  if (route === 'GET /posts/feed') return feed(url.searchParams);
+  if (route === 'GET /posts/bookmarks') { me(); return s.posts.filter((p) => p.isBookmarked); }
+  if (route === 'POST /posts') return createPost(body);
+  if (parts[0] === 'posts' && parts[1]) {
+    if (parts[2] === 'like' && method === 'POST') return toggleLike(parts[1]);
+    if (parts[2] === 'bookmark' && method === 'POST') return toggleBookmark(parts[1]);
+    if (!parts[2] && method === 'GET') return byId(s.posts, parts[1]) || fail(404, 'Post not found');
+  }
+
+  // Discovery
+  if (route === 'GET /discovery/categories') return INITIAL_CATEGORIES;
+
+  // Community
+  if (route === 'GET /community/challenges') return s.challenges;
+  if (route === 'POST /community/challenges') return createChallenge(body);
+  if (parts[0] === 'community') {
+    if (parts[1] === 'challenges' && parts[3] === 'suggest' && method === 'POST') return suggest(parts[2], body);
+    if (parts[1] === 'suggestions' && parts[3] === 'upvote' && method === 'POST') {
+      const sug = s.challenges.flatMap((c) => c.suggestions).find((x) => x.id === parts[2]);
+      return toggleUpvote(sug, 'Suggestion not found');
+    }
+    if (route === 'GET /community/qa') return s.questions;
+    if (parts[1] === 'qa' && parts[2] === 'questions' && parts[4] === 'upvote' && method === 'POST') {
+      return toggleUpvote(byId(s.questions, parts[3]), 'Question not found');
+    }
+    if (parts[1] === 'qa' && parts[3] === 'ask' && method === 'POST') return askQuestion(parts[2], body);
+    if (parts[1] === 'reviews' && parts[2] && method === 'GET') return s.reviews.filter((r) => r.post_id === parts[2]);
+    if (route === 'POST /community/reviews') return submitReview(body);
+  }
+
+  fail(404, `Not available in the demo: ${method} ${path}`);
+}
+
+// Signing out ends the demo session but keeps this browser's demo content.
+export function demoSignOut() {
+  const s = load();
+  s.meUsername = null;
+  save();
+}

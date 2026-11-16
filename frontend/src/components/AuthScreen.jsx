@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Briefcase, Loader2, AlertCircle, ArrowLeft, Check } from 'lucide-react';
-import { api, tokenStore } from '../api/client';
+import { api, IS_DEMO, tokenStore } from '../api/client';
+import { DEMO_PASSWORD } from '../api/demoBackend';
 
 // Used only if /auth/signup-options cannot be loaded; the server re-validates everything.
 const FALLBACK_OPTIONS = {
@@ -208,6 +209,13 @@ export default function AuthScreen({ onAuthenticated }) {
 
           {mode === 'login' ? (
             <form onSubmit={submitLogin} className="space-y-4">
+              {IS_DEMO && (
+                <p className="p-3 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-xl text-xs">
+                  <strong>Demo mode:</strong> sample data, saved only in this browser. Log in as{' '}
+                  <code>sarah_plumber</code>, <code>alex_driver</code> or <code>elena_lawyer</code> with password{' '}
+                  <code>{DEMO_PASSWORD}</code>, or create an account.
+                </p>
+              )}
               <Field id="login-id" label="Username or email">
                 <input id="login-id" className={inputCls} autoComplete="username" required value={login.username_or_email}
                   onChange={(e) => setLogin({ ...login, username_or_email: e.target.value })} />

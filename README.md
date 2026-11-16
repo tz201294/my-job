@@ -36,6 +36,12 @@ python -m pytest                                    # tests
 cd frontend && npm install && npm run dev
 ```
 
+### Demo mode (no backend)
+On GitHub Pages, or when built with `VITE_DEMO_MODE=true`, the app runs entirely in the browser
+(`frontend/src/api/demoBackend.js`): sample data, with changes saved only in that browser's localStorage.
+Log in as a demo account with password `demo1234`, or sign up. Outside demo mode the app always talks to the
+real API and shows an error if it can't be reached, so it never falls back to sample data silently.
+
 ## Accounts & sign-up survey
 Users sign up with a username + password (bcrypt-hashed, JWT sessions). The sign-up form asks whether
 they work, their field/profession, **multiple** fields of interest, gender, age, and optional
