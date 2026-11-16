@@ -3,6 +3,8 @@ from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
+from app.schemas.common import HttpUrlStr
+
 
 class MediaType(str, Enum):
     IMAGE = "image"
@@ -17,7 +19,7 @@ class StoryBase(BaseModel):
 
 
 class StoryCreate(StoryBase):
-    pass
+    media_url: HttpUrlStr
 
 
 class StoryResponse(StoryBase):

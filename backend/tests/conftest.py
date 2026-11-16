@@ -70,3 +70,15 @@ async def auth_headers(client, signup_payload):
     r = await client.post("/api/v1/auth/register", json=signup_payload)
     assert r.status_code == 201, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+@pytest.fixture(autouse=True)
+def reset_login_limits():
+    """Failed-login counters live in process memory; start every test with a clean slate."""
+    from app.api.v1.endpoints.auth import ip_limiter, username_limiter
+
+    username_limiter.clear()
+    ip_limiter.clear()
+    yield
+    username_limiter.clear()
+    ip_limiter.clear()

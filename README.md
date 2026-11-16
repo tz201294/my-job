@@ -17,19 +17,35 @@ See [`SKILL.md`](SKILL.md) for domain architecture, data models, and feature gui
 ```bash
 docker compose up --build        # runs `alembic upgrade head`, then the API on :8000
 ```
-Demo accounts (`sarah_plumber`, `alex_driver`, `elena_lawyer`; password `demo1234`) are seeded into an
-**empty** database when `SEED_DEMO_DATA=true` (the compose default). Disable it and set a real
-`SECRET_KEY` outside development.
+To load the demo accounts (`sarah_plumber`, `alex_driver`, `elena_lawyer`; password `demo1234`) into an
+**empty** database, put `SEED_DEMO_DATA=true` in a `.env` file next to `docker-compose.yml`. Postgres and
+Redis are not published to the host; only the API port 8000 is.
 
 ### Backend (local, no Docker)
 ```bash
 cd backend
 pip install -r requirements.txt
-set DATABASE_URL=sqlite+aiosqlite:///./myjob.db     # or a postgresql+asyncpg:// URL
+copy .env.example .env                              # ENVIRONMENT=development, SQLite, demo data
 python -m alembic upgrade head
 python -m uvicorn app.main:app --reload
-python -m pytest                                    # tests
+python -m pytest                                    # tests (also run by CI on every push)
 ```
+
+### Configuration and production
+`ENVIRONMENT` defaults to `production`, and in production the API **refuses to start** unless:
+- `SECRET_KEY` is a random value of at least 32 characters
+  (`python -c "import secrets; print(secrets.token_urlsafe(48))"`);
+- `SEED_DEMO_DATA` is false;
+- `BACKEND_CORS_ORIGINS` lists real frontend origins (a JSON list, e.g. `["https://myjob.example.com"]`), not `"*"`.
+
+Use `ENVIRONMENT=development` locally (the compose file and `.env.example` already do).
+
+Login is rate limited: after 5 failed attempts for one username, or 20 from one IP address, within 15 minutes
+the API answers `429` with a `Retry-After` header (`LOGIN_*` settings). Counts are kept in memory per API
+process, so use a shared store such as Redis before running several workers. Behind a reverse proxy, set
+uvicorn's `FORWARDED_ALLOW_IPS` to the proxy address so client IPs are read correctly.
+
+Media links (post media, step images, stories, challenges) must be `http://` or `https://` URLs.
 
 ### Frontend
 ```bash

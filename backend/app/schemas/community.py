@@ -3,6 +3,8 @@ from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
+from app.schemas.common import OptionalHttpUrlStr
+
 
 class ReviewRating(int, Enum):
     ONE = 1
@@ -44,7 +46,7 @@ class QAQuestionCreate(BaseModel):
 
 class QAAnswerCreate(BaseModel):
     answer_text: str
-    video_response_url: Optional[str] = None
+    video_response_url: OptionalHttpUrlStr = None
 
 
 class QAQuestionResponse(BaseModel):
@@ -106,7 +108,7 @@ class WorkChallengeCreate(BaseModel):
     title: str
     scenario_description: str
     profession_category: str
-    media_url: Optional[str] = None
+    media_url: OptionalHttpUrlStr = None
     urgency_level: str = "medium"  # "low" | "medium" | "urgent" | "brainstorming"
 
 

@@ -1,12 +1,14 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import user_me_out, user_public_out
+from app.core.config import settings
+from app.core.rate_limit import FailureLimiter
 from app.core.security import create_access_token, hash_password, verify_password
 from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
 from app.db.session import get_db
@@ -20,6 +22,19 @@ router = APIRouter()
 # Hash of a throwaway password, verified when the account doesn't exist so that
 # response time does not reveal whether a username is registered.
 _DUMMY_HASH = hash_password("not-a-real-password")
+
+# Brute-force protection for /login: failures are counted per username and per client IP.
+username_limiter = FailureLimiter(settings.LOGIN_MAX_FAILURES_PER_USERNAME, settings.LOGIN_FAILURE_WINDOW_SECONDS)
+ip_limiter = FailureLimiter(settings.LOGIN_MAX_FAILURES_PER_IP, settings.LOGIN_FAILURE_WINDOW_SECONDS)
+
+
+def _too_many_attempts(retry_after: int) -> HTTPException:
+    minutes = max(1, -(-retry_after // 60))
+    return HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail=f"Too many failed login attempts. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
+        headers={"Retry-After": str(retry_after)},
+    )
 
 
 @router.get("/signup-options")
@@ -108,18 +123,30 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(credentials: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
     ident = credentials.username_or_email.strip().lower()
+    # Behind a reverse proxy, run uvicorn with --proxy-headers so this is the real client address.
+    ip = request.client.host if request.client else "unknown"
+
+    blocked = [r for r in (username_limiter.retry_after(ident), ip_limiter.retry_after(ip)) if r]
+    if blocked:
+        raise _too_many_attempts(max(blocked))
+
     user = (
         await db.execute(select(User).where(or_(User.username == ident, func.lower(User.email) == ident)))
     ).scalars().first()
 
     if user is None:
         verify_password(credentials.password, _DUMMY_HASH)
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-    if not verify_password(credentials.password, user.hashed_password) or not user.is_active:
+        ok = False
+    else:
+        ok = verify_password(credentials.password, user.hashed_password) and user.is_active
+    if not ok:
+        username_limiter.record_failure(ident)
+        ip_limiter.record_failure(ip)
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+    username_limiter.reset(ident)
     return Token(access_token=create_access_token(user.id), user=await user_me_out(db, user))
 
 

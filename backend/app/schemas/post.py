@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+from app.schemas.common import HttpUrlStr
 from app.schemas.task import TaskDetailsBase, TaskDetailsCreate, TaskDetailsResponse
 
 
@@ -18,6 +19,10 @@ class MediaItem(BaseModel):
     caption: Optional[str] = None
 
 
+class MediaItemCreate(MediaItem):
+    url: HttpUrlStr
+
+
 class PostBase(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     caption: str = Field(min_length=1)
@@ -27,6 +32,7 @@ class PostBase(BaseModel):
 
 
 class PostCreate(PostBase):
+    media: List[MediaItemCreate] = []
     task_details: Optional[TaskDetailsCreate] = None
 
 

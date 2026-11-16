@@ -1,4 +1,5 @@
-version: '3.8'
+# Local development stack. Values can be overridden in a .env file next to this one.
+# Postgres and Redis are only reachable from the backend container, not from the host network.
 
 services:
   # PostgreSQL Database
@@ -10,23 +11,19 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-myjob_db}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Redis Cache for 24h Stories & Feed Index
+  # Redis (reserved for caching and shared rate limits; not used by the API yet)
   redis:
     image: redis:7-alpine
     container_name: myjob_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -43,11 +40,13 @@ services:
     container_name: myjob_backend
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/myjob_db
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-myjob_db}
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=${SECRET_KEY:-development-secret-key-change-in-prod}
-      # Development only: seeds demo accounts (password: demo1234) into an empty DB
-      - SEED_DEMO_DATA=${SEED_DEMO_DATA:-true}
+      # Required (32+ random characters) when ENVIRONMENT=production; the dev default is refused there.
+      - SECRET_KEY=${SECRET_KEY:-development-only-secret-key-do-not-use-in-production}
+      # Set SEED_DEMO_DATA=true to load demo accounts (password: demo1234) into an empty DB.
+      - SEED_DEMO_DATA=${SEED_DEMO_DATA:-false}
     ports:
       - "8000:8000"
     depends_on:

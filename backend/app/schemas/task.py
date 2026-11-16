@@ -2,6 +2,8 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from enum import Enum
 
+from app.schemas.common import OptionalHttpUrlStr
+
 
 class TaskDifficulty(str, Enum):
     BEGINNER = "beginner"
@@ -18,6 +20,10 @@ class TaskStep(BaseModel):
     tip: Optional[str] = None
 
 
+class TaskStepCreate(TaskStep):
+    image_url: OptionalHttpUrlStr = None
+
+
 class TaskDetailsBase(BaseModel):
     problem_statement: str
     category: str
@@ -29,7 +35,7 @@ class TaskDetailsBase(BaseModel):
 
 
 class TaskDetailsCreate(TaskDetailsBase):
-    pass
+    steps: List[TaskStepCreate] = []
 
 
 class TaskDetailsResponse(TaskDetailsBase):
