@@ -10,7 +10,7 @@ describe('layout and navigation', () => {
     await loginAndWaitForFeed('sarah_plumber');
     expect(screen.queryByText('AMAs')).toBeNull(); // the old in-page tab bar is gone
     expect(within(sidebar()).getByRole('button', { name: 'Home' }).getAttribute('aria-current')).toBe('page');
-    expect(document.title).toBe('MyJob — Discover How the World Works');
+    expect(document.title).toBe('Prologue — A story behind every profession');
 
     // Phone menu drawer -> My activity
     await click(screen.getByRole('button', { name: 'Open menu' }));
@@ -20,7 +20,7 @@ describe('layout and navigation', () => {
     expect(currentPath()).toBe('/activity');
     await screen.findByRole('heading', { name: 'My activity' });
     await screen.findByText('1 question is waiting for your answer');
-    expect(document.title).toBe('My activity · MyJob');
+    expect(document.title).toBe('My activity · Prologue');
 
     // Banner -> Q&A inbox
     await click(screen.getByText('1 question is waiting for your answer'));

@@ -511,7 +511,7 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
   useEffect(() => {
     if (currentUser === null) {
-      document.title = 'Log in · MyJob';
+      document.title = 'Log in · Prologue';
       return;
     }
     const extra = route.page === 'profile' && viewingUser?.username === route.username
@@ -740,7 +740,7 @@ export default function App() {
           <Loading />
         ) : loadState === 'error' ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-slate-200" role="alert">
-            <p className="text-sm font-bold text-slate-700">Couldn't load MyJob</p>
+            <p className="text-sm font-bold text-slate-700">Couldn't load Prologue</p>
             <p className="text-xs text-slate-500 mt-1">{loadError}</p>
             <button
               onClick={loadAll}
@@ -755,7 +755,7 @@ export default function App() {
           <NotFoundPage
             title={profileState === 'notfound' ? 'Profile not found' : "Couldn't load this profile"}
             message={profileState === 'notfound'
-              ? `There is no one called @${route.username} on MyJob.`
+              ? `There is no one called @${route.username} on Prologue.`
               : 'Please check your connection and try again.'}
           />
         ) : route.page === 'profile' && viewingUser?.username !== route.username ? (

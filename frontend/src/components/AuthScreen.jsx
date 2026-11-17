@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Briefcase, Loader2, AlertCircle, ArrowLeft, Check } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, Check } from 'lucide-react';
+import { BrandMark, TAGLINE, Wordmark } from './Brand';
 import { api, IS_DEMO, tokenStore } from '../api/client';
 import { SlowHint } from './SlowHint';
 import { DEMO_PASSWORD } from '../api/demoConstants';
@@ -174,17 +175,11 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-2.5 mb-6">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 via-cyan-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/30">
-            <Briefcase className="w-6 h-6 stroke-[2.2]" />
-          </div>
-          <span className="font-extrabold text-3xl tracking-tight bg-gradient-to-r from-slate-900 via-teal-700 to-cyan-600 bg-clip-text text-transparent">
-            MyJob
-          </span>
+        <div className="flex flex-col items-center gap-3 mb-6">
+          <BrandMark size={64} title="Prologue" className="drop-shadow-[0_10px_24px_rgba(11,95,90,0.35)]" />
+          <h1><Wordmark className="text-[2.6rem]" /></h1>
+          <p className="text-sm text-slate-500 font-medium tracking-wide">{TAGLINE}</p>
         </div>
-        <p className="text-center text-sm text-slate-600 font-medium mb-5">
-          See how every profession really works — and share yours.
-        </p>
 
         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
           <div className="flex p-1 bg-slate-100 rounded-xl mb-5 text-xs font-bold" role="tablist">

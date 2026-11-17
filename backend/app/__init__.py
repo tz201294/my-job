@@ -1,1 +1,1 @@
-# MyJob App Package
+# Prologue App Package

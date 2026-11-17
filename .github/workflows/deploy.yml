@@ -1,4 +1,4 @@
-name: Deploy MyJob to GitHub Pages
+name: Deploy Prologue to GitHub Pages
 
 on:
   push:

@@ -388,7 +388,10 @@ export default function SettingsPage({
       )}
 
       <Card icon={Info} title="About">
-        <p className="text-xs text-slate-600">MyJob shows how every profession really works, from the people doing it.</p>
+        <p className="text-xs text-slate-600">
+          <strong className="text-slate-800">Prologue</strong> — a story behind every profession. See how every profession really
+          works, from the people doing it.
+        </p>
       </Card>
 
       <button type="button" onClick={onLogout}

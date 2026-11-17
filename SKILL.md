@@ -1,17 +1,17 @@
 ---
 name: my-job
-description: Use when designing, developing, testing, or maintaining the MyJob application — a profession-centric social media platform (like Instagram) where workers from any profession (e.g., plumbers, bus drivers, lawyers, accountants, software engineers) share day-in-the-life stories, job tasks, workflows, and problem-solving techniques for followers to explore and understand how various professions operate.
+description: Use when designing, developing, testing, or maintaining the Prologue application — a profession-centric social media platform (like Instagram) where workers from any profession (e.g., plumbers, bus drivers, lawyers, accountants, software engineers) share day-in-the-life stories, job tasks, workflows, and problem-solving techniques for followers to explore and understand how various professions operate.
 ---
 
-# MyJob Application Development Skill
+# Prologue Application Development Skill
 
-This skill guides the design, architecture, implementation, and enhancement of **MyJob** — an Instagram-style visual and story-driven social platform dedicated to showcasing real-world professions, daily workflows, and job task solutions.
+This skill guides the design, architecture, implementation, and enhancement of **Prologue** — an Instagram-style visual and story-driven social platform dedicated to showcasing real-world professions, daily workflows, and job task solutions.
 
 ---
 
 ## 1. Project Concept & Core Vision
 
-**MyJob** bridges curiosity and real-world work by letting anyone—from manual trades to specialized corporate roles—share authentic glimpses into their daily tasks, professional challenges, and job workflows.
+**Prologue** bridges curiosity and real-world work by letting anyone—from manual trades to specialized corporate roles—share authentic glimpses into their daily tasks, professional challenges, and job workflows.
 
 ### Target Personas
 1. **Professionals / Creators:**
@@ -56,7 +56,7 @@ This skill guides the design, architecture, implementation, and enhancement of *
 
 ## 3. Data Model & Architecture Guidelines
 
-When developing features for MyJob, adhere to the following schema paradigms:
+When developing features for Prologue, adhere to the following schema paradigms:
 
 ### 3.1 User & Profession Profile
 ```json
@@ -90,12 +90,12 @@ When developing features for MyJob, adhere to the following schema paradigms:
   "media": [
     {
       "type": "image",
-      "url": "https://cdn.myjob.app/media/p-trap-before.jpg",
+      "url": "https://cdn.prologue.app/media/p-trap-before.jpg",
       "caption": "Initial corrosion check"
     },
     {
       "type": "video",
-      "url": "https://cdn.myjob.app/media/p-trap-install.mp4",
+      "url": "https://cdn.prologue.app/media/p-trap-install.mp4",
       "duration": 45
     }
   ],

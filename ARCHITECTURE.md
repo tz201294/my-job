@@ -1,8 +1,8 @@
-# MyJob System Architecture & Design Specification
+# Prologue System Architecture & Design Specification
 
 ## 1. System Overview
 
-**MyJob** is a profession-centric, media-driven social platform that allows verified workers and professionals across any discipline (trades, law, medicine, transport, tech, finance) to showcase both their daily life and their specialized craft.
+**Prologue** is a profession-centric, media-driven social platform that allows verified workers and professionals across any discipline (trades, law, medicine, transport, tech, finance) to showcase both their daily life and their specialized craft.
 
 ### 1.1 The 3-Tier Worker Content Model
 Every worker account has three distinct modes of publishing:
@@ -15,7 +15,7 @@ Every worker account has three distinct modes of publishing:
    - Includes: Problem context, statutory/tool references, step-by-step methodology, and expert pro-tips.
 
 ### 1.2 The Explorer / Follower Experience & Community Collaboration
-The average user on MyJob is an explorer, learner, peer, or client who interacts with professionals in rich, structured ways:
+The average user on Prologue is an explorer, learner, peer, or client who interacts with professionals in rich, structured ways:
 
 1. **Profession Observation & Career Discovery**:
    - Follow specific practitioners (e.g., litigators, HVAC technicians, bus drivers) or whole profession tags (`#Plumbing`, `#Litigation`).

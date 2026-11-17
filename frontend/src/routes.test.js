@@ -51,9 +51,9 @@ describe('menus and titles', () => {
   });
 
   it('titles pages', () => {
-    expect(titleForRoute(parseRoute('/settings'))).toBe('Settings · MyJob');
-    expect(titleForRoute(parseRoute('/qa/inbox'))).toBe('Waiting for my answer · MyJob');
-    expect(titleForRoute(parseRoute('/u/sam'), 'Sam (@sam)')).toBe('Sam (@sam) · MyJob');
-    expect(titleForRoute(parseRoute('/nope'))).toBe('Page not found · MyJob');
+    expect(titleForRoute(parseRoute('/settings'))).toBe('Settings · Prologue');
+    expect(titleForRoute(parseRoute('/qa/inbox'))).toBe('Waiting for my answer · Prologue');
+    expect(titleForRoute(parseRoute('/u/sam'), 'Sam (@sam)')).toBe('Sam (@sam) · Prologue');
+    expect(titleForRoute(parseRoute('/nope'))).toBe('Page not found · Prologue');
   });
 });

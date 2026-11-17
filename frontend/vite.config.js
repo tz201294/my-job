@@ -25,7 +25,7 @@ function contentSecurityPolicy(apiUrl) {
     "form-action 'self'",
   ].join('; ');
   return {
-    name: 'myjob-csp',
+    name: 'prologue-csp',
     apply: 'build',
     transformIndexHtml(html) {
       return html.replace(

@@ -85,13 +85,13 @@ export function menuKeyForRoute(route, myUsername) {
 
 // Browser tab title for a route (profile/post titles are filled in once loaded).
 export function titleForRoute(route, extra) {
-  const base = 'MyJob';
+  const base = 'Prologue';
   const names = {
     challenges: 'Live Work', qa: route.qaView === 'inbox' ? 'Waiting for my answer' : 'Q&A', reels: 'Reels',
     activity: 'My activity', notifications: 'Notifications', settings: 'Settings', notFound: 'Page not found',
   };
   if (route.page === 'feed') {
-    return route.feedView === 'all' ? `${base} — Discover How the World Works`
+    return route.feedView === 'all' ? `${base} — A story behind every profession`
       : `${route.feedView === 'saved' ? 'Saved' : 'Following'} · ${base}`;
   }
   if ((route.page === 'profile' || route.page === 'post') && extra) return `${extra} · ${base}`;

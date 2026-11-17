@@ -542,7 +542,7 @@ export default function CreatePostModal({
               disabled={busy}
               className="px-6 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white shadow-sm transition-all"
             >
-              {isEditing ? (busy ? 'Saving…' : 'Save changes') : (busy ? 'Publishing…' : 'Publish to MyJob')}
+              {isEditing ? (busy ? 'Saving…' : 'Save changes') : (busy ? 'Publishing…' : 'Publish to Prologue')}
             </button>
           </div>
         </form>

@@ -5,7 +5,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: myjob_postgres
+    container_name: prologue_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -22,7 +22,7 @@ services:
   # Redis (reserved for caching and shared rate limits; not used by the API yet)
   redis:
     image: redis:7-alpine
-    container_name: myjob_redis
+    container_name: prologue_redis
     restart: unless-stopped
     volumes:
       - redis_data:/data
@@ -37,7 +37,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: myjob_backend
+    container_name: prologue_backend
     restart: unless-stopped
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}

@@ -13,7 +13,7 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, info) {
     // Visible in the browser console; a real error-reporting service can be plugged in here later.
-    console.error('MyJob crashed:', error, info?.componentStack);
+    console.error('Prologue crashed:', error, info?.componentStack);
   }
 
   render() {
@@ -27,7 +27,7 @@ export default class ErrorBoundary extends React.Component {
           </p>
           <button type="button" onClick={() => window.location.reload()}
             className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold">
-            Reload MyJob
+            Reload Prologue
           </button>
         </div>
       </div>

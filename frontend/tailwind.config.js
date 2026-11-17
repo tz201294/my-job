@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // MyJob theme: teal is the main color, cyan the accent (Tailwind's teal/cyan scales).
+        // Prologue theme: teal is the main color, cyan the accent (Tailwind's teal/cyan scales).
         brand: {
           50: '#f0fdfa',
           100: '#ccfbf1',

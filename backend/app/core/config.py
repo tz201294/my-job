@@ -38,7 +38,7 @@ def normalize_database_url(url: str) -> str:
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env")
 
-    PROJECT_NAME: str = "MyJob API"
+    PROJECT_NAME: str = "Prologue API"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Briefcase, Search, PlusSquare, Bell, Menu, X } from 'lucide-react';
+import { Search, PlusSquare, Bell, Menu, X } from 'lucide-react';
+import { BrandMark, Wordmark } from './Brand';
 
 import { DEFAULT_AVATAR } from '../api/mappers';
 
@@ -52,18 +53,10 @@ export default function Header({
           </button>
 
           {/* Brand */}
-          <button type="button" className="flex items-center gap-2.5 group" onClick={onGoHome} aria-label="MyJob home">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-teal-500 via-cyan-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/30 group-hover:scale-105 transition-transform">
-              <Briefcase className="w-5 h-5 stroke-[2.2]" />
-            </div>
-            <span className="flex items-center gap-1.5">
-              <span className="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-slate-900 via-teal-700 to-cyan-600 bg-clip-text text-transparent">
-                MyJob
-              </span>
-              <span className="hidden sm:inline text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white uppercase tracking-wider shadow-2xs">
-                PRO
-              </span>
-            </span>
+          <button type="button" className="flex items-center gap-2.5 group" onClick={onGoHome} aria-label="Prologue home">
+            <BrandMark size={40}
+              className="w-9 h-9 sm:w-10 sm:h-10 drop-shadow-[0_4px_10px_rgba(11,95,90,0.35)] group-hover:scale-105 transition-transform" />
+            <Wordmark className="text-[1.4rem] sm:text-[1.65rem]" />
           </button>
         </div>
 

@@ -53,7 +53,7 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
               <Check className="w-6 h-6 stroke-[3]" />
             </div>
             <h4 className="font-bold text-lg text-slate-900">Review Submitted!</h4>
-            <p className="text-xs text-slate-500">Thank you for contributing to professional clarity on MyJob.</p>
+            <p className="text-xs text-slate-500">Thank you for contributing to professional clarity on Prologue.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">

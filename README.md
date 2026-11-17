@@ -1,9 +1,11 @@
-# MyJob 💼📱
+# Prologue
+
+> **A story behind every profession.**
 
 > An Instagram-like social media platform where professionals across all industries upload stories, daily workflows, and task solutions.
 
 ## Overview
-**MyJob** is designed for professionals and workers of all fields—plumbers, bus drivers, lawyers, accountants, software engineers, doctors, and more—to showcase:
+**Prologue** is designed for professionals and workers of all fields—plumbers, bus drivers, lawyers, accountants, software engineers, doctors, and more—to showcase:
 - **Day-in-the-Life Stories & Highlights**: Ephemeral and pinned updates detailing real-world shifts and projects.
 - **Job Task Solutions**: Structured breakdowns of specific problems solved, complete with tool lists and step-by-step workflows.
 - **Profession Discovery Hub**: Explore accounts and feeds filtered by profession, industry, tools, and experience level.
@@ -36,7 +38,7 @@ python -m pytest                                    # tests (also run by CI on e
 - `SECRET_KEY` is a random value of at least 32 characters
   (`python -c "import secrets; print(secrets.token_urlsafe(48))"`);
 - `SEED_DEMO_DATA` is false;
-- `BACKEND_CORS_ORIGINS` lists real frontend origins (a JSON list, e.g. `["https://myjob.example.com"]`), not `"*"`.
+- `BACKEND_CORS_ORIGINS` lists real frontend origins (a JSON list, e.g. `["https://prologue.example.com"]`), not `"*"`.
 
 Use `ENVIRONMENT=development` locally (the compose file and `.env.example` already do).
 

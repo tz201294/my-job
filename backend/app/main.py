@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="Backend API for MyJob — an Instagram-style social platform for real professions, daily workflows, and job task solutions.",
+    description="Backend API for Prologue — an Instagram-style social platform for real professions, daily workflows, and job task solutions.",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc",

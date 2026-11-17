@@ -1,7 +1,7 @@
 [project]
-name = "myjob-backend"
+name = "prologue-backend"
 version = "0.1.0"
-description = "FastAPI backend for MyJob - The social network for professions, workflows, and job tasks"
+description = "FastAPI backend for Prologue - a story behind every profession"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

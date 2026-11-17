@@ -1,9 +1,9 @@
-# Render Blueprint for the MyJob API (free plan). See docs/DEPLOY.md for the step-by-step guide.
+# Render Blueprint for the Prologue API (free plan). See docs/DEPLOY.md for the step-by-step guide.
 # The database is a free Neon Postgres (Render's free Postgres is deleted after 30 days); paste its connection
 # string into DATABASE_URL when Render asks for it.
 services:
   - type: web
-    name: myjob-api
+    name: prologue-api
     runtime: docker
     plan: free            # change to "starter" (paid, always on) when you're ready; nothing else changes
     region: frankfurt     # closest Render region to Israel

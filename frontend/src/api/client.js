@@ -63,7 +63,7 @@ async function request(endpoint, options = {}) {
       headers: { 'Content-Type': 'application/json', ...authHeaders(), ...options.headers },
     });
   } catch {
-    throw new Error("Can't reach the MyJob server. Check your connection and try again.");
+    throw new Error("Can't reach the Prologue server. Check your connection and try again.");
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {

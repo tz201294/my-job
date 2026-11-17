@@ -10,7 +10,7 @@ describe('page addresses', () => {
     await login('sarah_plumber');
     await screen.findByText(/Commercial Litigation Partner @ Vance/);
     expect(currentPath()).toBe('/u/elena_lawyer');
-    await waitFor(() => expect(document.title).toBe('Elena Vance, Esq. (@elena_lawyer) · MyJob'));
+    await waitFor(() => expect(document.title).toBe('Elena Vance, Esq. (@elena_lawyer) · Prologue'));
   });
 
   it('a post address shows that post with its comments', async () => {
@@ -43,7 +43,7 @@ describe('page addresses', () => {
     renderApp('/this/does/not/exist');
     await login('sarah_plumber');
     await screen.findByRole('heading', { name: 'Page not found' });
-    expect(document.title).toBe('Page not found · MyJob');
+    expect(document.title).toBe('Page not found · Prologue');
     await click(screen.getByRole('link', { name: 'Go to the home page' }));
     expect(currentPath()).toBe('/');
   });
