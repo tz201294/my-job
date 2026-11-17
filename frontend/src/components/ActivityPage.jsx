@@ -7,9 +7,9 @@ import { toPost, toQuestion } from '../api/mappers';
 
 function Section({ icon: Icon, title, count, children, empty }) {
   return (
-    <section className="bg-white border border-indigo-100 rounded-3xl p-4 sm:p-5 shadow-2xs">
+    <section className="bg-white border border-teal-100 rounded-3xl p-4 sm:p-5 shadow-2xs">
       <h3 className="flex items-center gap-2 text-sm font-black text-slate-900 mb-3">
-        <Icon className="w-4 h-4 text-indigo-600" />
+        <Icon className="w-4 h-4 text-teal-600" />
         {title}
         {count != null && <span className="text-xs font-bold text-slate-400">({count})</span>}
       </h3>
@@ -64,14 +64,14 @@ export default function ActivityPage({ me, qaItems, challenges, onOpenPost, onGo
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-1">
-        <span className="p-1.5 rounded-xl bg-indigo-100 text-indigo-700"><Activity className="w-5 h-5" /></span>
+        <span className="p-1.5 rounded-xl bg-teal-100 text-teal-700"><Activity className="w-5 h-5" /></span>
         <h2 className="font-black text-xl text-slate-900">My activity</h2>
       </div>
       {error && <p role="alert" className="text-xs font-bold text-rose-600">Couldn't load everything: {error}</p>}
 
       {inbox && inbox.length > 0 && (
         <button type="button" onClick={() => onGoToQA('inbox')}
-          className="w-full flex items-center gap-3 p-4 rounded-3xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-left shadow-md">
+          className="w-full flex items-center gap-3 p-4 rounded-3xl bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-left shadow-md">
           <Inbox className="w-5 h-5" />
           <span className="flex-1 text-sm font-extrabold">
             {inbox.length} {inbox.length === 1 ? 'question is' : 'questions are'} waiting for your answer

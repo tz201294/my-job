@@ -29,7 +29,7 @@ import NotificationsPage from './components/NotificationsPage';
 import { INITIAL_REELS } from './data/mockData';
 
 import {
-  Loader2, AlertTriangle
+  Loader2, Info
 } from 'lucide-react';
 
 const EMPTY_CATEGORIES = [{ id: 'cat_all', name: 'All Professions', slug: 'all', icon: 'briefcase' }];
@@ -597,7 +597,7 @@ export default function App() {
   if (currentUser === undefined) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center" role="status" aria-label="Loading">
-        <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+        <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
       </div>
     );
   }
@@ -632,8 +632,8 @@ export default function App() {
 
       {toast && (
         <div role="alert" className="fixed top-16 inset-x-0 z-[60] flex justify-center px-4 pointer-events-none">
-          <div className="pointer-events-auto flex items-center gap-2 bg-rose-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg">
-            <AlertTriangle className="w-4 h-4" />
+          <div className="pointer-events-auto flex items-center gap-2 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg">
+            <Info className="w-4 h-4 text-cyan-300" />
             <span>{toast}</span>
           </div>
         </div>
@@ -645,7 +645,7 @@ export default function App() {
       <main className="flex-1 min-w-0 max-w-2xl mx-auto lg:mx-0 py-4 sm:py-6 pb-24 lg:pb-8">
         {loadState === 'loading' || loadState === 'idle' ? (
           <div className="flex justify-center py-20" role="status" aria-label="Loading">
-            <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+            <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
           </div>
         ) : loadState === 'error' ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-slate-200" role="alert">
@@ -705,6 +705,7 @@ export default function App() {
             {/* 24h Worklife Story Tray */}
             <StoryTray
               stories={stories}
+              myAvatarUrl={me.avatarUrl}
               onSelectStory={(_, idx) => setActiveStoryIdx(idx)}
               onOpenAddStory={() => setIsCreateOpen(true)}
             />
@@ -742,7 +743,7 @@ export default function App() {
 
                 {feedView !== 'all' && feedState === 'loading' ? (
                   <div className="flex justify-center py-10" role="status" aria-label="Loading">
-                    <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-teal-600 animate-spin" />
                   </div>
                 ) : filteredPosts.length === 0 ? (
                   <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">

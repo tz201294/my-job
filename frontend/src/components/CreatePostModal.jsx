@@ -175,7 +175,7 @@ export default function CreatePostModal({
             onClick={() => setContentType('challenge')}
             className={`py-2 px-2 rounded-xl transition-all ${
               contentType === 'challenge'
-                ? 'bg-gradient-to-r from-orange-600 to-rose-600 text-white shadow-sm font-black'
+                ? 'bg-gradient-to-r from-cyan-600 to-cyan-600 text-white shadow-sm font-black'
                 : 'bg-white text-slate-700 hover:bg-slate-200 font-bold'
             }`}
           >
@@ -240,7 +240,7 @@ export default function CreatePostModal({
                   placeholder="e.g. Live shift: Rare HVAC error code on inverter unit / Conflicting statutory timeline"
                   value={challengeTitle}
                   onChange={(e) => setChallengeTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-indigo-200 rounded-xl text-xs outline-none focus:border-orange-500 font-medium"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-teal-200 rounded-xl text-xs outline-none focus:border-cyan-500 font-medium"
                   required
                 />
               </div>

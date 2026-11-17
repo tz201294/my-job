@@ -23,7 +23,7 @@ const FALLBACK_OPTIONS = {
 const label = (v) => v.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
 const inputCls =
-  'w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all';
+  'w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all';
 const labelCls = 'block text-xs font-bold text-slate-700 mb-1.5';
 
 function Field({ id, label: text, children, hint }) {
@@ -40,13 +40,13 @@ function Choice({ checked, onChange, children, type = 'radio', name }) {
   return (
     <label
       className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
-        checked ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+        checked ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
       }`}
     >
       <input type={type} name={name} checked={checked} onChange={onChange} className="sr-only" />
       <span
         className={`w-4 h-4 flex items-center justify-center border ${type === 'radio' ? 'rounded-full' : 'rounded'} ${
-          checked ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'
+          checked ? 'bg-teal-600 border-teal-600' : 'border-slate-300'
         }`}
         aria-hidden="true"
       >
@@ -174,10 +174,10 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2.5 mb-6">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-rose-500/30">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 via-cyan-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/30">
             <Briefcase className="w-6 h-6 stroke-[2.2]" />
           </div>
-          <span className="font-extrabold text-3xl tracking-tight bg-gradient-to-r from-slate-900 via-indigo-700 to-rose-600 bg-clip-text text-transparent">
+          <span className="font-extrabold text-3xl tracking-tight bg-gradient-to-r from-slate-900 via-teal-700 to-cyan-600 bg-clip-text text-transparent">
             MyJob
           </span>
         </div>
@@ -217,7 +217,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
           {mode === 'login' ? (
             <form onSubmit={submitLogin} className="space-y-4">
               {IS_DEMO && (
-                <p className="p-3 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-xl text-xs">
+                <p className="p-3 bg-teal-50 border border-teal-200 text-teal-800 rounded-xl text-xs">
                   <strong>Demo mode:</strong> sample data, saved only in this browser. Log in as{' '}
                   <code>sarah_plumber</code>, <code>alex_driver</code> or <code>elena_lawyer</code> with password{' '}
                   <code>{DEMO_PASSWORD}</code>, or create an account.
@@ -234,7 +234,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
               <SubmitButton busy={busy}>Log in</SubmitButton>
               <p className="text-center text-xs text-slate-500">
                 New here?{' '}
-                <button type="button" onClick={() => switchMode('signup')} className="font-bold text-indigo-600 hover:underline">
+                <button type="button" onClick={() => switchMode('signup')} className="font-bold text-teal-600 hover:underline">
                   Create an account
                 </button>
               </p>
@@ -244,8 +244,8 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
               <ol className="flex items-center gap-2 mb-1" aria-label="Sign-up progress">
                 {STEPS.map((s, i) => (
                   <li key={s} className="flex-1" aria-current={i === step ? 'step' : undefined}>
-                    <div className={`h-1.5 rounded-full ${i <= step ? 'bg-gradient-to-r from-indigo-600 to-rose-500' : 'bg-slate-200'}`} />
-                    <span className={`block mt-1 text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-indigo-700' : 'text-slate-400'}`}>{s}</span>
+                    <div className={`h-1.5 rounded-full ${i <= step ? 'bg-gradient-to-r from-teal-600 to-cyan-500' : 'bg-slate-200'}`} />
+                    <span className={`block mt-1 text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-teal-700' : 'text-slate-400'}`}>{s}</span>
                   </li>
                 ))}
               </ol>
@@ -349,7 +349,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                     </select>
                   </Field>
                   <label className="flex items-start gap-2.5 text-xs text-slate-600 leading-relaxed cursor-pointer">
-                    <input type="checkbox" className="mt-0.5 w-4 h-4 accent-indigo-600" checked={form.data_consent} onChange={(e) => set('data_consent', e.target.checked)} />
+                    <input type="checkbox" className="mt-0.5 w-4 h-4 accent-teal-600" checked={form.data_consent} onChange={(e) => set('data_consent', e.target.checked)} />
                     <span>
                       I agree that my answers above may be used in anonymised form for analysis and research.
                       Your name, email and password are never included.
@@ -380,7 +380,7 @@ function SubmitButton({ busy, children }) {
     <button
       type="submit"
       disabled={busy}
-      className="flex-1 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-500 hover:from-indigo-700 hover:to-rose-600 disabled:opacity-60 text-white rounded-xl text-sm font-extrabold shadow-md shadow-indigo-500/25 transition-all"
+      className="flex-1 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-600 via-cyan-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 disabled:opacity-60 text-white rounded-xl text-sm font-extrabold shadow-md shadow-teal-500/25 transition-all"
     >
       {busy && <Loader2 className="w-4 h-4 animate-spin" />}
       {children}

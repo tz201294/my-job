@@ -31,8 +31,8 @@ function AnswerForm({ qa, onSubmit, onCancel }) {
   };
 
   return (
-    <form onSubmit={submit} className="bg-indigo-50/60 border border-indigo-200 rounded-2xl p-3.5 space-y-2.5">
-      <label htmlFor={`answer-${qa.id}`} className="block text-xs font-black text-indigo-950">
+    <form onSubmit={submit} className="bg-teal-50/60 border border-teal-200 rounded-2xl p-3.5 space-y-2.5">
+      <label htmlFor={`answer-${qa.id}`} className="block text-xs font-black text-teal-950">
         {editing ? 'Edit your answer' : 'Your answer'}
       </label>
       <textarea
@@ -43,7 +43,7 @@ function AnswerForm({ qa, onSubmit, onCancel }) {
         value={answerText}
         onChange={(e) => setAnswerText(e.target.value)}
         placeholder="Share what the work is really like..."
-        className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium resize-y"
+        className="w-full px-3.5 py-2.5 bg-white border border-teal-200 rounded-xl text-xs sm:text-sm text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-medium resize-y"
       />
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="sr-only" htmlFor={`answer-video-${qa.id}`}>Video answer link (optional)</label>
@@ -55,7 +55,7 @@ function AnswerForm({ qa, onSubmit, onCancel }) {
           value={videoResponseUrl}
           onChange={(e) => setVideoResponseUrl(e.target.value)}
           placeholder="Optional video answer link (https://...)"
-          className="flex-1 px-3.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500 font-medium"
+          className="flex-1 px-3.5 py-2 bg-white border border-teal-200 rounded-xl text-xs text-slate-800 outline-none focus:border-teal-500 font-medium"
         />
         <div className="flex gap-2 justify-end">
           {onCancel && (
@@ -71,7 +71,7 @@ function AnswerForm({ qa, onSubmit, onCancel }) {
           <button
             type="submit"
             disabled={busy || !answerText.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5"
+            className="px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:opacity-60 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5"
           >
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             <span>{editing ? 'Save answer' : 'Post answer'}</span>
@@ -115,7 +115,7 @@ function QuestionEditForm({ qa, onSubmit, onCancel }) {
         required
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold resize-y"
+        className="w-full px-3.5 py-2.5 bg-white border border-teal-200 rounded-xl text-sm text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-semibold resize-y"
       />
       <div className="flex items-center justify-between gap-2">
         <span role="alert" className="text-[11px] font-bold text-rose-600">{error}</span>
@@ -125,7 +125,7 @@ function QuestionEditForm({ qa, onSubmit, onCancel }) {
             Cancel
           </button>
           <button type="submit" disabled={busy || !text.trim()}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
+            className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60">
             {busy ? 'Saving…' : 'Save'}
           </button>
         </div>
@@ -154,11 +154,11 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
   const canDelete = isAsker || isMine;
 
   return (
-    <div className="border border-indigo-100 rounded-3xl p-4 sm:p-5 bg-white hover:border-indigo-200 transition-all shadow-2xs">
+    <div className="border border-teal-100 rounded-3xl p-4 sm:p-5 bg-white hover:border-teal-200 transition-all shadow-2xs">
       {/* Question Header */}
       <div className="flex items-start justify-between gap-3 mb-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-800 border border-indigo-200 font-extrabold shadow-2xs">
+          <span className="text-[10px] px-3 py-0.5 rounded-full bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-800 border border-teal-200 font-extrabold shadow-2xs">
             {qa.topicTag}
           </span>
           <span className="text-xs text-slate-400 font-medium">
@@ -184,8 +184,8 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
           aria-label={`Upvote question (${qa.upvotes})`}
           className={`flex items-center gap-1 px-3 py-1 rounded-xl border text-xs font-black transition-colors ${
             qa.upvotedByMe
-              ? 'bg-indigo-600 border-indigo-600 text-white'
-              : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800'
+              ? 'bg-teal-600 border-teal-600 text-white'
+              : 'bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-800'
           }`}
         >
           <ArrowUp className="w-3.5 h-3.5" />
@@ -207,10 +207,10 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
       {isMine && (!answered || editing) ? (
         <AnswerForm qa={qa} onSubmit={submitAnswer} onCancel={answered ? () => setEditing(false) : null} />
       ) : answered ? (
-        <div className="bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 border border-indigo-100 rounded-2xl p-4 space-y-2">
+        <div className="bg-gradient-to-br from-slate-50 via-teal-50/30 to-cyan-50/20 border border-teal-100 rounded-2xl p-4 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="p-0.5 rounded-full bg-gradient-to-tr from-indigo-500 to-rose-500">
+              <div className="p-0.5 rounded-full bg-gradient-to-tr from-teal-500 to-cyan-500">
                 <img
                   src={qa.workerAvatarUrl}
                   alt={qa.workerFullName}
@@ -220,7 +220,7 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
               <div className="flex flex-wrap items-center gap-1">
                 <span className="font-extrabold text-xs text-slate-900">{qa.workerFullName}</span>
                 <ShieldCheck className="w-3.5 h-3.5 text-sky-500" />
-                <span className="text-[10px] text-indigo-700 font-bold">({qa.workerProfessionTitle})</span>
+                <span className="text-[10px] text-teal-700 font-bold">({qa.workerProfessionTitle})</span>
                 {qa.answeredTimeAgo && (
                   <span className="text-[10px] text-slate-400 font-medium">· answered {qa.answeredTimeAgo}</span>
                 )}
@@ -229,7 +229,7 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
             {isMine && (
               <button
                 onClick={() => setEditing(true)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-indigo-700 hover:bg-indigo-100"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-teal-700 hover:bg-teal-100"
               >
                 <Pencil className="w-3 h-3" />
                 Edit
@@ -245,7 +245,7 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
               href={qa.videoResponseUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700 hover:underline"
             >
               <Video className="w-3.5 h-3.5" />
               Watch video answer
@@ -335,15 +335,15 @@ export default function QAHub({
   const inboxCount = inbox?.length || 0;
   const shown = view === 'inbox' ? inbox || [] : qaItems;
   const tabCls = (v) => `flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-colors ${
-    view === v ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-800 hover:bg-indigo-50'
+    view === v ? 'bg-teal-600 text-white shadow-sm' : 'text-teal-800 hover:bg-teal-50'
   }`;
 
   return (
-    <div className="bg-white/95 border border-indigo-100 rounded-3xl p-5 sm:p-6 shadow-sm mb-6 backdrop-blur-sm card-glow">
+    <div className="bg-white/95 border border-teal-100 rounded-3xl p-5 sm:p-6 shadow-sm mb-6 backdrop-blur-sm card-glow">
       <div className="flex items-center justify-between mb-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="p-1.5 rounded-xl bg-indigo-100 text-indigo-700">
+            <span className="p-1.5 rounded-xl bg-teal-100 text-teal-700">
               <MessageSquareText className="w-5 h-5" />
             </span>
             <h3 className="font-black text-lg sm:text-xl text-slate-900 tracking-tight">
@@ -357,9 +357,9 @@ export default function QAHub({
       </div>
 
       {/* Ask a Question Box with Vibrant Gradient */}
-      <form onSubmit={handleAsk} className="bg-gradient-to-br from-indigo-50/80 via-purple-50/50 to-slate-50 border border-indigo-100 rounded-3xl p-4 sm:p-5 mb-6 space-y-3.5 shadow-2xs">
+      <form onSubmit={handleAsk} className="bg-gradient-to-br from-teal-50/80 via-cyan-50/50 to-slate-50 border border-teal-100 rounded-3xl p-4 sm:p-5 mb-6 space-y-3.5 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <span className="text-xs font-black text-indigo-950">
+          <span className="text-xs font-black text-teal-950">
             Ask a Verified Practitioner:
           </span>
           <div className="flex flex-wrap items-center gap-2">
@@ -367,7 +367,7 @@ export default function QAHub({
               value={workerId}
               onChange={(e) => setTargetWorker(e.target.value)}
               aria-label="Professional to ask"
-              className="px-3 py-1.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:border-indigo-500 shadow-2xs max-w-full"
+              className="px-3 py-1.5 bg-white border border-teal-200 rounded-xl text-xs font-bold text-teal-900 outline-none focus:border-teal-500 shadow-2xs max-w-full"
             >
               {askable.map((p) => (
                 <option key={p.id} value={p.id}>{p.fullName} ({p.professionTitle})</option>
@@ -378,7 +378,7 @@ export default function QAHub({
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
               aria-label="Topic"
-              className="px-3 py-1.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:border-indigo-500 shadow-2xs"
+              className="px-3 py-1.5 bg-white border border-teal-200 rounded-xl text-xs font-bold text-teal-900 outline-none focus:border-teal-500 shadow-2xs"
             >
               <option value="Daily Routine & Worklife">Daily Routine & Worklife</option>
               <option value="Career & Salary Advice">Career & Salary Advice</option>
@@ -395,13 +395,13 @@ export default function QAHub({
             placeholder="e.g. What is the hardest part of managing depositions? How do you handle 40-ton buses in snow?"
             value={questionText}
             onChange={(e) => setQuestionText(e.target.value)}
-            className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-indigo-200 rounded-2xl text-xs text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
+            className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-teal-200 rounded-2xl text-xs text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all font-medium"
             required
           />
           <button
             type="submit"
             disabled={busy || !workerId}
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-600 hover:from-indigo-700 hover:to-rose-700 disabled:opacity-60 text-white rounded-2xl text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-indigo-500/20 transition-all active:scale-95"
+            className="px-5 py-2.5 bg-gradient-to-r from-teal-600 via-cyan-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:opacity-60 text-white rounded-2xl text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-teal-500/20 transition-all active:scale-95"
           >
             <Send className="w-3.5 h-3.5" />
             <span>Ask Pro</span>
@@ -424,7 +424,7 @@ export default function QAHub({
           <Inbox className="w-3.5 h-3.5" />
           Waiting for my answer
           {inboxCount > 0 && (
-            <span className={`ml-0.5 px-1.5 rounded-full text-[10px] ${view === 'inbox' ? 'bg-white text-indigo-700' : 'bg-rose-500 text-white'}`}>
+            <span className={`ml-0.5 px-1.5 rounded-full text-[10px] ${view === 'inbox' ? 'bg-white text-teal-700' : 'bg-rose-500 text-white'}`}>
               {inboxCount}
             </span>
           )}

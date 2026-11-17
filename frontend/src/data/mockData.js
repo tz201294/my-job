@@ -315,14 +315,14 @@ export const INITIAL_CATEGORIES = [
     name: "All Professions",
     slug: "all",
     icon: "briefcase",
-    color: "from-blue-600 to-indigo-600"
+    color: "from-teal-600 to-teal-600"
   },
   {
     id: "cat_legal",
     name: "Legal & Regulatory",
     slug: "legal",
     icon: "scale",
-    color: "from-indigo-600 to-purple-600",
+    color: "from-teal-600 to-cyan-600",
     activePros: "2,400+ Pros",
     popularRoles: ["Litigation Attorney", "Corporate Counsel", "Paralegal", "Public Defender"]
   },
@@ -331,7 +331,7 @@ export const INITIAL_CATEGORIES = [
     name: "Trades & Craftsmanship",
     slug: "trades",
     icon: "wrench",
-    color: "from-amber-600 to-orange-600",
+    color: "from-teal-600 to-cyan-600",
     activePros: "5,800+ Pros",
     popularRoles: ["Master Plumber", "Electrician", "HVAC Tech", "Carpenter", "Welder"]
   },
@@ -358,7 +358,7 @@ export const INITIAL_CATEGORIES = [
     name: "Healthcare & Medicine",
     slug: "healthcare",
     icon: "heart-pulse",
-    color: "from-rose-600 to-pink-600",
+    color: "from-cyan-600 to-cyan-600",
     activePros: "4,600+ Pros",
     popularRoles: ["ER Trauma Nurse", "Surgical Tech", "Flight Paramedic", "Radiology Tech"]
   }

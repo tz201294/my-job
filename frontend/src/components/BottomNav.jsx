@@ -11,7 +11,7 @@ export default function BottomNav({ me, activeKey, onNavigate, onOpenCreate }) {
         onClick={() => onNavigate(key)}
         aria-current={active ? 'page' : undefined}
         className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 text-[10px] ${
-          active ? 'text-indigo-700 font-extrabold' : 'text-slate-500 font-semibold'
+          active ? 'text-teal-700 font-extrabold' : 'text-slate-500 font-semibold'
         }`}
       >
         <Icon className={`w-6 h-6 ${active ? 'stroke-[2.5]' : ''}`} />
@@ -33,7 +33,7 @@ export default function BottomNav({ me, activeKey, onNavigate, onOpenCreate }) {
             type="button"
             onClick={onOpenCreate}
             aria-label="Create a post"
-            className="w-12 h-12 -mt-1 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform"
+            className="w-12 h-12 -mt-1 rounded-2xl bg-gradient-to-tr from-teal-600 via-cyan-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-teal-500/30 active:scale-95 transition-transform"
           >
             <Plus className="w-6 h-6 stroke-[2.5]" />
           </button>
@@ -44,13 +44,13 @@ export default function BottomNav({ me, activeKey, onNavigate, onOpenCreate }) {
           onClick={() => onNavigate('profile')}
           aria-current={activeKey === 'profile' ? 'page' : undefined}
           className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 text-[10px] ${
-            activeKey === 'profile' ? 'text-indigo-700 font-extrabold' : 'text-slate-500 font-semibold'
+            activeKey === 'profile' ? 'text-teal-700 font-extrabold' : 'text-slate-500 font-semibold'
           }`}
         >
           <img
             src={me.avatarUrl}
             alt=""
-            className={`w-6 h-6 rounded-full object-cover ${activeKey === 'profile' ? 'ring-2 ring-indigo-600' : ''}`}
+            className={`w-6 h-6 rounded-full object-cover ${activeKey === 'profile' ? 'ring-2 ring-teal-600' : ''}`}
           />
           <span>Profile</span>
         </button>

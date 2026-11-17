@@ -29,11 +29,11 @@ function MenuItem({ item, active, onNavigate }) {
         aria-current={active ? 'page' : undefined}
         className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-colors ${
           active
-            ? 'bg-indigo-50 text-indigo-800 font-extrabold'
+            ? 'bg-teal-50 text-teal-800 font-extrabold'
             : 'text-slate-700 hover:bg-slate-100 font-semibold'
         }`}
       >
-        <Icon className={`w-5 h-5 ${active ? 'text-indigo-600' : 'text-slate-500'}`} />
+        <Icon className={`w-5 h-5 ${active ? 'text-teal-600' : 'text-slate-500'}`} />
         <span>{item.label}</span>
         {item.note && (
           <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800">{item.note}</span>
@@ -52,7 +52,7 @@ function MenuContent({ me, activeKey, onNavigate, onLogout }) {
         onClick={() => onNavigate('profile')}
         className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-slate-100 text-left"
       >
-        <img src={me.avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-indigo-500" />
+        <img src={me.avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-500" />
         <div className="min-w-0">
           <p className="flex items-center gap-1 font-extrabold text-sm text-slate-900 truncate">
             {me.fullName}

@@ -30,14 +30,14 @@ function CommentItem({ comment, canEdit, canDelete, onSave, onDelete }) {
 
   return (
     <li className="flex gap-2.5">
-      <img src={comment.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-indigo-100" />
+      <img src={comment.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-teal-100" />
       <div className="flex-1 min-w-0">
         <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-2.5">
           <div className="flex items-start justify-between gap-2">
             <p className="text-xs leading-snug">
               <span className="font-extrabold text-slate-900">{comment.fullName}</span>
               {comment.professionTitle && (
-                <span className="text-[10px] text-indigo-700 font-bold"> · {comment.professionTitle}</span>
+                <span className="text-[10px] text-teal-700 font-bold"> · {comment.professionTitle}</span>
               )}
             </p>
             {(canEdit || canDelete) && !editing && (
@@ -58,7 +58,7 @@ function CommentItem({ comment, canEdit, canDelete, onSave, onDelete }) {
                 maxLength={MAX_LENGTH}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500 resize-y"
+                className="w-full px-3 py-2 bg-white border border-teal-200 rounded-xl text-xs text-slate-800 outline-none focus:border-teal-500 resize-y"
               />
               <div className="flex items-center justify-end gap-2">
                 <span role="alert" className="mr-auto text-[11px] font-bold text-rose-600">{error}</span>
@@ -67,7 +67,7 @@ function CommentItem({ comment, canEdit, canDelete, onSave, onDelete }) {
                   Cancel
                 </button>
                 <button type="submit" disabled={busy || !text.trim()}
-                  className="px-3 py-1 rounded-lg text-[11px] font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
+                  className="px-3 py-1 rounded-lg text-[11px] font-extrabold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60">
                   {busy ? 'Saving…' : 'Save'}
                 </button>
               </div>
@@ -175,7 +175,7 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
   };
 
   return (
-    <section aria-label="Comments" className="pt-3.5 mt-3.5 border-t border-indigo-100/70 space-y-3">
+    <section aria-label="Comments" className="pt-3.5 mt-3.5 border-t border-teal-100/70 space-y-3">
       {state === 'loading' && (
         <p className="flex items-center gap-1.5 text-xs text-slate-500"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading comments…</p>
       )}
@@ -203,7 +203,7 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
 
       {state === 'ready' && comments.length < total && (
         <button onClick={loadMore} disabled={loadingMore}
-          className="text-xs font-bold text-indigo-700 hover:underline disabled:opacity-60">
+          className="text-xs font-bold text-teal-700 hover:underline disabled:opacity-60">
           {loadingMore ? 'Loading…' : `Show more comments (${total - comments.length})`}
         </button>
       )}
@@ -218,10 +218,10 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) submit(e); }}
           placeholder="Add a comment…"
-          className="flex-1 min-w-0 px-3.5 py-2 bg-white border border-indigo-200 rounded-2xl text-xs sm:text-sm text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none"
+          className="flex-1 min-w-0 px-3.5 py-2 bg-white border border-teal-200 rounded-2xl text-xs sm:text-sm text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 resize-none"
         />
         <button type="submit" disabled={posting || !draft.trim()} aria-label="Post comment"
-          className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white">
+          className="p-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white">
           {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>
       </form>

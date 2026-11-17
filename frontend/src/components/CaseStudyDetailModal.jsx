@@ -95,11 +95,11 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
                 Difficulty: {task.difficulty}
               </span>
               {task.estimatedDuration && (
-                <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 text-xs font-bold">
                   Duration: {task.estimatedDuration}
                 </span>
               )}
-              <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-xs font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 text-xs font-bold">
                 {post.rating != null ? `⭐ ${post.rating} / 5.0 (${post.reviewsCount} ${post.reviewsCount === 1 ? 'review' : 'reviews'})` : 'Not reviewed yet'}
               </span>
             </div>

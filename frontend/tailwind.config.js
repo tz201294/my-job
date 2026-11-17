@@ -7,20 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
+        // MyJob theme: teal is the main color, cyan the accent (Tailwind's teal/cyan scales).
         brand: {
-          50: '#f0f7ff',
-          100: '#e0effe',
-          200: '#bae0fd',
-          500: '#0284c7',
-          600: '#0369a1',
-          700: '#075985',
-          800: '#0c4a6e',
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
         },
-        trade: '#ea580c',
-        legal: '#4f46e5',
-        transit: '#059669',
-        tech: '#0284c7',
-        health: '#e11d48',
       }
     },
   },
