@@ -6,11 +6,16 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_optional_user
-from app.api.serializers import bookmarked_ids_for, comment_out, liked_ids_for, post_out
+from app.api.serializers import bookmarked_ids_for, comment_out, liked_ids_for, post_out, reactions_for
 from app.core.time import utcnow
 from app.db.session import get_db
-from app.models import Bookmark, Follow, Post, PostComment, PostLike, TaskDetails, TaskReview, User
-from app.schemas.comment import CommentCreate, CommentPage, CommentResponse, CommentUpdate
+from app.models import (
+    Bookmark, CommentReaction, Follow, Post, PostComment, PostLike, TaskDetails, TaskReview, User,
+)
+from app.schemas.comment import (
+    CommentCreate, CommentPage, CommentResponse, CommentUpdate, ReactionIn, ReactionState,
+)
+from app.services.notifications import forget, notify, withdraw
 from app.schemas.post import PostCreate, PostResponse, PostType, PostUpdate
 
 router = APIRouter()
@@ -165,6 +170,9 @@ async def delete_post(
     """The author deletes their post, with its likes, saves and reviews."""
     post = await _own_post(db, user, post_id)
     # Removed explicitly so nothing is left behind on databases that don't enforce ON DELETE CASCADE (SQLite).
+    post_comments = select(PostComment.id).where(PostComment.post_id == post_id)
+    await db.execute(delete(CommentReaction).where(CommentReaction.comment_id.in_(post_comments)))
+    await forget(db, post_id=post_id)
     for model in (PostLike, Bookmark, TaskReview, PostComment):
         await db.execute(delete(model).where(model.post_id == post_id))
     await db.delete(post)
@@ -205,8 +213,9 @@ async def list_comments(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_user),
 ):
-    """Comments on a post, oldest first. Public."""
+    """Comments on a post, oldest first, with emoji reactions. Public."""
     await _post_or_404(db, post_id)
     total = (
         await db.execute(select(func.count()).select_from(PostComment).where(PostComment.post_id == post_id))
@@ -220,7 +229,8 @@ async def list_comments(
             .offset(offset)
         )
     ).scalars().all()
-    return {"total": total, "comments": [comment_out(c) for c in rows]}
+    counts, mine = await reactions_for(db, [c.id for c in rows], user)
+    return {"total": total, "comments": [comment_out(c, counts.get(c.id), mine.get(c.id)) for c in rows]}
 
 
 @router.post("/{post_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
@@ -230,11 +240,13 @@ async def add_comment(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    await _post_or_404(db, post_id)
+    post = await _post_or_404(db, post_id)
     comment = PostComment(post_id=post_id, user_id=user.id, body=c_in.body)
     db.add(comment)
     await db.flush()
     await _sync_comments_count(db, post_id)
+    await notify(db, user_id=post.author_id, actor_id=user.id, type="comment", post_id=post_id,
+                 comment_id=comment.id, snippet=c_in.body)
     await db.commit()
     comment = await _comment_or_404(db, post_id, comment.id)
     return comment_out(comment)
@@ -255,7 +267,8 @@ async def edit_comment(
     comment.body = c_in.body
     comment.updated_at = utcnow()
     await db.commit()
-    return comment_out(comment)
+    counts, mine = await reactions_for(db, [comment.id], user)
+    return comment_out(comment, counts.get(comment.id), mine.get(comment.id))
 
 
 @router.delete("/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -270,11 +283,63 @@ async def delete_comment(
     post = await _post_or_404(db, post_id)
     if user.id not in (comment.user_id, post.author_id):
         raise HTTPException(status_code=403, detail="Only the commenter or the post's author can delete this comment")
+    await db.execute(delete(CommentReaction).where(CommentReaction.comment_id == comment_id))
+    await forget(db, comment_id=comment_id)
     await db.delete(comment)
     await db.flush()
     await _sync_comments_count(db, post_id)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+async def _reaction_state(db: AsyncSession, comment_id: str, user: User) -> dict:
+    counts, mine = await reactions_for(db, [comment_id], user)
+    return {"comment_id": comment_id, "reactions": counts.get(comment_id, {}), "my_reaction": mine.get(comment_id)}
+
+
+@router.put("/{post_id}/comments/{comment_id}/reaction", response_model=ReactionState)
+async def react_to_comment(
+    post_id: str,
+    comment_id: str,
+    body: ReactionIn,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Sets your emoji reaction on a comment, replacing any earlier one (one reaction per person)."""
+    comment = await _comment_or_404(db, post_id, comment_id)
+    existing = (
+        await db.execute(
+            select(CommentReaction).where(CommentReaction.comment_id == comment_id, CommentReaction.user_id == user.id)
+        )
+    ).scalar_one_or_none()
+    if existing:
+        existing.emoji = body.emoji
+    else:
+        db.add(CommentReaction(comment_id=comment_id, user_id=user.id, emoji=body.emoji))
+    await notify(db, user_id=comment.user_id, actor_id=user.id, type="reaction", post_id=post_id,
+                 comment_id=comment_id, snippet=f"{body.emoji} {comment.body}", collapse=True)
+    try:
+        await db.commit()
+    except IntegrityError:  # two clicks at once; the first one won
+        await db.rollback()
+    return await _reaction_state(db, comment_id, user)
+
+
+@router.delete("/{post_id}/comments/{comment_id}/reaction", response_model=ReactionState)
+async def remove_reaction(
+    post_id: str,
+    comment_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Removes your reaction from a comment. Idempotent."""
+    await _comment_or_404(db, post_id, comment_id)
+    await db.execute(
+        delete(CommentReaction).where(CommentReaction.comment_id == comment_id, CommentReaction.user_id == user.id)
+    )
+    await withdraw(db, actor_id=user.id, type="reaction", comment_id=comment_id)
+    await db.commit()
+    return await _reaction_state(db, comment_id, user)
 
 
 @router.post("/{post_id}/like")

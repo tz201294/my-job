@@ -12,6 +12,7 @@ from app.core.rate_limit import FailureLimiter
 from app.core.security import create_access_token, hash_password, verify_password
 from app.core.time import utcnow
 from app.services.account import delete_account
+from app.services.notifications import notify
 from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
 from app.db.session import get_db
 from app.models import Follow, Post, ProfessionProfile, User, UserInterest, UserSurvey
@@ -310,6 +311,7 @@ async def follow_user(
     ).scalar_one_or_none()
     if not exists:
         db.add(Follow(follower_id=me.id, followee_id=target.id))
+        await notify(db, user_id=target.id, actor_id=me.id, type="follow", collapse=True)
         try:
             await db.commit()
         except IntegrityError:  # concurrent double-click: already following

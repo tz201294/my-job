@@ -68,3 +68,16 @@ class PostComment(Base):
     author = relationship("User", lazy="selectin")
 
     __table_args__ = (Index("ix_post_comments_post_id_created_at", "post_id", "created_at"),)
+
+
+# The emoji people can react to a comment with. One reaction per person per comment.
+REACTION_EMOJIS = ("❤️", "👍", "😂", "😮", "👏", "💡")
+
+
+class CommentReaction(Base):
+    __tablename__ = "comment_reactions"
+
+    comment_id = Column(String, ForeignKey("post_comments.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True)
+    emoji = Column(String(16), nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)

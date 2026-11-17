@@ -11,6 +11,7 @@ from app.api.serializers import (
 )
 from app.core.time import utcnow
 from app.db.session import get_db
+from app.services.notifications import forget, notify
 from app.models import (
     ChallengeSuggestion, Post, QAQuestion, QAUpvote, SuggestionUpvote, TaskReview, User, WorkChallenge,
 )
@@ -65,6 +66,8 @@ async def create_task_review(
     )
     db.add(review)
     await db.flush()
+    await notify(db, user_id=post.author_id, actor_id=user.id, type="review", post_id=post.id,
+                 snippet=f"{(review_in.clarity_score + review_in.accuracy_score) / 2:.1f}★ {review_in.feedback_text}")
 
     avg, count = (
         await db.execute(
@@ -149,6 +152,8 @@ async def ask_worker_question(
         topic_tag=q_in.topic_tag or "General Inquiry",
     )
     db.add(q)
+    await db.flush()
+    await notify(db, user_id=worker_id, actor_id=user.id, type="question", question_id=q.id, snippet=q.question_text)
     await db.commit()
     q = (await db.execute(select(QAQuestion).where(QAQuestion.id == q.id))).scalar_one()
     return question_out(q)
@@ -173,6 +178,8 @@ async def answer_question(
     if not q.is_answered:
         q.is_answered = True
         q.answered_at = utcnow()
+        await notify(db, user_id=q.asker_id, actor_id=user.id, type="answer", question_id=q.id,
+                     snippet=a_in.answer_text)
     await db.commit()
 
     q = (await db.execute(select(QAQuestion).where(QAQuestion.id == question_id))).scalar_one()
@@ -221,6 +228,7 @@ async def delete_question(
     if user.id not in (q.asker_id, q.worker_id):
         raise HTTPException(status_code=403, detail="Only the asker or the professional asked can delete this question")
     await db.execute(delete(QAUpvote).where(QAUpvote.question_id == question_id))
+    await forget(db, question_id=question_id)
     await db.delete(q)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -305,6 +313,7 @@ async def delete_challenge(
     chal = await _own_challenge(db, user, challenge_id)
     suggestion_ids = select(ChallengeSuggestion.id).where(ChallengeSuggestion.challenge_id == challenge_id)
     await db.execute(delete(SuggestionUpvote).where(SuggestionUpvote.suggestion_id.in_(suggestion_ids)))
+    await forget(db, challenge_id=challenge_id)
     await db.delete(chal)  # suggestions go with it (delete-orphan)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -331,6 +340,9 @@ async def submit_challenge_suggestion(
         suggested_tool_or_reference=sug_in.suggested_tool_or_reference,
     )
     db.add(sug)
+    await db.flush()
+    await notify(db, user_id=chal.worker_id, actor_id=user.id, type="suggestion", challenge_id=challenge_id,
+                 suggestion_id=sug.id, snippet=sug_in.suggestion_text)
     await db.commit()
     sug = (await db.execute(select(ChallengeSuggestion).where(ChallengeSuggestion.id == sug.id))).scalar_one()
     return suggestion_out(sug)
@@ -384,6 +396,7 @@ async def delete_suggestion(
     if sug.is_accepted_by_worker:
         chal.is_solved = False
     await db.execute(delete(SuggestionUpvote).where(SuggestionUpvote.suggestion_id == suggestion_id))
+    await forget(db, suggestion_id=suggestion_id)
     await db.delete(sug)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -416,8 +429,11 @@ async def accept_suggestion(
 ):
     """The challenge owner marks this suggestion as the solution. It replaces any earlier accepted
     suggestion and marks the challenge solved. Returns the updated challenge."""
-    _, chal = await _owned_challenge_for_suggestion(db, user, suggestion_id)
+    sug, chal = await _owned_challenge_for_suggestion(db, user, suggestion_id)
     challenge_id = chal.id
+    if not sug.is_accepted_by_worker:
+        await notify(db, user_id=sug.suggester_id, actor_id=user.id, type="accepted", challenge_id=challenge_id,
+                     suggestion_id=suggestion_id, snippet=sug.suggestion_text, collapse=True)
     await db.execute(
         update(ChallengeSuggestion)
         .where(ChallengeSuggestion.challenge_id == challenge_id, ChallengeSuggestion.id != suggestion_id)

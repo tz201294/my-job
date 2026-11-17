@@ -171,6 +171,31 @@ export function toComment(c) {
     body: c.body,
     timeAgo: timeAgo(c.created_at),
     edited: !!c.updated_at,
+    reactions: c.reactions || {},
+    myReaction: c.my_reaction || null,
+  };
+}
+
+// The emoji people can react to a comment with (same list as the server).
+export const REACTION_EMOJIS = ['❤️', '👍', '😂', '😮', '👏', '💡'];
+
+export function toNotification(n) {
+  if (n.actorUsername && n.timeAgo !== undefined) return n;
+  return {
+    id: n.id,
+    type: n.type,
+    actorId: n.actor_id,
+    actorUsername: n.actor_username,
+    actorFullName: n.actor_full_name || n.actor_username,
+    actorAvatarUrl: n.actor_avatar_url || DEFAULT_AVATAR,
+    postId: n.post_id || null,
+    commentId: n.comment_id || null,
+    questionId: n.question_id || null,
+    challengeId: n.challenge_id || null,
+    suggestionId: n.suggestion_id || null,
+    snippet: n.snippet || '',
+    timeAgo: timeAgo(n.created_at),
+    read: !!n.read,
   };
 }
 

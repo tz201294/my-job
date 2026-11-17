@@ -13,6 +13,7 @@ export default function Header({
   onOpenNotifications,
   onOpenMyProfile,
   notificationsActive = false,
+  unreadCount = 0,
 }) {
   // On phones the search box opens as a full-width row under the header.
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -95,13 +96,19 @@ export default function Header({
           <button
             type="button"
             onClick={onOpenNotifications}
-            aria-label="Notifications"
+            aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
             aria-current={notificationsActive ? 'page' : undefined}
-            className={`p-2 rounded-full transition-colors ${
+            className={`relative p-2 rounded-full transition-colors ${
               notificationsActive ? 'text-teal-700 bg-teal-50' : 'text-slate-600 hover:text-teal-600 hover:bg-teal-50'
             }`}
           >
             <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span aria-hidden="true"
+                className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* Your profile (phones use the bottom bar) */}

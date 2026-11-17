@@ -7,8 +7,9 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Bookmark, ChallengeSuggestion, Follow, Post, PostComment, PostLike, ProfessionProfile, QAQuestion, QAUpvote,
-    Story, SuggestionUpvote, TaskDetails, TaskReview, User, UserInterest, UserSurvey, WorkChallenge,
+    Bookmark, ChallengeSuggestion, CommentReaction, Follow, Notification, Post, PostComment, PostLike,
+    ProfessionProfile, QAQuestion, QAUpvote, Story, SuggestionUpvote, TaskDetails, TaskReview, User, UserInterest,
+    UserSurvey, WorkChallenge,
 )
 
 
@@ -42,6 +43,25 @@ async def delete_account(db: AsyncSession, user_id: str) -> None:
     my_suggestions = select(ChallengeSuggestion.id).where(ChallengeSuggestion.suggester_id == user_id)
     questions_involving_me = select(QAQuestion.id).where(
         (QAQuestion.asker_id == user_id) | (QAQuestion.worker_id == user_id)
+    )
+
+    # 0. Notifications to/from this user or about anything that is about to go, and emoji reactions by
+    #    this user or on comments that are about to go.
+    doomed_comments = select(PostComment.id).where(
+        (PostComment.user_id == user_id) | PostComment.post_id.in_(my_posts)
+    )
+    await db.execute(
+        delete(Notification).where(
+            (Notification.user_id == user_id) | (Notification.actor_id == user_id)
+            | Notification.post_id.in_(my_posts) | Notification.comment_id.in_(doomed_comments)
+            | Notification.question_id.in_(questions_involving_me) | Notification.challenge_id.in_(my_challenges)
+            | Notification.suggestion_id.in_(my_suggestions)
+        )
+    )
+    await db.execute(
+        delete(CommentReaction).where(
+            (CommentReaction.user_id == user_id) | CommentReaction.comment_id.in_(doomed_comments)
+        )
     )
 
     # 1. Take back this user's likes and upvotes on other people's content, so their counters stay right.

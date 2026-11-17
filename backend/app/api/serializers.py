@@ -199,7 +199,50 @@ def question_out(q: QAQuestion, upvoted_ids: Set[str] = frozenset()) -> dict:
     }
 
 
-def comment_out(c) -> dict:
+async def reactions_for(db: AsyncSession, comment_ids, user: Optional[User]) -> tuple:
+    """({comment_id: {emoji: count}}, {comment_id: my emoji}) for the given comments."""
+    from app.models import CommentReaction
+
+    counts, mine = {}, {}
+    if not comment_ids:
+        return counts, mine
+    rows = await db.execute(
+        select(CommentReaction.comment_id, CommentReaction.emoji, func.count())
+        .where(CommentReaction.comment_id.in_(comment_ids))
+        .group_by(CommentReaction.comment_id, CommentReaction.emoji)
+    )
+    for cid, emoji, n in rows.all():
+        counts.setdefault(cid, {})[emoji] = n
+    if user is not None:
+        rows = await db.execute(
+            select(CommentReaction.comment_id, CommentReaction.emoji)
+            .where(CommentReaction.comment_id.in_(comment_ids), CommentReaction.user_id == user.id)
+        )
+        mine = dict(rows.all())
+    return counts, mine
+
+
+def notification_out(n) -> dict:
+    a = n.actor
+    return {
+        "id": n.id,
+        "type": n.type,
+        "actor_id": n.actor_id,
+        "actor_username": a.username,
+        "actor_full_name": a.full_name,
+        "actor_avatar_url": a.avatar_url,
+        "post_id": n.post_id,
+        "comment_id": n.comment_id,
+        "question_id": n.question_id,
+        "challenge_id": n.challenge_id,
+        "suggestion_id": n.suggestion_id,
+        "snippet": n.snippet,
+        "created_at": n.created_at,
+        "read": n.read_at is not None,
+    }
+
+
+def comment_out(c, reactions: Optional[dict] = None, my_reaction: Optional[str] = None) -> dict:
     u = c.author
     return {
         "id": c.id,
@@ -212,6 +255,8 @@ def comment_out(c) -> dict:
         "body": c.body,
         "created_at": c.created_at,
         "updated_at": c.updated_at,
+        "reactions": reactions or {},
+        "my_reaction": my_reaction,
     }
 
 

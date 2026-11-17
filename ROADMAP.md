@@ -13,6 +13,9 @@ What is done, what is next, and decisions still open. Update this file when a st
   Settings and Notifications (placeholder) pages, phone search, no fake unread dot.
 - Settings: edit profile (name, bio, photo link, email, work, interests), data-sharing consent, password
   change (signs out other sessions), delete account (removes everything and fixes everyone's counts).
+- Notifications (bell badge, list, open the related post/question/challenge/profile) and emoji reactions
+  on comments (❤️ 👍 😂 😮 👏 💡).
+- Teal + cyan color theme.
 
 ## Next
 
@@ -42,12 +45,11 @@ for hosting), size and type limits, image resizing, upload UI in every create fo
 demo site. **Decision needed:** where files are stored once hosted.
 
 ### 3. Frontend follow-ups (agreed order)
-1. **Notifications:** backend table and events (follows, questions/answers, accepted ideas, reviews,
-   comments), unread count on the bell, list on the Notifications page (currently a placeholder).
-2. **Page addresses (routing):** URLs for profiles, posts and pages so the back button and shared links work.
+1. **Page addresses (routing):** URLs for profiles, posts and pages so the back button and shared links work.
 
 ## Ideas for later
 - Search across posts, case studies, tools and people (Postgres full-text search).
 - Replies to comments; editing/deleting reviews.
 - A small permanent frontend test suite (Vitest + Testing Library) running in CI.
 - Loading skeletons, friendlier empty states, dark mode.
+- Real-time notifications (WebSocket or server-sent events) instead of polling every minute; email/push.

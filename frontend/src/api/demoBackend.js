@@ -11,14 +11,15 @@ import {
   INITIAL_USERS,
 } from '../data/mockData';
 import {
-  DEFAULT_AVATAR, PLACEHOLDER_IMAGE, toChallenge, toComment, toPost, toQuestion, toStory, toSuggestion,
+  DEFAULT_AVATAR, PLACEHOLDER_IMAGE, REACTION_EMOJIS, toChallenge, toComment, toPost, toQuestion, toStory,
+  toSuggestion,
 } from './mappers';
 
 export const DEMO_PASSWORD = 'demo1234';
 export const DEMO_TOKEN = 'demo_token';
 
 // Bump the version when the sample data changes so returning visitors get the new data.
-const STORE_KEY = 'myjob_demo_store_v5';
+const STORE_KEY = 'myjob_demo_store_v6';
 // undefined (a 204 No Content reply) becomes null, like an empty response body.
 const clone = (x) => (x === undefined ? null : JSON.parse(JSON.stringify(x)));
 
@@ -38,7 +39,66 @@ const SIGNUP_OPTIONS = {
   education_levels: ['high_school', 'vocational', 'bachelors', 'masters', 'doctorate', 'other'],
 };
 
+// Sample emoji reactions on the sample comments: { commentId: { userId: emoji } }.
+const SAMPLE_REACTIONS = {
+  cmt_01: { usr_102: '❤️', usr_103: '👏' },
+  cmt_04: { usr_101: '❤️' },
+  cmt_05: { usr_101: '👍', usr_103: '💡' },
+};
+
 function freshStore() {
+  const s = buildStore();
+  s.comments.forEach((c) => { c.reactionsBy = { ...(SAMPLE_REACTIONS[c.id] || {}) }; });
+  s.notifications = seedNotifications(s);
+  return s;
+}
+
+// Notifications for the sample activity, as if it had just happened (all unread), like the server's seed.
+function seedNotifications(s) {
+  const list = [];
+  let t = Date.now();
+  const add = (recipientId, actor, type, targets, snippet) => {
+    if (!recipientId || recipientId === actor.id) return;
+    list.push({
+      id: `ntf_seed_${list.length + 1}`, type, recipientId, actorId: actor.id, actorUsername: actor.username,
+      actorFullName: actor.fullName || actor.username, actorAvatarUrl: actor.avatarUrl || DEFAULT_AVATAR,
+      postId: null, commentId: null, questionId: null, challengeId: null, suggestionId: null,
+      ...targets, snippet: snippet || '', timeAgo: ['10m ago', '1h ago', '3h ago', '5h ago', '1d ago'][Math.min(4, list.length >> 1)],
+      read: false, createdAt: (t -= 600000),
+    });
+  };
+  const userActor = (username) => {
+    const u = s.users[username];
+    return u && { id: u.id, username: u.username, fullName: u.full_name, avatarUrl: u.avatar_url };
+  };
+  [['elena_lawyer', 'sarah_plumber'], ['alex_driver', 'sarah_plumber'], ['sarah_plumber', 'elena_lawyer'],
+    ['sarah_plumber', 'alex_driver']].forEach(([from, to]) => {
+    const a = userActor(from);
+    const target = s.users[to];
+    if (a && target) add(target.id, a, 'follow', {});
+  });
+  s.comments.forEach((c) => {
+    const post = s.posts.find((p) => p.id === c.postId);
+    if (post) add(post.authorId, { id: c.userId, username: c.username, fullName: c.fullName, avatarUrl: c.avatarUrl },
+      'comment', { postId: post.id, commentId: c.id }, c.body);
+    Object.entries(c.reactionsBy || {}).forEach(([uid, emoji]) => {
+      const a = Object.values(s.users).find((u) => u.id === uid);
+      if (a) add(c.userId, { id: a.id, username: a.username, fullName: a.full_name, avatarUrl: a.avatar_url },
+        'reaction', { postId: c.postId, commentId: c.id }, `${emoji} ${c.body}`);
+    });
+  });
+  s.questions.filter((q) => !q.answerText).forEach((q) => {
+    add(q.workerId, { id: `asker_${q.askerUsername}`, username: q.askerUsername, avatarUrl: q.askerAvatarUrl },
+      'question', { questionId: q.id }, q.questionText);
+  });
+  s.challenges.forEach((c) => c.suggestions.forEach((x) => {
+    add(c.workerId, { id: x.suggesterId, username: x.suggesterUsername }, 'suggestion',
+      { challengeId: c.id, suggestionId: x.id }, x.suggestionText);
+  }));
+  return list;
+}
+
+function buildStore() {
   return {
     // Every account, in the API's user shape (snake_case), keyed by username.
     users: Object.fromEntries(Object.values(INITIAL_USERS).map((u) => [u.username, uiUserToApi(u)])),
@@ -200,6 +260,7 @@ function setFollow(username, follow) {
   if (target.username === self.username) fail(400, "You can't follow yourself");
   const was = s.following.includes(username);
   if (follow && !was) {
+    notify(target.id, 'follow', {}, '', true);
     s.following.push(username);
     target.followers_count += 1;
     self.following_count += 1;
@@ -331,6 +392,7 @@ function suggest(challengeId, body) {
     is_accepted_by_worker: false,
   });
   chal.suggestions.unshift(sug);
+  notify(chal.workerId, 'suggestion', { challengeId, suggestionId: sug.id }, sug.suggestionText);
   save();
   return sug;
 }
@@ -342,6 +404,9 @@ function setAccepted(suggestionId, accept) {
   if (chal.workerId !== u.id) fail(403, 'Only the person who posted this challenge can accept a solution');
   const sug = chal.suggestions.find((x) => x.id === suggestionId);
   if (accept) {
+    if (!sug.isAccepted) {
+      notify(sug.suggesterId, 'accepted', { challengeId: chal.id, suggestionId }, sug.suggestionText, true);
+    }
     chal.suggestions.forEach((x) => { x.isAccepted = x.id === suggestionId; });
     chal.isSolved = true;
   } else if (sug.isAccepted) {
@@ -383,6 +448,7 @@ function answerQuestion(questionId, body) {
   if (video && !/^https?:\/\/[^/\s]+/i.test(video)) {
     fail(422, 'video_response_url: must be a link starting with http:// or https://');
   }
+  if (!q.answerText && q.askerId) notify(q.askerId, 'answer', { questionId: q.id }, text);
   q.answerText = text;
   q.videoResponseUrl = video;
   if (!q.answeredTimeAgo) q.answeredTimeAgo = 'Just now';
@@ -412,6 +478,7 @@ function askQuestion(workerId, body) {
     created_at: nowIso(),
   });
   s.questions.unshift(q);
+  notify(worker.id, 'question', { questionId: q.id }, q.questionText);
   save();
   return q;
 }
@@ -438,6 +505,8 @@ function submitReview(body) {
     created_at: nowIso(),
   };
   s.reviews.unshift(review);
+  notify(post.authorId, 'review', { postId: post.id },
+    `${((body.clarity_score + body.accuracy_score) / 2).toFixed(1)}★ ${body.feedback_text}`);
   // Fold the new score into the post's average, as the server does.
   const score = (body.clarity_score + body.accuracy_score) / 2;
   const n = post.reviewsCount || 0;
@@ -497,6 +566,7 @@ function deletePost(postId) {
   s.posts = s.posts.filter((x) => x.id !== postId);
   s.reviews = s.reviews.filter((r) => r.post_id !== postId);
   s.comments = s.comments.filter((c) => c.postId !== postId);
+  forgetNotifications((n) => n.postId === postId);
   save();
 }
 
@@ -529,6 +599,7 @@ function deleteQuestion(questionId) {
     fail(403, 'Only the asker or the professional asked can delete this question');
   }
   s.questions = s.questions.filter((x) => x.id !== questionId);
+  forgetNotifications((n) => n.questionId === questionId);
   save();
 }
 
@@ -555,6 +626,7 @@ function deleteChallenge(challengeId) {
   ownChallenge(challengeId);
   const s = load();
   s.challenges = s.challenges.filter((x) => x.id !== challengeId);
+  forgetNotifications((n) => n.challengeId === challengeId);
   save();
 }
 
@@ -588,6 +660,7 @@ function deleteSuggestion(suggestionId) {
   }
   if (sug.isAccepted) chal.isSolved = false;
   chal.suggestions = chal.suggestions.filter((x) => x.id !== suggestionId);
+  forgetNotifications((n) => n.suggestionId === suggestionId);
   save();
 }
 
@@ -606,7 +679,7 @@ function listComments(postId, params) {
   const all = postComments(postId);
   const limit = Number(params.get('limit')) || 50;
   const offset = Number(params.get('offset')) || 0;
-  return { total: all.length, comments: all.slice(offset, offset + limit) };
+  return { total: all.length, comments: all.slice(offset, offset + limit).map(viewComment) };
 }
 
 function commentBody(body) {
@@ -631,10 +704,12 @@ function addComment(postId, body) {
     body: commentBody(body),
     created_at: nowIso(),
   });
+  c.reactionsBy = {};
   s.comments.push(c);
   syncCommentsCount(post);
+  notify(post.authorId, 'comment', { postId, commentId: c.id }, c.body);
   save();
-  return c;
+  return viewComment(c);
 }
 
 function findComment(postId, commentId) {
@@ -651,7 +726,7 @@ function updateComment(postId, commentId, body) {
   c.body = commentBody(body);
   c.edited = true;
   save();
-  return c;
+  return viewComment(c);
 }
 
 function deleteComment(postId, commentId) {
@@ -662,6 +737,7 @@ function deleteComment(postId, commentId) {
     fail(403, "Only the commenter or the post's author can delete this comment");
   }
   s.comments = s.comments.filter((x) => x.id !== commentId);
+  forgetNotifications((n) => n.commentId === commentId);
   syncCommentsCount(post);
   save();
 }
@@ -774,10 +850,104 @@ function deleteMe(body) {
     if (s.following.includes(x.username)) x.followers_count = Math.max(0, x.followers_count - 1);
   });
   s.following = [];
+  s.comments.forEach((c) => { if (c.reactionsBy) delete c.reactionsBy[u.id]; });
+  forgetNotifications((n) => n.recipientId === u.id || n.actorId === u.id);
   delete s.users[u.username];
   delete s.passwords[u.username];
   s.meUsername = null;
   save();
+}
+
+// ---------- notifications ----------
+
+function currentUserId() {
+  const s = load();
+  return (s.meUsername && s.users[s.meUsername]?.id) || null;
+}
+
+// Adds a notification from the signed-in user to `recipientId` (never to yourself). With `collapse`, an unread
+// one of the same kind from you about the same thing is refreshed instead of adding another.
+function notify(recipientId, type, targets = {}, snippet = '', collapse = false) {
+  const s = load();
+  const actor = me();
+  if (!recipientId || recipientId === actor.id) return;
+  const full = { postId: null, commentId: null, questionId: null, challengeId: null, suggestionId: null, ...targets };
+  if (collapse) {
+    const same = s.notifications.find((n) => n.recipientId === recipientId && n.actorId === actor.id && n.type === type
+      && !n.read && ['postId', 'commentId', 'questionId', 'challengeId', 'suggestionId'].every((k) => n[k] === full[k]));
+    if (same) {
+      Object.assign(same, { snippet: snippet || '', timeAgo: 'Just now', createdAt: Date.now() });
+      return;
+    }
+  }
+  s.notifications.push({
+    id: newId('ntf'), type, recipientId, actorId: actor.id, actorUsername: actor.username,
+    actorFullName: actor.full_name, actorAvatarUrl: actor.avatar_url || DEFAULT_AVATAR, ...full,
+    snippet: (snippet || '').slice(0, 140), timeAgo: 'Just now', read: false, createdAt: Date.now(),
+  });
+}
+
+function forgetNotifications(match) {
+  const s = load();
+  s.notifications = s.notifications.filter((n) => !match(n));
+}
+
+function myNotifications() {
+  const uid = me().id;
+  return load().notifications.filter((n) => n.recipientId === uid).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function listNotifications(params) {
+  const all = myNotifications();
+  const limit = Number(params.get('limit')) || 30;
+  const offset = Number(params.get('offset')) || 0;
+  return {
+    unread_count: all.filter((n) => !n.read).length,
+    total: all.length,
+    notifications: all.slice(offset, offset + limit),
+  };
+}
+
+function markNotificationsRead(body) {
+  const ids = body?.ids;
+  myNotifications().forEach((n) => { if (!ids || ids.includes(n.id)) n.read = true; });
+  save();
+  return { unread_count: myNotifications().filter((n) => !n.read).length };
+}
+
+// ---------- comment reactions ----------
+
+function viewComment(c) {
+  const { reactionsBy = {}, ...rest } = c;
+  const reactions = {};
+  Object.values(reactionsBy).forEach((e) => { reactions[e] = (reactions[e] || 0) + 1; });
+  const uid = currentUserId();
+  return { ...rest, reactions, myReaction: (uid && reactionsBy[uid]) || null };
+}
+
+function reactionState(c) {
+  const v = viewComment(c);
+  return { comment_id: c.id, reactions: v.reactions, my_reaction: v.myReaction };
+}
+
+function setReaction(postId, commentId, body) {
+  const u = me();
+  const [, c] = findComment(postId, commentId);
+  const emoji = body?.emoji;
+  if (!REACTION_EMOJIS.includes(emoji)) fail(422, `emoji: Input should be one of ${REACTION_EMOJIS.join(' ')}`);
+  c.reactionsBy = { ...(c.reactionsBy || {}), [u.id]: emoji };
+  notify(c.userId, 'reaction', { postId, commentId }, `${emoji} ${c.body}`, true);
+  save();
+  return reactionState(c);
+}
+
+function removeReaction(postId, commentId) {
+  const u = me();
+  const [, c] = findComment(postId, commentId);
+  if (c.reactionsBy) delete c.reactionsBy[u.id];
+  forgetNotifications((n) => n.type === 'reaction' && n.actorId === u.id && n.commentId === commentId && !n.read);
+  save();
+  return reactionState(c);
 }
 
 // ---------- router ----------
@@ -804,6 +974,9 @@ function handle(endpoint, options) {
   if (route === 'POST /auth/login') return login(body);
   if (route === 'POST /auth/register') return register(body);
   if (route === 'GET /auth/me') return publicUser(me());
+  if (route === 'GET /notifications') return listNotifications(url.searchParams);
+  if (route === 'GET /notifications/unread-count') return { unread_count: myNotifications().filter((n) => !n.read).length };
+  if (route === 'POST /notifications/read') return markNotificationsRead(body);
   if (route === 'PATCH /auth/me') return updateMe(body || {});
   if (route === 'POST /auth/me/password') return changePassword(body);
   if (route === 'POST /auth/me/delete') return deleteMe(body);
@@ -836,6 +1009,8 @@ function handle(endpoint, options) {
     if (!parts[2] && method === 'PATCH') return updatePost(parts[1], body || {});
     if (parts[2] === 'comments' && !parts[3] && method === 'GET') return listComments(parts[1], url.searchParams);
     if (parts[2] === 'comments' && !parts[3] && method === 'POST') return addComment(parts[1], body);
+    if (parts[2] === 'comments' && parts[4] === 'reaction' && method === 'PUT') return setReaction(parts[1], parts[3], body);
+    if (parts[2] === 'comments' && parts[4] === 'reaction' && method === 'DELETE') return removeReaction(parts[1], parts[3]);
     if (parts[2] === 'comments' && parts[3] && method === 'PATCH') return updateComment(parts[1], parts[3], body);
     if (parts[2] === 'comments' && parts[3] && method === 'DELETE') return deleteComment(parts[1], parts[3]);
     if (!parts[2] && method === 'DELETE') return deletePost(parts[1]);

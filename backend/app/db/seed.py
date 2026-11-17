@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.core.time import utcnow
 from app.models import (
-    ChallengeSuggestion, Follow, Post, PostComment, ProfessionProfile, QAQuestion, Story, TaskDetails, TaskReview, User,
+    ChallengeSuggestion, Follow, Notification, Post, PostComment, ProfessionProfile, QAQuestion, Story, TaskDetails, TaskReview, User,
     UserInterest, UserSurvey, WorkChallenge,
 )
 
@@ -293,5 +293,33 @@ async def seed_demo_data(db: AsyncSession) -> bool:
     ]:
         db.add(Follow(follower_id=users[follower].id, followee_id=users[followee].id))
 
+    await db.flush()
+    await _seed_notifications(db)
     await db.commit()
     return True
+
+
+async def _seed_notifications(db: AsyncSession) -> None:
+    """Notifications for the sample activity, as if it had just happened (all unread)."""
+    from app.services.notifications import notify
+
+    for f in (await db.execute(select(Follow))).scalars():
+        await notify(db, user_id=f.followee_id, actor_id=f.follower_id, type="follow")
+    for c in (await db.execute(select(PostComment))).scalars():
+        post = (await db.execute(select(Post).where(Post.id == c.post_id))).scalar_one()
+        await notify(db, user_id=post.author_id, actor_id=c.user_id, type="comment", post_id=post.id,
+                     comment_id=c.id, snippet=c.body)
+    for r in (await db.execute(select(TaskReview))).scalars():
+        post = (await db.execute(select(Post).where(Post.id == r.post_id))).scalar_one()
+        await notify(db, user_id=post.author_id, actor_id=r.user_id, type="review", post_id=post.id,
+                     snippet=r.feedback_text)
+    for q in (await db.execute(select(QAQuestion))).scalars():
+        await notify(db, user_id=q.worker_id, actor_id=q.asker_id, type="question", question_id=q.id,
+                     snippet=q.question_text)
+    for s in (await db.execute(select(ChallengeSuggestion))).scalars():
+        chal = (await db.execute(select(WorkChallenge).where(WorkChallenge.id == s.challenge_id))).scalar_one()
+        await notify(db, user_id=chal.worker_id, actor_id=s.suggester_id, type="suggestion", challenge_id=chal.id,
+                     suggestion_id=s.id, snippet=s.suggestion_text)
+        if s.is_accepted_by_worker:
+            await notify(db, user_id=s.suggester_id, actor_id=chal.worker_id, type="accepted",
+                         challenge_id=chal.id, suggestion_id=s.id, snippet=s.suggestion_text)

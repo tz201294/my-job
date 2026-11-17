@@ -19,7 +19,7 @@ const PERSONAL_ITEMS = [
   { key: 'settings', label: 'Settings', icon: Settings },
 ];
 
-function MenuItem({ item, active, onNavigate }) {
+function MenuItem({ item, active, onNavigate, badge = 0 }) {
   const Icon = item.icon;
   return (
     <li>
@@ -35,6 +35,12 @@ function MenuItem({ item, active, onNavigate }) {
       >
         <Icon className={`w-5 h-5 ${active ? 'text-teal-600' : 'text-slate-500'}`} />
         <span>{item.label}</span>
+        {badge > 0 && (
+          <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center"
+            aria-label={`${badge} unread`}>
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
         {item.note && (
           <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800">{item.note}</span>
         )}
@@ -43,7 +49,7 @@ function MenuItem({ item, active, onNavigate }) {
   );
 }
 
-function MenuContent({ me, activeKey, onNavigate, onLogout }) {
+function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0 }) {
   return (
     <nav aria-label="Main menu" className="flex flex-col gap-4">
       {/* Who is signed in */}
@@ -72,7 +78,8 @@ function MenuContent({ me, activeKey, onNavigate, onLogout }) {
 
       <ul className="space-y-0.5">
         {PERSONAL_ITEMS.map((item) => (
-          <MenuItem key={item.key} item={item} active={activeKey === item.key} onNavigate={onNavigate} />
+          <MenuItem key={item.key} item={item} active={activeKey === item.key} onNavigate={onNavigate}
+            badge={item.key === 'notifications' ? unreadCount : 0} />
         ))}
       </ul>
 

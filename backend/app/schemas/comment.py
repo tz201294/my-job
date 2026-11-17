@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -27,6 +27,21 @@ class CommentResponse(BaseModel):
     body: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+    reactions: Dict[str, int] = {}  # emoji -> how many people reacted with it
+    my_reaction: Optional[str] = None
+
+
+Emoji = Literal["❤️", "👍", "😂", "😮", "👏", "💡"]  # keep in step with models.post.REACTION_EMOJIS
+
+
+class ReactionIn(BaseModel):
+    emoji: Emoji
+
+
+class ReactionState(BaseModel):
+    comment_id: str
+    reactions: Dict[str, int]
+    my_reaction: Optional[str] = None
 
 
 class CommentPage(BaseModel):

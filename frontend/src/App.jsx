@@ -25,6 +25,7 @@ import BottomNav from './components/BottomNav';
 import ActivityPage from './components/ActivityPage';
 import SettingsPage from './components/SettingsPage';
 import NotificationsPage from './components/NotificationsPage';
+import PostModal from './components/PostModal';
 
 import { INITIAL_REELS } from './data/mockData';
 
@@ -79,6 +80,8 @@ export default function App() {
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null); // a post open in the editor
+  const [openedPost, setOpenedPost] = useState(null); // a single post opened from a notification
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -97,6 +100,7 @@ export default function App() {
     setSearchTerm(''); setSelectedCategory('all');
     setSelectedCaseStudy(null); setReviewModalPost(null); setEditingPost(null); setIsCreateOpen(false);
     setActiveStoryIdx(null); setToast('');
+    setOpenedPost(null); setUnreadCount(0);
   }, []);
 
   // Any 401 from a token-bearing call means the session expired.
@@ -170,6 +174,7 @@ export default function App() {
     setPosts((ps) => mapById(ps, postId, fn));
     setFeedPosts((ps) => mapById(ps, postId, fn));
     setViewingPosts((ps) => mapById(ps, postId, fn));
+    setOpenedPost((p) => (p && p.id === postId ? fn(p) : p));
   };
 
   const handleLikePost = async (postId) => {
@@ -248,6 +253,7 @@ export default function App() {
     setFeedPosts(replace);
     setViewingPosts(replace);
     setSelectedCaseStudy((cs) => (cs && cs.id === updated.id ? updated : cs));
+    setOpenedPost((p) => (p && p.id === updated.id ? updated : p));
   };
 
   // The comments panel reports the real total after loading or changing comments.
@@ -256,6 +262,7 @@ export default function App() {
     setPosts(set);
     setFeedPosts(set);
     setViewingPosts(set);
+    setOpenedPost((p) => (p && p.id === postId && p.commentsCount !== total ? { ...p, commentsCount: total } : p));
   }, []);
 
   const handleUpdatePost = async (postId, draft) => {
@@ -274,6 +281,7 @@ export default function App() {
     setFeedPosts(drop);
     setViewingPosts(drop);
     setSelectedCaseStudy((cs) => (cs && cs.id === postId ? null : cs));
+    setOpenedPost((p) => (p && p.id === postId ? null : p));
     setViewingUser((u) => (u && u.id === currentUser.id ? { ...u, postsCount: Math.max(0, (u.postsCount || 1) - 1) } : u));
     showToast('Post deleted');
   };
@@ -551,6 +559,61 @@ export default function App() {
     showToast('Your account was deleted.');
   };
 
+  // ---------- Notifications ----------
+
+  const refreshUnread = useCallback(async () => {
+    try {
+      setUnreadCount((await api.getUnreadCount()).unread_count);
+    } catch {
+      // A missed poll is harmless; the next one (or a 401 sign-out) takes care of it.
+    }
+  }, []);
+
+  // Poll for the bell badge every minute, and right away when you come back to the tab.
+  useEffect(() => {
+    if (!currentUser?.id) return undefined;
+    refreshUnread();
+    const timer = setInterval(refreshUnread, 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshUnread(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [currentUser?.id, refreshUnread]);
+
+  const openPostById = async (postId, preferCaseStudy) => {
+    try {
+      const p = toPost(await api.getPostById(postId));
+      if (preferCaseStudy && p.taskDetails) setSelectedCaseStudy(p);
+      else setOpenedPost(p);
+    } catch (err) {
+      showToast(err.status === 404 ? 'That post is no longer available.' : `Couldn't open the post: ${err.message}`);
+    }
+  };
+
+  // Takes you to whatever the notification is about.
+  const handleOpenNotification = (n) => {
+    switch (n.type) {
+      case 'follow':
+        openProfile(n.actorUsername);
+        break;
+      case 'question':
+        goToQA('inbox');
+        break;
+      case 'answer':
+        goToQA('all');
+        break;
+      case 'suggestion':
+      case 'accepted':
+        if (challenges.some((c) => c.id === n.challengeId)) goToChallenge(n.challengeId);
+        else showToast('That challenge is no longer available.');
+        break;
+      default: // comment, reaction, review
+        if (n.postId) openPostById(n.postId, n.type === 'review');
+    }
+  };
+
   const handleResetDemo = () => {
     if (!window.confirm('Reset the demo? Everything you did in this browser is removed and you are signed out.')) return;
     resetDemoData();
@@ -613,7 +676,7 @@ export default function App() {
     ? (viewingUser.id === currentUser.id ? 'profile' : null)
     : activeTab === 'feed' && feedView === 'saved' ? 'saved' : activeTab;
 
-  const menuProps = { me, activeKey, onNavigate: navigate, onLogout: handleLogout };
+  const menuProps = { me, activeKey, onNavigate: navigate, onLogout: handleLogout, unreadCount };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -627,6 +690,7 @@ export default function App() {
         onOpenNotifications={() => navigate('notifications')}
         onOpenMyProfile={() => navigate('profile')}
         notificationsActive={activeKey === 'notifications'}
+        unreadCount={unreadCount}
       />
       <MenuDrawer open={menuOpen} onClose={() => setMenuOpen(false)} {...menuProps} />
 
@@ -685,7 +749,7 @@ export default function App() {
             onGoToChallenge={goToChallenge}
           />
         ) : activeTab === 'notifications' ? (
-          <NotificationsPage />
+          <NotificationsPage onOpen={handleOpenNotification} onUnreadChange={setUnreadCount} />
         ) : activeTab === 'settings' ? (
           <SettingsPage
             account={currentUser}
@@ -850,6 +914,24 @@ export default function App() {
           currentUserId={me.id}
           onDeleteStory={handleDeleteStory}
           onClose={() => setActiveStoryIdx(null)}
+        />
+      )}
+
+      {/* A single post opened from a notification, with its comments */}
+      {openedPost && (
+        <PostModal
+          post={openedPost}
+          onClose={() => setOpenedPost(null)}
+          onLike={handleLikePost}
+          onBookmark={handleBookmarkPost}
+          onOpenCaseStudy={(p) => { setOpenedPost(null); setSelectedCaseStudy(p); }}
+          onOpenReviewModal={(p) => { setOpenedPost(null); setReviewModalPost(p); }}
+          onOpenUserProfile={(u) => { setOpenedPost(null); handleOpenUserProfile(u); }}
+          isOwn={openedPost.authorId === me.id}
+          onEdit={(p) => { setOpenedPost(null); setEditingPost(p); }}
+          onDelete={handleDeletePost}
+          currentUserId={me.id}
+          onCommentsCountChange={handleCommentsCountChange}
         />
       )}
 

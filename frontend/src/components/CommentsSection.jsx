@@ -1,13 +1,75 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Loader2, Send } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Loader2, Send, SmilePlus } from 'lucide-react';
 import { api } from '../api/client';
-import { toComment } from '../api/mappers';
+import { REACTION_EMOJIS, toComment } from '../api/mappers';
 import OwnerActions from './OwnerActions';
 
 const PAGE_SIZE = 20;
 const MAX_LENGTH = 2000;
 
-function CommentItem({ comment, canEdit, canDelete, onSave, onDelete }) {
+// Reaction counts under a comment, plus a picker. Tapping your current emoji removes it; another one replaces it.
+function Reactions({ comment, onReact }) {
+  const [picking, setPicking] = useState(false);
+  const boxRef = useRef(null);
+
+  // Close the picker on a tap outside it or on Escape.
+  useEffect(() => {
+    if (!picking) return undefined;
+    const onDown = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setPicking(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setPicking(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [picking]);
+  const counts = Object.entries(comment.reactions || {}).filter(([, n]) => n > 0)
+    .sort((a, b) => REACTION_EMOJIS.indexOf(a[0]) - REACTION_EMOJIS.indexOf(b[0]));
+  const choose = (emoji) => {
+    setPicking(false);
+    onReact(comment.id, emoji);
+  };
+  return (
+    <div ref={boxRef} className="relative flex flex-wrap items-center gap-1">
+      {counts.map(([emoji, n]) => (
+        <button key={emoji} type="button" onClick={() => choose(emoji)}
+          aria-pressed={comment.myReaction === emoji}
+          aria-label={`${emoji} ${n}${comment.myReaction === emoji ? ', your reaction' : ''}`}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border transition-colors ${
+            comment.myReaction === emoji
+              ? 'bg-teal-50 border-teal-400 text-teal-800'
+              : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+          }`}>
+          <span className="text-sm leading-none">{emoji}</span>{n}
+        </button>
+      ))}
+      <button type="button" onClick={() => setPicking((v) => !v)} aria-expanded={picking}
+        aria-label="React to this comment"
+        className="inline-flex items-center justify-center w-7 h-6 rounded-full text-slate-400 hover:text-teal-700 hover:bg-teal-50">
+        <SmilePlus className="w-4 h-4" />
+      </button>
+      {picking && (
+        <div role="menu" aria-label="Pick a reaction"
+          className="absolute z-20 bottom-full mb-1 left-0 flex gap-0.5 p-1 bg-white border border-slate-200 rounded-full shadow-lg">
+          {REACTION_EMOJIS.map((emoji) => (
+            <button key={emoji} type="button" role="menuitemradio" aria-checked={comment.myReaction === emoji}
+              aria-label={`React with ${emoji}`} onClick={() => choose(emoji)}
+              className={`w-8 h-8 rounded-full text-lg leading-none hover:scale-125 hover:bg-slate-100 transition-transform ${
+                comment.myReaction === emoji ? 'bg-teal-50 ring-2 ring-teal-300' : ''
+              }`}>
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommentItem({ comment, canEdit, canDelete, canReact, onSave, onDelete, onReact }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(comment.body);
   const [busy, setBusy] = useState(false);
@@ -78,9 +140,12 @@ function CommentItem({ comment, canEdit, canDelete, onSave, onDelete }) {
             </p>
           )}
         </div>
-        <p className="mt-0.5 ml-3 text-[10px] text-slate-400 font-medium">
-          {comment.timeAgo}{comment.edited ? ' · edited' : ''}
-        </p>
+        <div className="mt-0.5 ml-3 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="text-[10px] text-slate-400 font-medium">
+            {comment.timeAgo}{comment.edited ? ' · edited' : ''}
+          </p>
+          {canReact && <Reactions comment={comment} onReact={onReact} />}
+        </div>
       </div>
     </li>
   );
@@ -163,6 +228,28 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
     setComments((cs) => cs.map((c) => (c.id === commentId ? updated : c)));
   };
 
+  // Optimistic: the chip updates at once, then settles on what the server says.
+  const react = async (commentId, emoji) => {
+    const c = comments.find((x) => x.id === commentId);
+    if (!c) return;
+    const removing = c.myReaction === emoji;
+    const optimistic = { ...c.reactions };
+    if (c.myReaction) optimistic[c.myReaction] = Math.max(0, (optimistic[c.myReaction] || 1) - 1);
+    if (!removing) optimistic[emoji] = (optimistic[emoji] || 0) + 1;
+    const set = (reactions, myReaction) =>
+      setComments((cs) => cs.map((x) => (x.id === commentId ? { ...x, reactions, myReaction } : x)));
+    set(optimistic, removing ? null : emoji);
+    try {
+      const r = removing
+        ? await api.removeReaction(post.id, commentId)
+        : await api.reactToComment(post.id, commentId, emoji);
+      set(r.reactions, r.my_reaction ?? r.myReaction ?? null);
+    } catch (err) {
+      set(c.reactions, c.myReaction);
+      setPostError(`Couldn't save your reaction: ${err.message}`);
+    }
+  };
+
   const remove = async (commentId) => {
     try {
       await api.deleteComment(post.id, commentId);
@@ -194,8 +281,10 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
               comment={c}
               canEdit={c.userId === currentUserId}
               canDelete={c.userId === currentUserId || isPostAuthor}
+              canReact={!!currentUserId}
               onSave={saveEdit}
               onDelete={remove}
+              onReact={react}
             />
           ))}
         </ul>

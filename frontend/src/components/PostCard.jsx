@@ -26,8 +26,9 @@ export default function PostCard({
   onDelete,
   currentUserId,
   onCommentsCountChange,
+  initialShowComments = false,
 }) {
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(initialShowComments);
   const isCaseStudy = post.postType === 'pro_case_study' || post.postType === 'task_walkthrough';
   const task = post.taskDetails;
   const diffKey = task?.difficulty?.toLowerCase() || 'expert';

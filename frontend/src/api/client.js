@@ -113,6 +113,9 @@ export const api = {
   addComment: (postId, data) => post(`/posts/${postId}/comments`, data),
   updateComment: (postId, commentId, data) => patch(`/posts/${postId}/comments/${commentId}`, data),
   deleteComment: (postId, commentId) => del(`/posts/${postId}/comments/${commentId}`),
+  reactToComment: (postId, commentId, emoji) =>
+    request(`/posts/${postId}/comments/${commentId}/reaction`, { method: 'PUT', body: JSON.stringify({ emoji }) }),
+  removeReaction: (postId, commentId) => del(`/posts/${postId}/comments/${commentId}/reaction`),
 
   // Discovery & Taxonomy
   getCategories: () => request('/discovery/categories'),
@@ -144,4 +147,9 @@ export const api = {
   // Community: Reviews & Ratings
   getReviews: (postId) => request(`/community/reviews/${postId}`),
   submitReview: (data) => post('/community/reviews', data),
+
+  // Notifications
+  getNotifications: ({ limit = 30, offset = 0 } = {}) => request(`/notifications?limit=${limit}&offset=${offset}`),
+  getUnreadCount: () => request('/notifications/unread-count'),
+  markNotificationsRead: (ids = null) => post('/notifications/read', { ids }),
 };

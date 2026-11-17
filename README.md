@@ -79,6 +79,17 @@ Q&A questions and upvotes, live-work challenges, suggestions and upvotes, real p
 Still sample/local only: **Reels** (labelled in the UI) and story highlights. Media is
 link-only for now (no file uploads).
 
+Notifications: `GET /notifications?limit=&offset=` (newest first, with `unread_count` and `total`),
+`GET /notifications/unread-count` (the app polls it every minute for the bell badge) and `POST /notifications/read`
+(`{"ids": [...]}`, or no ids for all). Created for follows, questions to you, answers to your questions, ideas on
+your challenges, accepted ideas, reviews and comments on your posts, and reactions to your comments; never for your
+own actions, and repeats (follow/unfollow/follow, changing a reaction) refresh one unread notification instead of
+adding more. Deleting content or an account removes the notifications about it.
+
+Comment reactions: `PUT /posts/{id}/comments/{comment_id}/reaction` (`{"emoji": "❤️"}`; one of ❤️ 👍 😂 😮 👏 💡,
+one reaction per person, a new one replaces yours) and `DELETE` on the same URL. Comments include `reactions`
+(emoji → count) and `my_reaction`. Migration `0007` adds both tables.
+
 Your account (Settings): `PATCH /auth/me` edits name, bio, photo link, email, interests, work details
 (`profession`, or `works: false`) and `data_consent`; changing the field or job title removes the verified badge.
 `POST /auth/me/password` (`current_password`, `new_password`) returns a new token and signs out every older session
