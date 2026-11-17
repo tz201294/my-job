@@ -231,7 +231,7 @@ async def seed_demo_data(db: AsyncSession) -> bool:
         worker_id=users["sarah_plumber"].id,
         title="Unusual water hammer knocking at 3 AM in a 1920s brick brownstone",
         scenario_description="We isolated all radiator loops, tested the expansion tank diaphragm (20 PSI intact), but the homeowner still reports loud knocking at 3 AM specifically. What subtle thermal siphon or solenoid issue would you test next?",
-        profession_category="Plumbing", urgency_level="brainstorming",
+        profession_category="Plumbing", urgency_level="brainstorming", is_solved=True,
         media_url=U + "photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
     )
     db.add(chal)
@@ -241,6 +241,30 @@ async def seed_demo_data(db: AsyncSession) -> bool:
         suggestion_text="Check if an automatic ice maker or reverse osmosis filter solenoid valve cycles precisely at 3 AM with no arrestor installed on that branch line.",
         suggested_tool_or_reference="Mini in-line water hammer arrestor (1/4-inch push-fit)",
     ))
+
+    # An open challenge with ideas but no accepted solution yet, so its owner can try accepting one.
+    open_chal = WorkChallenge(
+        worker_id=users["elena_lawyer"].id,
+        title="Opposing counsel keeps missing discovery deadlines: motion to compel now, or one more meet-and-confer?",
+        scenario_description=(
+            "Third missed production deadline in six weeks. The judge is known to dislike discovery motions, "
+            "but trial is four months out. How would you sequence this?"
+        ),
+        profession_category="Legal", urgency_level="urgent",
+    )
+    db.add(open_chal)
+    await db.flush()
+    for suggester, text, ref, votes in [
+        ("sarah_plumber",
+         "Send one last meet-and-confer letter with a hard date, then file. It shows the judge you tried.", None, 6),
+        ("alex_driver",
+         "Put every missed date in a one-page timeline exhibit; judges respond to a clear pattern.",
+         "Chronology exhibit", 4),
+    ]:
+        db.add(ChallengeSuggestion(
+            challenge_id=open_chal.id, suggester_id=users[suggester].id, suggestion_text=text,
+            suggested_tool_or_reference=ref, upvotes_count=votes,
+        ))
 
     # A small demo social graph so the 'following' feed has something to show.
     for follower, followee in [

@@ -251,6 +251,72 @@ async def submit_challenge_suggestion(
     return suggestion_out(sug)
 
 
+async def _owned_challenge_for_suggestion(db: AsyncSession, user: User, suggestion_id: str):
+    sug = (
+        await db.execute(select(ChallengeSuggestion).where(ChallengeSuggestion.id == suggestion_id))
+    ).scalar_one_or_none()
+    if not sug:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    chal = (await db.execute(select(WorkChallenge).where(WorkChallenge.id == sug.challenge_id))).scalar_one()
+    if chal.worker_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the person who posted this challenge can accept a solution")
+    return sug, chal
+
+
+async def _challenge_response(db: AsyncSession, user: User, challenge_id: str) -> dict:
+    db.expire_all()  # the bulk updates bypass the identity map; reload suggestions from the database
+    chal = (await db.execute(select(WorkChallenge).where(WorkChallenge.id == challenge_id))).scalar_one()
+    voted = await upvoted_suggestion_ids(db, user, [chal])
+    return challenge_out(chal, voted)
+
+
+@router.post("/suggestions/{suggestion_id}/accept", response_model=WorkChallengeResponse)
+async def accept_suggestion(
+    suggestion_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The challenge owner marks this suggestion as the solution. It replaces any earlier accepted
+    suggestion and marks the challenge solved. Returns the updated challenge."""
+    _, chal = await _owned_challenge_for_suggestion(db, user, suggestion_id)
+    challenge_id = chal.id
+    await db.execute(
+        update(ChallengeSuggestion)
+        .where(ChallengeSuggestion.challenge_id == challenge_id, ChallengeSuggestion.id != suggestion_id)
+        .values(is_accepted_by_worker=False)
+    )
+    await db.execute(
+        update(ChallengeSuggestion).where(ChallengeSuggestion.id == suggestion_id).values(is_accepted_by_worker=True)
+    )
+    await db.execute(update(WorkChallenge).where(WorkChallenge.id == challenge_id).values(is_solved=True))
+    try:
+        await db.commit()
+    except IntegrityError:  # another accept on the same challenge landed at the same moment
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Another solution was just accepted. Refresh and try again.")
+    return await _challenge_response(db, user, challenge_id)
+
+
+@router.delete("/suggestions/{suggestion_id}/accept", response_model=WorkChallengeResponse)
+async def unaccept_suggestion(
+    suggestion_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The challenge owner withdraws the accepted solution, reopening the challenge. Idempotent."""
+    sug, chal = await _owned_challenge_for_suggestion(db, user, suggestion_id)
+    challenge_id = chal.id
+    if sug.is_accepted_by_worker:
+        await db.execute(
+            update(ChallengeSuggestion)
+            .where(ChallengeSuggestion.id == suggestion_id)
+            .values(is_accepted_by_worker=False)
+        )
+        await db.execute(update(WorkChallenge).where(WorkChallenge.id == challenge_id).values(is_solved=False))
+        await db.commit()
+    return await _challenge_response(db, user, challenge_id)
+
+
 @router.post("/suggestions/{suggestion_id}/upvote")
 async def toggle_suggestion_upvote(
     suggestion_id: str,

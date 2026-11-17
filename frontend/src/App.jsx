@@ -250,6 +250,19 @@ export default function App() {
     setChallenges((cs) => mapById(cs, challengeId, (c) => ({ ...c, suggestions: [created, ...c.suggestions] })));
   };
 
+  // The challenge owner accepts a suggestion as the solution (or withdraws it). The server returns the
+  // whole challenge, since accepting one suggestion un-accepts any other.
+  const handleAcceptSuggestion = async (challengeId, suggestionId, accept) => {
+    try {
+      const updated = toChallenge(
+        accept ? await api.acceptSuggestion(suggestionId) : await api.unacceptSuggestion(suggestionId)
+      );
+      setChallenges((cs) => mapById(cs, challengeId, () => updated));
+    } catch (err) {
+      showToast(`Couldn't ${accept ? 'accept' : 'withdraw'} the solution: ${err.message}`);
+    }
+  };
+
   const handleUpvoteSuggestion = async (challengeId, suggestionId) => {
     const apply = (fn) => setChallenges((cs) => mapById(cs, challengeId, (c) => ({
       ...c, suggestions: mapById(c.suggestions, suggestionId, fn),
@@ -548,6 +561,8 @@ export default function App() {
                 challenges={challenges}
                 onAddSuggestion={handleAddSuggestion}
                 onUpvoteSuggestion={handleUpvoteSuggestion}
+                onAcceptSuggestion={handleAcceptSuggestion}
+                currentUserId={me.id}
                 onOpenCreateChallenge={() => setIsCreateOpen(true)}
               />
             )}

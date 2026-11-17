@@ -83,6 +83,11 @@ Q&A: `POST /community/qa/questions/{id}/answer` (`answer_text`, optional `video_
 professional who was asked answer, or edit their answer (403 for anyone else). `GET /community/qa?worker_id=…&answered=false`
 lists a worker's unanswered questions; the Q&A tab shows them under "Waiting for my answer".
 
+Live work challenges: `POST /community/suggestions/{id}/accept` lets the person who posted the challenge mark a
+suggestion as the solution (replacing any earlier one; the challenge becomes solved), and `DELETE` on the same URL
+withdraws it. Both return the updated challenge; anyone else gets 403. Migration `0004` enforces one accepted
+suggestion per challenge and syncs `is_solved` for existing data.
+
 Social endpoints: `POST`/`DELETE /auth/users/{username}/follow` (idempotent; you can't follow yourself),
 `GET /posts/feed?following=true`, `POST /posts/{id}/bookmark` (toggle), `GET /posts/bookmarks`.
 Existing databases need `python -m alembic upgrade head` (`0002` adds upvotes, `0003` adds follows and

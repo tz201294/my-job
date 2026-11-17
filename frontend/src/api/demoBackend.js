@@ -15,7 +15,7 @@ export const DEMO_PASSWORD = 'demo1234';
 export const DEMO_TOKEN = 'demo_token';
 
 // Bump the version when the sample data changes so returning visitors get the new data.
-const STORE_KEY = 'myjob_demo_store_v2';
+const STORE_KEY = 'myjob_demo_store_v3';
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 const SIGNUP_OPTIONS = {
@@ -317,6 +317,23 @@ function suggest(challengeId, body) {
   return sug;
 }
 
+function setAccepted(suggestionId, accept) {
+  const u = me();
+  const chal = load().challenges.find((c) => c.suggestions.some((x) => x.id === suggestionId));
+  if (!chal) fail(404, 'Suggestion not found');
+  if (chal.workerId !== u.id) fail(403, 'Only the person who posted this challenge can accept a solution');
+  const sug = chal.suggestions.find((x) => x.id === suggestionId);
+  if (accept) {
+    chal.suggestions.forEach((x) => { x.isAccepted = x.id === suggestionId; });
+    chal.isSolved = true;
+  } else if (sug.isAccepted) {
+    sug.isAccepted = false;
+    chal.isSolved = false;
+  }
+  save();
+  return chal;
+}
+
 function toggleUpvote(item, notFound) {
   me();
   if (!item) fail(404, notFound);
@@ -470,6 +487,8 @@ function handle(endpoint, options) {
   if (route === 'POST /community/challenges') return createChallenge(body);
   if (parts[0] === 'community') {
     if (parts[1] === 'challenges' && parts[3] === 'suggest' && method === 'POST') return suggest(parts[2], body);
+    if (parts[1] === 'suggestions' && parts[3] === 'accept' && method === 'POST') return setAccepted(parts[2], true);
+    if (parts[1] === 'suggestions' && parts[3] === 'accept' && method === 'DELETE') return setAccepted(parts[2], false);
     if (parts[1] === 'suggestions' && parts[3] === 'upvote' && method === 'POST') {
       const sug = s.challenges.flatMap((c) => c.suggestions).find((x) => x.id === parts[2]);
       return toggleUpvote(sug, 'Suggestion not found');

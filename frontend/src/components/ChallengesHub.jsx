@@ -4,19 +4,36 @@ import {
   PlusCircle, Sparkles, Send, Wrench, Radio, Flame
 } from 'lucide-react';
 
-export default function ChallengesHub({ 
-  challenges, 
-  onAddSuggestion, 
+export default function ChallengesHub({
+  challenges,
+  currentUserId,
+  onAddSuggestion,
   onUpvoteSuggestion,
-  onOpenCreateChallenge 
+  onAcceptSuggestion,
+  onOpenCreateChallenge
 }) {
   const [activeChallengeId, setActiveChallengeId] = useState(challenges[0]?.id);
   const [suggestionInput, setSuggestionInput] = useState('');
   const [toolInput, setToolInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [acceptingId, setAcceptingId] = useState(null);
 
   const activeChallenge = challenges.find((c) => c.id === activeChallengeId) || challenges[0];
+  const isOwner = !!activeChallenge && !!currentUserId && activeChallenge.workerId === currentUserId;
+  // The accepted solution is shown first; the rest keep their order.
+  const suggestions = [...(activeChallenge?.suggestions || [])].sort(
+    (a, b) => Number(!!b.isAccepted) - Number(!!a.isAccepted)
+  );
+
+  const handleAccept = async (sug) => {
+    setAcceptingId(sug.id);
+    try {
+      await onAcceptSuggestion(activeChallenge.id, sug.id, !sug.isAccepted);
+    } finally {
+      setAcceptingId(null);
+    }
+  };
 
   const handleSuggestionSubmit = async (e) => {
     e.preventDefault();
@@ -87,9 +104,17 @@ export default function ChallengesHub({
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-2xs">
-                    {chal.category}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-2xs">
+                      {chal.category}
+                    </span>
+                    {chal.isSolved && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Solved
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[10px] text-slate-400 font-bold">{chal.timeAgo}</span>
                 </div>
                 <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-2 leading-snug mb-1.5">
@@ -128,9 +153,16 @@ export default function ChallengesHub({
                 </div>
               </div>
 
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-orange-900 text-xs font-black border border-orange-200">
-                🔴 {activeChallenge.urgencyLevel}
-              </span>
+              {activeChallenge.isSolved ? (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black border border-emerald-200">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Solved
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-orange-900 text-xs font-black border border-orange-200">
+                  🔴 {activeChallenge.urgencyLevel}
+                </span>
+              )}
             </div>
 
             {/* Live Scenario Description */}
@@ -153,8 +185,14 @@ export default function ChallengesHub({
                 </h4>
               </div>
 
+              {isOwner && suggestions.length > 0 && (
+                <p className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 mb-3">
+                  This is your challenge. When an idea solves it, mark it as the solution so others can learn from it.
+                </p>
+              )}
+
               <div className="space-y-3 mb-4">
-                {activeChallenge.suggestions?.map((sug) => (
+                {suggestions.map((sug) => (
                   <div
                     key={sug.id}
                     className={`p-4 rounded-2xl border transition-all ${
@@ -198,12 +236,29 @@ export default function ChallengesHub({
                       {sug.suggestionText}
                     </p>
 
-                    {sug.suggestedTool && (
-                      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-900 bg-orange-100/70 border border-orange-200 px-2.5 py-1 rounded-lg">
-                        <Wrench className="w-3 h-3 text-orange-600" />
-                        <span>Recommended: {sug.suggestedTool}</span>
-                      </div>
-                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      {sug.suggestedTool ? (
+                        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-900 bg-orange-100/70 border border-orange-200 px-2.5 py-1 rounded-lg">
+                          <Wrench className="w-3 h-3 text-orange-600" />
+                          <span>Recommended: {sug.suggestedTool}</span>
+                        </div>
+                      ) : <span />}
+
+                      {isOwner && (
+                        <button
+                          onClick={() => handleAccept(sug)}
+                          disabled={acceptingId !== null}
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-extrabold border transition-all disabled:opacity-60 ${
+                            sug.isAccepted
+                              ? 'bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50'
+                              : 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {acceptingId === sug.id ? 'Saving…' : sug.isAccepted ? 'Undo accept' : 'Accept as solution'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

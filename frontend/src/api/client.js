@@ -109,6 +109,9 @@ export const api = {
   createChallenge: (data) => post('/community/challenges', data),
   submitSuggestion: (challengeId, data) => post(`/community/challenges/${challengeId}/suggest`, data),
   upvoteSuggestion: (suggestionId) => post(`/community/suggestions/${suggestionId}/upvote`),
+  acceptSuggestion: (suggestionId) => post(`/community/suggestions/${suggestionId}/accept`),
+  unacceptSuggestion: (suggestionId) =>
+    request(`/community/suggestions/${suggestionId}/accept`, { method: 'DELETE' }),
 
   // Community: Q&A AMAs
   getQuestions: (params = {}) => {

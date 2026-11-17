@@ -377,7 +377,7 @@ export const INITIAL_CHALLENGES = [
     category: "Trades & Craftsmanship",
     urgencyLevel: "Brainstorming",
     timeAgo: "5h ago",
-    isSolved: false,
+    isSolved: true,
     suggestions: [
       {
         id: "sug_01",

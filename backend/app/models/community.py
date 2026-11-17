@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey, Index, true
 from sqlalchemy.orm import relationship
 from app.core.time import utcnow
 from app.db.base import Base
@@ -90,3 +90,12 @@ class ChallengeSuggestion(Base):
 
     challenge = relationship("WorkChallenge", back_populates="suggestions")
     suggester = relationship("User", lazy="selectin")
+
+    __table_args__ = (
+        # At most one accepted solution per challenge, even under concurrent requests.
+        Index(
+            "uq_challenge_one_accepted_suggestion", "challenge_id", unique=True,
+            postgresql_where=is_accepted_by_worker.is_(true()),
+            sqlite_where=is_accepted_by_worker.is_(true()),
+        ),
+    )
