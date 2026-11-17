@@ -265,6 +265,7 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
 export default function QAHub({
   qaItems, professionals = [], currentUserId, onAskQuestion, onAnswerQuestion, onUpdateQuestion, onDeleteQuestion,
   onUpvoteQA,
+  initialView = 'all',
 }) {
   const [questionText, setQuestionText] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('Daily Routine & Worklife');
@@ -272,7 +273,7 @@ export default function QAHub({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const [view, setView] = useState('all'); // 'all' | 'inbox'
+  const [view, setView] = useState(initialView); // 'all' | 'inbox'
   const [inbox, setInbox] = useState(null); // questions waiting for my answer; null = not loaded
   const [inboxError, setInboxError] = useState('');
 

@@ -99,9 +99,10 @@ export default function ChallengesHub({
   onUpdateSuggestion,
   onDeleteSuggestion,
   categories = [],
+  initialChallengeId = null,
   onOpenCreateChallenge
 }) {
-  const [activeChallengeId, setActiveChallengeId] = useState(challenges[0]?.id);
+  const [activeChallengeId, setActiveChallengeId] = useState(initialChallengeId || challenges[0]?.id);
   const [suggestionInput, setSuggestionInput] = useState('');
   const [toolInput, setToolInput] = useState('');
   const [busy, setBusy] = useState(false);

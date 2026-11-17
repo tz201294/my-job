@@ -750,6 +750,14 @@ function handle(endpoint, options) {
   fail(404, `Not available in the demo: ${method} ${path}`);
 }
 
+// Throws away everything done in this browser's demo and starts again from the sample data.
+export function resetDemoData() {
+  try {
+    localStorage.removeItem(STORE_KEY);
+  } catch {}
+  store = null;
+}
+
 // Signing out ends the demo session but keeps this browser's demo content.
 export function demoSignOut() {
   const s = load();

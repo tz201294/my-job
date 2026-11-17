@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AuthScreen from './components/AuthScreen';
-import { api, onUnauthorized, tokenStore } from './api/client';
+import { api, IS_DEMO, onUnauthorized, tokenStore } from './api/client';
+import { resetDemoData } from './api/demoBackend';
 import {
   toCategories, toChallenge, toChallengePayload, toPost, toPostPayload, toPostUpdatePayload, toProfileUser,
   toQuestion,
@@ -18,11 +19,16 @@ import QAHub from './components/QAHub';
 import ReelsHub from './components/ReelsHub';
 import CreatePostModal from './components/CreatePostModal';
 import UserProfile from './components/UserProfile';
+import { MenuDrawer, Sidebar } from './components/SideMenu';
+import BottomNav from './components/BottomNav';
+import ActivityPage from './components/ActivityPage';
+import SettingsPage from './components/SettingsPage';
+import NotificationsPage from './components/NotificationsPage';
 
 import { INITIAL_REELS } from './data/mockData';
 
 import {
-  Layers, Puzzle, HelpCircle, Film, Loader2, AlertTriangle
+  Loader2, AlertTriangle
 } from 'lucide-react';
 
 const EMPTY_CATEGORIES = [{ id: 'cat_all', name: 'All Professions', slug: 'all', icon: 'briefcase' }];
@@ -34,7 +40,12 @@ export default function App() {
   // Auth: undefined = checking stored token, null = signed out, object = signed-in account
   const [currentUser, setCurrentUser] = useState(tokenStore.get() ? undefined : null);
 
-  const [activeTab, setActiveTab] = useState('feed'); // 'feed' | 'reels' | 'challenges' | 'qa'
+  // Which page is shown: 'feed' | 'reels' | 'challenges' | 'qa' | 'activity' | 'notifications' | 'settings'
+  const [activeTab, setActiveTab] = useState('feed');
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Opening Live Work or Q&A from My activity jumps to a specific challenge / the answer inbox.
+  const [focusChallengeId, setFocusChallengeId] = useState(null);
+  const [qaView, setQaView] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -80,6 +91,11 @@ export default function App() {
     setPosts([]); setStories([]); setChallenges([]); setQaItems([]); setProfessionals([]);
     setFeedPosts([]); setFeedView('all');
     setLoadState('idle');
+    // The next person to sign in starts on Home, not on the page the last one left open.
+    setActiveTab('feed'); setMenuOpen(false); setFocusChallengeId(null); setQaView('all');
+    setSearchTerm(''); setSelectedCategory('all');
+    setSelectedCaseStudy(null); setReviewModalPost(null); setEditingPost(null); setIsCreateOpen(false);
+    setActiveStoryIdx(null);
   }, []);
 
   // Any 401 from a token-bearing call means the session expired.
@@ -446,6 +462,55 @@ export default function App() {
   const handleOpenUserProfile = (username) => openProfile(username);
   const handleOpenMyProfile = () => openProfile(currentUser.username);
 
+  // One place for all navigation: the sidebar, the phone menu, the bottom bar and the header.
+  const navigate = (key) => {
+    window.scrollTo({ top: 0 });
+    if (key === 'profile') {
+      handleOpenMyProfile();
+      return;
+    }
+    setViewingUser(null);
+    if (key === 'saved') {
+      setActiveTab('feed');
+      setFeedView('saved');
+      return;
+    }
+    if (key === 'feed' && activeTab === 'feed' && feedView === 'saved') setFeedView('all');
+    if (key === 'challenges') setFocusChallengeId(null);
+    if (key === 'qa') setQaView('all');
+    setActiveTab(key);
+  };
+
+  const goToChallenge = (challengeId) => {
+    navigate('challenges');
+    setFocusChallengeId(challengeId);
+  };
+
+  const goToQA = (view) => {
+    navigate('qa');
+    setQaView(view);
+  };
+
+  const openPostFromActivity = (post) => {
+    if (post.taskDetails) setSelectedCaseStudy(post);
+    else handleOpenMyProfile();
+  };
+
+  // Typing a search shows the feed, where search applies.
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    if (value && (activeTab !== 'feed' || viewingUser)) {
+      setViewingUser(null);
+      setActiveTab('feed');
+    }
+  };
+
+  const handleResetDemo = () => {
+    if (!window.confirm('Reset the demo? Everything you did in this browser is removed and you are signed out.')) return;
+    resetDemoData();
+    clearSession();
+  };
+
   const handleSelectHighlight = (highlight) => {
     const highlightStory = {
       id: highlight.id,
@@ -497,27 +562,27 @@ export default function App() {
 
   const me = toProfileUser(currentUser);
 
-  const tabClass = (tab) =>
-    `flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
-      activeTab === tab ? 'bg-white text-slate-900 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
-    }`;
+  // What the menus highlight as the current page.
+  const activeKey = viewingUser
+    ? (viewingUser.id === currentUser.id ? 'profile' : null)
+    : activeTab === 'feed' && feedView === 'saved' ? 'saved' : activeTab;
+
+  const menuProps = { me, activeKey, onNavigate: navigate, onLogout: handleLogout };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Universal Instagram-Style Header */}
       <Header
         currentUser={currentUser}
-        onLogout={handleLogout}
         onOpenCreate={() => setIsCreateOpen(true)}
         searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          setViewingUser(null);
-          setActiveTab(tab);
-        }}
-        onOpenMyProfile={handleOpenMyProfile}
+        onSearchChange={handleSearchChange}
+        onGoHome={() => navigate('feed')}
+        onOpenMenu={() => setMenuOpen(true)}
+        onOpenNotifications={() => navigate('notifications')}
+        onOpenMyProfile={() => navigate('profile')}
+        notificationsActive={activeKey === 'notifications'}
       />
+      <MenuDrawer open={menuOpen} onClose={() => setMenuOpen(false)} {...menuProps} />
 
       {toast && (
         <div role="alert" className="fixed top-16 inset-x-0 z-[60] flex justify-center px-4 pointer-events-none">
@@ -528,8 +593,10 @@ export default function App() {
         </div>
       )}
 
-      {/* Main App Container */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      {/* Sidebar (wide screens) + page */}
+      <div className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-4 flex gap-8">
+      <Sidebar {...menuProps} />
+      <main className="flex-1 min-w-0 max-w-2xl mx-auto lg:mx-0 py-4 sm:py-6 pb-24 lg:pb-8">
         {loadState === 'loading' || loadState === 'idle' ? (
           <div className="flex justify-center py-20" role="status" aria-label="Loading">
             <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
@@ -562,9 +629,30 @@ export default function App() {
             onEditPost={setEditingPost}
             onDeletePost={handleDeletePost}
           />
+        ) : activeTab === 'activity' ? (
+          <ActivityPage
+            me={me}
+            qaItems={qaItems}
+            challenges={challenges}
+            onOpenPost={openPostFromActivity}
+            onGoToQA={goToQA}
+            onGoToChallenge={goToChallenge}
+          />
+        ) : activeTab === 'notifications' ? (
+          <NotificationsPage />
+        ) : activeTab === 'settings' ? (
+          <SettingsPage
+            account={currentUser}
+            me={me}
+            isDemo={IS_DEMO}
+            onLogout={handleLogout}
+            onResetDemo={handleResetDemo}
+          />
         ) : (
-          /* MAIN FEED & TABS VIEW */
+          /* MAIN SECTIONS */
           <>
+            {activeTab === 'feed' && (
+            <>
             {/* 24h Worklife Story Tray */}
             <StoryTray
               stories={stories}
@@ -579,30 +667,8 @@ export default function App() {
               onSelectCategory={setSelectedCategory}
               onSelectRole={(role) => setSearchTerm(role)}
             />
-
-            {/* Main Feed Navigation Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl mb-5 text-xs font-bold border border-slate-300/60">
-              <button onClick={() => setActiveTab('feed')} className={tabClass('feed')}>
-                <Layers className="w-3.5 h-3.5 text-brand-600" />
-                <span className="hidden sm:inline">Feed & Guides</span>
-                <span className="sm:hidden">Feed</span>
-              </button>
-
-              <button onClick={() => setActiveTab('reels')} className={tabClass('reels')}>
-                <Film className="w-3.5 h-3.5 text-rose-600" />
-                <span>Reels (sample)</span>
-              </button>
-
-              <button onClick={() => setActiveTab('challenges')} className={tabClass('challenges')}>
-                <Puzzle className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Dilemmas</span>
-              </button>
-
-              <button onClick={() => setActiveTab('qa')} className={tabClass('qa')}>
-                <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
-                <span>AMAs</span>
-              </button>
-            </div>
+            </>
+            )}
 
             {/* FEED TAB CONTENT */}
             {activeTab === 'feed' && (
@@ -688,6 +754,8 @@ export default function App() {
             {/* CHALLENGES TAB CONTENT */}
             {activeTab === 'challenges' && (
               <ChallengesHub
+                key={focusChallengeId || 'challenges'}
+                initialChallengeId={focusChallengeId}
                 challenges={challenges}
                 onAddSuggestion={handleAddSuggestion}
                 onUpvoteSuggestion={handleUpvoteSuggestion}
@@ -705,6 +773,8 @@ export default function App() {
             {/* QA AMAs TAB CONTENT */}
             {activeTab === 'qa' && (
               <QAHub
+                key={qaView}
+                initialView={qaView}
                 qaItems={qaItems}
                 professionals={professionals}
                 currentUserId={me.id}
@@ -718,6 +788,9 @@ export default function App() {
           </>
         )}
       </main>
+      </div>
+
+      <BottomNav me={me} activeKey={activeKey} onNavigate={navigate} onOpenCreate={() => setIsCreateOpen(true)} />
 
       {/* Story Viewer Modal */}
       {activeStoryIdx !== null && (
