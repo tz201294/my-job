@@ -77,6 +77,8 @@ Pages the deploy copies `index.html` to `404.html` for that. Production builds i
 to `VITE_API_URL`'s origin.
 
 ### Demo mode (no backend)
+The GitHub Pages deploy always publishes the demo at `/my-job/demo/` (https://tz201294.github.io/my-job/demo/),
+next to the main app at `/my-job/`. The two keep separate logins in the browser.
 On GitHub Pages, or when built with `VITE_DEMO_MODE=true`, the app runs entirely in the browser
 (`frontend/src/api/demoBackend.js`): sample data, with changes saved only in that browser's localStorage.
 Log in as a demo account with password `demo1234`, or sign up. Outside demo mode the app always talks to the

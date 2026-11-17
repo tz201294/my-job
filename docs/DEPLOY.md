@@ -64,6 +64,11 @@ to start and the **Logs** tab says exactly what to fix.
 The site is now the real app: accounts and posts are stored in your Neon database. There are no demo accounts in
 production; everyone signs up.
 
+**The demo stays online** at **https://tz201294.github.io/my-job/demo/**, with all the sample accounts, posts and
+comments (password `demo1234`). It runs entirely in the visitor's browser and never touches the real database.
+The real login page shows a "Try the demo" link, and the demo links back to the real app. Each keeps its own
+login, so trying the demo doesn't sign anyone out of their real account.
+
 ---
 
 ## Good to know
@@ -92,4 +97,5 @@ Nothing in the code or the addresses changes.
 ## Going back to the demo
 
 Delete the `VITE_API_URL` variable in GitHub and re-run the **Deploy Prologue to GitHub Pages** workflow. The
-website becomes the in-browser demo again. The API and the database keep running and keep their data.
+main address becomes the in-browser demo again (`/demo/` always is). The API and the database keep running and
+keep their data.

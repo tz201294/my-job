@@ -17,6 +17,8 @@ What is done, what is next, and decisions still open. Update this file when a st
   on comments (❤️ 👍 😂 😮 👏 💡).
 - Teal + cyan color theme.
 - Tags field in the post form (validated the same way on the server).
+- Rebrand to Prologue ("A story behind every profession"), new icon and wordmark.
+- The demo stays online at /my-job/demo/ next to the real app (separate logins, links both ways).
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.
@@ -36,8 +38,7 @@ demo site. **Decision needed:** where files are stored once hosted.
 
 ### 3. Frontend: what's left before real users
 The frontend itself is ready; these depend on the backend steps above or are polish:
-- Point the build at the deployed API (`VITE_API_URL`) once step 1 is done, and decide whether GitHub Pages
-  keeps the demo.
+- Point the build at the deployed API (`VITE_API_URL`) once step 1 is done (the demo stays at /demo/).
 - Photo/video upload UI (step 2).
 - "Forgot password" and email verification (need email sending on the server).
 - Error reporting service (e.g. Sentry) hooked into the crash screen, and basic analytics if wanted.

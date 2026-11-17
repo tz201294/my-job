@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import { BrandMark, TAGLINE, Wordmark } from './Brand';
-import { api, IS_DEMO, tokenStore } from '../api/client';
+import { api, DEMO_URL, IS_DEMO, REAL_APP_URL, tokenStore } from '../api/client';
 import { SlowHint } from './SlowHint';
 import { DEMO_PASSWORD } from '../api/demoConstants';
 
@@ -217,6 +217,11 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                   <strong>Demo mode:</strong> sample data, saved only in this browser. Log in as{' '}
                   <code>sarah_plumber</code>, <code>alex_driver</code> or <code>elena_lawyer</code> with password{' '}
                   <code>{DEMO_PASSWORD}</code>, or create an account.
+                  {REAL_APP_URL && (
+                    <>
+                      {' '}<a href={REAL_APP_URL} className="font-bold underline hover:text-teal-950">Join the real Prologue →</a>
+                    </>
+                  )}
                 </p>
               )}
               <Field id="login-id" label="Username or email">
@@ -235,6 +240,12 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                   Create an account
                 </button>
               </p>
+              {DEMO_URL && (
+                <p className="text-center text-xs text-slate-500">
+                  Want to look around first?{' '}
+                  <a href={DEMO_URL} className="font-bold text-teal-600 hover:underline">Try the demo →</a>
+                </p>
+              )}
             </form>
           ) : (
             <form onSubmit={lastStep ? submitSignup : next} className="space-y-4" noValidate>

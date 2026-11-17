@@ -20,7 +20,14 @@ const API_BASE =
     ? '/api/v1'
     : `${window.location.protocol}//${window.location.hostname}:8000/api/v1`);
 
-const TOKEN_KEY = 'myjob_token';
+// The real app and the demo can run on the same site (/my-job/ and /my-job/demo/), which share browser storage;
+// separate keys keep a demo login from replacing a real one.
+const TOKEN_KEY = IS_DEMO ? 'myjob_demo_token' : 'myjob_token';
+
+// Where the other version lives, when the deploy provides one (see .github/workflows/deploy.yml).
+export const DEMO_URL = !IS_DEMO && import.meta.env.VITE_DEMO_PATH
+  ? `${import.meta.env.BASE_URL}${import.meta.env.VITE_DEMO_PATH}` : null;
+export const REAL_APP_URL = IS_DEMO ? import.meta.env.VITE_REAL_APP_URL || null : null;
 
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),
