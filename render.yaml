@@ -11,7 +11,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
-    autoDeploy: true      # redeploys on every push to the default branch
+    autoDeployTrigger: checksPass  # redeploys after a push to the default branch, once all CI checks pass
     envVars:
       - key: ENVIRONMENT
         value: production

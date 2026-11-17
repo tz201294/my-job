@@ -29,7 +29,8 @@ What is done, what is next, and decisions still open. Update this file when a st
 Decision made: start free (Render free web service + Neon free Postgres + GitHub Pages), move to paid later
 without code changes. Everything is in the repo (`render.yaml`, deploy workflow reads `VITE_API_URL`); follow
 [docs/DEPLOY.md](docs/DEPLOY.md). Rehearsed locally in production mode (sign-up, posts, comments, reactions,
-settings, deep links) against SQLite; the first real Postgres run happens on Neon.
+settings, deep links). CI runs every backend test and the migrations on Postgres 17 (Neon's default), checks
+the migrations match the models and can be undone, and Render only deploys once CI passes.
 
 ### 2. Real file uploads
 Upload photos and videos instead of pasting links: storage (local disk first, then an S3-compatible bucket

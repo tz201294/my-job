@@ -8,7 +8,7 @@ import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine  # noqa: E402
-from sqlalchemy.pool import StaticPool  # noqa: E402
+from sqlalchemy.pool import NullPool, StaticPool  # noqa: E402
 
 import app.models  # noqa: E402,F401
 from app.db.base import Base  # noqa: E402
@@ -17,12 +17,28 @@ from app.db.session import get_db  # noqa: E402
 from app.main import app  # noqa: E402
 
 
-@pytest_asyncio.fixture
-async def session_factory():
-    engine = create_async_engine(
+# By default every test gets a fresh in-memory SQLite database. Set TEST_DATABASE_URL to a throwaway Postgres
+# database (CI does) to run the same tests against Postgres, which is what production uses. Its tables are
+# dropped and recreated for every test, so never point it at a database whose data you want to keep.
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
+
+
+def _test_engine():
+    if TEST_DATABASE_URL:
+        from app.core.config import normalize_database_url
+
+        return create_async_engine(normalize_database_url(TEST_DATABASE_URL), poolclass=NullPool)
+    return create_async_engine(
         "sqlite+aiosqlite:///:memory:", poolclass=StaticPool, connect_args={"check_same_thread": False}
     )
+
+
+@pytest_asyncio.fixture
+async def session_factory():
+    engine = _test_engine()
     async with engine.begin() as conn:
+        if TEST_DATABASE_URL:
+            await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False, autoflush=False)
     await engine.dispose()

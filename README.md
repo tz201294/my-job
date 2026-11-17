@@ -32,6 +32,9 @@ python -m alembic upgrade head
 python -m uvicorn app.main:app --reload
 python -m pytest                                    # tests (also run by CI on every push)
 ```
+Tests use a fresh in-memory SQLite database by default. To run them on Postgres, as production does, point
+`TEST_DATABASE_URL` at an **empty, throwaway** database (its tables are dropped and recreated for every test):
+`TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/prologue_test python -m pytest`.
 
 ### Configuration and production
 `ENVIRONMENT` defaults to `production`, and in production the API **refuses to start** unless:
@@ -58,7 +61,9 @@ npm test           # unit + rendered UI tests (Vitest + Testing Library, in demo
 npm run lint       # ESLint (React + hooks rules)
 npm run build      # production build in dist/
 ```
-CI runs lint, tests and the build on every push; the GitHub Pages deploy also runs the tests first.
+CI runs lint, tests and the build on every push; the backend tests and migrations run on both SQLite and
+Postgres 17. The GitHub Pages deploy also runs the frontend tests first, and Render deploys the API only once CI
+passes.
 
 **Page addresses.** `/` home (`/following`, `/saved`), `/live-work` (`/live-work/<challenge id>`), `/qa`
 (`/qa/inbox`), `/reels`, `/activity`, `/notifications`, `/settings`, `/u/<username>` profiles and `/p/<post id>`

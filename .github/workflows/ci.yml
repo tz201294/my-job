@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   backend-tests:
-    name: Backend tests
+    name: Backend tests (SQLite)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,6 +40,72 @@ jobs:
           ENVIRONMENT: development
           DATABASE_URL: sqlite+aiosqlite:///./ci.db
         run: python -m alembic upgrade head
+
+  # Production runs on Postgres (Neon), so everything is checked on Postgres too: the same version Neon uses by
+  # default, and the database address in the form Neon gives it (postgresql://...?sslmode=...).
+  backend-postgres:
+    name: Backend on Postgres
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: prologue
+          POSTGRES_PASSWORD: prologue
+          POSTGRES_DB: prologue_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prologue"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ENVIRONMENT: development
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create the migrations database
+        env:
+          PGPASSWORD: prologue
+        run: psql -h localhost -U prologue -d prologue_test -c "CREATE DATABASE prologue_migrations"
+
+      # Tables are dropped and recreated for every test (see tests/conftest.py).
+      - name: Run tests
+        env:
+          TEST_DATABASE_URL: postgresql://prologue:prologue@localhost:5432/prologue_test?sslmode=disable
+        run: python -m pytest -q
+
+      - name: Migrations apply cleanly
+        env:
+          DATABASE_URL: postgresql://prologue:prologue@localhost:5432/prologue_migrations?sslmode=disable
+        run: python -m alembic upgrade head
+
+      # Fails if a model was changed without a migration (or a migration doesn't match the models).
+      - name: Migrations match the models
+        env:
+          DATABASE_URL: postgresql://prologue:prologue@localhost:5432/prologue_migrations?sslmode=disable
+        run: python -m alembic check
+
+      - name: Migrations can be undone and reapplied
+        env:
+          DATABASE_URL: postgresql://prologue:prologue@localhost:5432/prologue_migrations?sslmode=disable
+        run: |
+          python -m alembic downgrade base
+          python -m alembic upgrade head
+          python -m alembic check
 
   frontend:
     name: Frontend lint, tests and build
