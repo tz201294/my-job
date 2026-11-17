@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Zap, Lightbulb, CheckCircle2, ShieldCheck, ArrowUp, 
-  PlusCircle, Sparkles, Send, Wrench, Radio, Flame
+import {
+  Zap, Lightbulb, CheckCircle2, ShieldCheck, ArrowUp, PlusCircle, Send, Wrench, Flame,
 } from 'lucide-react';
 
 import OwnerActions from './OwnerActions';
@@ -99,10 +98,14 @@ export default function ChallengesHub({
   onUpdateSuggestion,
   onDeleteSuggestion,
   categories = [],
-  initialChallengeId = null,
+  selectedChallengeId = null,
+  onSelectChallenge,
   onOpenCreateChallenge
 }) {
-  const [activeChallengeId, setActiveChallengeId] = useState(initialChallengeId || challenges[0]?.id);
+  // The selected challenge comes from the address (/live-work/<id>) when the parent provides it.
+  const [localId, setLocalId] = useState(selectedChallengeId || challenges[0]?.id);
+  const activeChallengeId = onSelectChallenge ? selectedChallengeId : localId;
+  const setActiveChallengeId = onSelectChallenge || setLocalId;
   const [suggestionInput, setSuggestionInput] = useState('');
   const [toolInput, setToolInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -231,7 +234,7 @@ export default function ChallengesHub({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-0.5 rounded-full bg-gradient-to-tr from-cyan-500 to-teal-500">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={activeChallenge.workerAvatarUrl}
                     alt={activeChallenge.workerFullName}
                     className="w-10 h-10 rounded-full object-cover border-2 border-white"

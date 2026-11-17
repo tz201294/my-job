@@ -16,6 +16,9 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Notifications (bell badge, list, open the related post/question/challenge/profile) and emoji reactions
   on comments (❤️ 👍 😂 😮 👏 💡).
 - Teal + cyan color theme.
+- Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
+  fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
+  Content Security Policy, manifest/icons/link previews.
 
 ## Next
 
@@ -44,8 +47,15 @@ Upload photos and videos instead of pasting links: storage (local disk first, th
 for hosting), size and type limits, image resizing, upload UI in every create form, and a stand-in for the
 demo site. **Decision needed:** where files are stored once hosted.
 
-### 3. Frontend follow-ups (agreed order)
-1. **Page addresses (routing):** URLs for profiles, posts and pages so the back button and shared links work.
+### 3. Frontend: what's left before real users
+The frontend itself is ready; these depend on the backend steps above or are polish:
+- Point the build at the deployed API (`VITE_API_URL`) once step 1 is done, and decide whether GitHub Pages
+  keeps the demo.
+- Photo/video upload UI (step 2).
+- "Forgot password" and email verification (need email sending on the server).
+- Error reporting service (e.g. Sentry) hooked into the crash screen, and basic analytics if wanted.
+- A tags field in the post form (tags are stored and shown, but can't be entered yet).
+- An accessibility pass with a screen reader, and loading skeletons.
 
 ## Ideas for later
 - Search across posts, case studies, tools and people (Postgres full-text search).

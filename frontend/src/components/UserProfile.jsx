@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  ShieldCheck, Star, Wrench, Layers, Image as ImageIcon, 
-  HelpCircle, Zap, ArrowLeft, UserPlus, Check, MessageSquare, 
-  Send, ExternalLink, Bookmark, Heart, ChevronRight, Flame
+import {
+  ShieldCheck, Star, Wrench, Layers, Image as ImageIcon, HelpCircle, ArrowLeft, UserPlus, Check, MessageSquare, Send, Heart,
 } from 'lucide-react';
 
 import OwnerActions from './OwnerActions';
@@ -11,12 +9,10 @@ export default function UserProfile({
   user,
   posts,
   qaItems,
-  challenges,
   isOwnProfile = false,
   onToggleFollow,
   onBack,
   onOpenCaseStudy,
-  onOpenReviewModal,
   onAskQuestion,
   onSelectHighlight,
   onEditPost,
@@ -52,9 +48,6 @@ export default function UserProfile({
   const userQAs = qaItems.filter(
     (q) => q.workerUsername === user.username || q.workerId === user.id
   );
-  const userChallenges = challenges.filter(
-    (c) => c.workerUsername === user.username || c.workerId === user.id
-  );
 
   const handleAsk = async (e) => {
     e.preventDefault();
@@ -79,7 +72,7 @@ export default function UserProfile({
           className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-slate-100 border border-teal-200 text-xs font-black text-teal-950 transition-all shadow-sm"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Feed</span>
+          <span>Back</span>
         </button>
         <span className="text-xs font-black text-teal-500 uppercase tracking-wider">
           @{user.username}
@@ -95,7 +88,7 @@ export default function UserProfile({
           {/* Avatar with Radiant Glowing Ring */}
           <div className="relative p-1 rounded-full story-ring-gradient flex-shrink-0">
             <div className="p-1 bg-white rounded-full">
-              <img
+              <img loading="lazy" decoding="async"
                 src={user.avatarUrl}
                 alt={user.fullName}
                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover"
@@ -229,7 +222,7 @@ export default function UserProfile({
                   className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
                 >
                   <div className="w-16 h-16 rounded-full p-[2.5px] story-ring-gradient group-hover:scale-105 transition-transform shadow-xs">
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={hl.cover}
                       alt={hl.title}
                       className="w-full h-full rounded-full object-cover border-2 border-white"
@@ -300,7 +293,7 @@ export default function UserProfile({
                   className="bg-white/95 border border-teal-100 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between card-glow"
                 >
                   <div className="aspect-[16/10] w-full bg-slate-900 overflow-hidden relative">
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={post.mediaUrl}
                       alt={post.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -351,7 +344,7 @@ export default function UserProfile({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {userGeneralPosts.map((post) => (
                 <div key={post.id} className="relative bg-white/95 border border-teal-100 rounded-3xl overflow-hidden shadow-2xs card-glow">
-                  <img src={post.mediaUrl} alt={post.title} className="aspect-[16/10] w-full object-cover" />
+                  <img loading="lazy" decoding="async" src={post.mediaUrl} alt={post.title} className="aspect-[16/10] w-full object-cover" />
                   <div className="absolute top-3 right-3">{ownerActions(post, 'dark')}</div>
                   <div className="p-4 sm:p-5">
                     <h4 className="font-extrabold text-sm sm:text-base text-slate-900 mb-1">{post.title}</h4>

@@ -49,8 +49,26 @@ Media links (post media, step images, stories, challenges) must be `http://` or 
 
 ### Frontend
 ```bash
-cd frontend && npm install && npm run dev
+cd frontend
+npm install
+npm run dev        # http://localhost:3000, proxies /api to the backend on :8000
+npm test           # unit + rendered UI tests (Vitest + Testing Library, in demo mode)
+npm run lint       # ESLint (React + hooks rules)
+npm run build      # production build in dist/
 ```
+CI runs lint, tests and the build on every push; the GitHub Pages deploy also runs the tests first.
+
+**Page addresses.** `/` home (`/following`, `/saved`), `/live-work` (`/live-work/<challenge id>`), `/qa`
+(`/qa/inbox`), `/reels`, `/activity`, `/notifications`, `/settings`, `/u/<username>` profiles and `/p/<post id>`
+single posts with their comments; anything else shows "Page not found". Links work when opened directly, and
+after logging in you land on the page the link pointed to.
+
+**Deploying the frontend.** Build with `VITE_API_URL=https://your-api.example.com/api/v1` (or serve it behind a
+proxy that forwards `/api`), and set `VITE_BASE` if it isn't served from the site root (GitHub Pages uses
+`VITE_BASE=/my-job/`). The host must send unknown paths to `index.html` (single-page app fallback); on GitHub
+Pages the deploy copies `index.html` to `404.html` for that. Production builds include a Content Security Policy
+(see `vite.config.js`) that allows https images/video from any site (posts link to external media) and API calls
+to `VITE_API_URL`'s origin.
 
 ### Demo mode (no backend)
 On GitHub Pages, or when built with `VITE_DEMO_MODE=true`, the app runs entirely in the browser

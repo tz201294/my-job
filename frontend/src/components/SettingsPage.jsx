@@ -120,7 +120,7 @@ function ProfileForm({ account, options, onSave, onDone }) {
   return (
     <form onSubmit={submit} className="space-y-3.5">
       <div className="flex items-center gap-3">
-        <img
+        <img loading="lazy" decoding="async"
           src={avatarUrl && previewOk ? avatarUrl : DEFAULT_AVATAR}
           onError={() => setPreviewOk(false)}
           alt="Photo preview"

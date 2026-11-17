@@ -36,10 +36,20 @@ jobs:
           cd frontend
           npm ci
 
+      - name: Test
+        run: |
+          cd frontend
+          npm test
+
+      # The site lives under /my-job/ on GitHub Pages. Pages has no rewrite rules, so 404.html (a copy of the app)
+      # serves direct links such as /my-job/u/sarah_plumber; the app then reads the address and shows that page.
       - name: Build Application
+        env:
+          VITE_BASE: /my-job/
         run: |
           cd frontend
           npm run build
+          cp dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

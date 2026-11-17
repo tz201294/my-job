@@ -276,7 +276,7 @@ export function toPostPayload(d) {
 
 // Same fields as a new post, minus the type, which can't change after publishing.
 export function toPostUpdatePayload(d) {
-  const { post_type, ...rest } = toPostPayload(d); // eslint-disable-line no-unused-vars
+  const { post_type: _postType, ...rest } = toPostPayload(d);
   return rest;
 }
 

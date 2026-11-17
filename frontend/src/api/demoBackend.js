@@ -15,7 +15,9 @@ import {
   toSuggestion,
 } from './mappers';
 
-export const DEMO_PASSWORD = 'demo1234';
+import { DEMO_PASSWORD } from './demoConstants';
+
+export { DEMO_PASSWORD };
 export const DEMO_TOKEN = 'demo_token';
 
 // Bump the version when the sample data changes so returning visitors get the new data.
@@ -193,7 +195,7 @@ function publicUser(u) {
 
 // What anyone may see about another user (no email, survey or interests), like the server's public profile.
 function publicProfile(u) {
-  const { email, survey, interests, ...rest } = publicUser(u); // eslint-disable-line no-unused-vars
+  const { email: _e, survey: _s, interests: _i, ...rest } = publicUser(u);
   return rest;
 }
 

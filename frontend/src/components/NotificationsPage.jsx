@@ -33,7 +33,7 @@ function NotificationRow({ n, onOpen }) {
         }`}
       >
         <div className="relative shrink-0">
-          <img src={n.actorAvatarUrl} alt="" className="w-11 h-11 rounded-full object-cover" />
+          <img loading="lazy" decoding="async" src={n.actorAvatarUrl} alt="" className="w-11 h-11 rounded-full object-cover" />
           <span className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white ${kind.tone}`}>
             <Icon className="w-3 h-3" />
           </span>

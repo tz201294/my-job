@@ -58,7 +58,7 @@ function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0 }) {
         onClick={() => onNavigate('profile')}
         className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-slate-100 text-left"
       >
-        <img src={me.avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-500" />
+        <img loading="lazy" decoding="async" src={me.avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-500" />
         <div className="min-w-0">
           <p className="flex items-center gap-1 font-extrabold text-sm text-slate-900 truncate">
             {me.fullName}

@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Heart, MessageCircle, Bookmark, Share2, Volume2, 
-  VolumeX, Play, Pause, ChevronUp, ChevronDown, 
-  Music, ShieldCheck, UserPlus, Check
+import {
+  Heart, MessageCircle, Bookmark, Share2, Volume2, VolumeX, Play, ChevronUp, ChevronDown, Music, ShieldCheck,
 } from 'lucide-react';
 
 export default function ReelsHub({ 
@@ -25,7 +23,7 @@ export default function ReelsHub({
         videoRef.current.play().catch(() => {});
       }
     }
-  }, [currentIndex]);
+  }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps -- only when the reel changes
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -158,7 +156,7 @@ export default function ReelsHub({
           className="flex items-center gap-2.5 cursor-pointer group"
           onClick={() => onOpenUserProfile && onOpenUserProfile(currentReel.authorUsername)}
         >
-          <img
+          <img loading="lazy" decoding="async"
             src={currentReel.authorAvatarUrl}
             alt={currentReel.authorFullName}
             className="w-10 h-10 rounded-full object-cover border-2 border-white"

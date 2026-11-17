@@ -47,7 +47,7 @@ export default function BottomNav({ me, activeKey, onNavigate, onOpenCreate }) {
             activeKey === 'profile' ? 'text-teal-700 font-extrabold' : 'text-slate-500 font-semibold'
           }`}
         >
-          <img
+          <img loading="lazy" decoding="async"
             src={me.avatarUrl}
             alt=""
             className={`w-6 h-6 rounded-full object-cover ${activeKey === 'profile' ? 'ring-2 ring-teal-600' : ''}`}

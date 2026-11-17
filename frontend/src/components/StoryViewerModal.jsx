@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Heart, Send, Sparkles, ShieldCheck } from 'lucide-react';
+import {
+  X, ChevronLeft, ChevronRight, Heart, Send, ShieldCheck,
+} from 'lucide-react';
 import OwnerActions from './OwnerActions';
 
 export default function StoryViewerModal({ stories, initialIndex, currentUserId, onDeleteStory, onClose }) {
@@ -104,7 +106,7 @@ export default function StoryViewerModal({ stories, initialIndex, currentUserId,
         {/* Story Author Header */}
         <div className="absolute top-6 inset-x-3 z-30 flex items-center justify-between text-white drop-shadow-md">
           <div className="flex items-center gap-2.5">
-            <img
+            <img loading="lazy" decoding="async"
               src={story.avatarUrl}
               alt={story.fullName}
               className="w-10 h-10 rounded-full object-cover border border-white"
@@ -136,7 +138,7 @@ export default function StoryViewerModal({ stories, initialIndex, currentUserId,
 
         {/* Story Media Background */}
         <div className="relative w-full h-full flex items-center justify-center bg-black">
-          <img
+          <img loading="lazy" decoding="async"
             src={story.mediaUrl}
             alt={story.caption}
             className="w-full h-full object-cover"

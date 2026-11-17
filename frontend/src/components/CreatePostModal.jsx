@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  X, Plus, Trash2, Upload
+  X, Plus, Trash2,
 } from 'lucide-react';
 import { PLACEHOLDER_IMAGE } from '../api/mappers';
 
@@ -32,7 +32,7 @@ export default function CreatePostModal({
   const [mediaUrl, setMediaUrl] = useState(
     editPost?.mediaUrl && editPost.mediaUrl !== PLACEHOLDER_IMAGE ? editPost.mediaUrl : ''
   );
-  const [tags, setTags] = useState((editPost?.tags || []).join(', '));
+  const [tags] = useState((editPost?.tags || []).join(', '));
 
   // Case Study Specific Fields
   const [category, setCategory] = useState(
@@ -203,7 +203,7 @@ export default function CreatePostModal({
                 <p className="mt-1 text-[11px] text-slate-400">Direct file uploads are not available yet — paste a link to an image.</p>
                 {storyMedia && (
                   <div className="mt-3 relative w-32 h-44 rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
-                    <img src={storyMedia} alt="Preview" className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={storyMedia} alt="Preview" className="w-full h-full object-cover" />
                     <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Preview</span>
                   </div>
                 )}
@@ -322,7 +322,7 @@ export default function CreatePostModal({
                 <p className="mt-1 text-[11px] text-slate-400">Direct file uploads are not available yet — paste a link to an image.</p>
                 {mediaUrl && (
                   <div className="mt-2 w-full aspect-video max-h-40 rounded-xl overflow-hidden border border-slate-200">
-                    <img src={mediaUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={mediaUrl} alt="Cover Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
@@ -478,7 +478,7 @@ export default function CreatePostModal({
 
                         {st.imageUrl && (
                           <div className="w-24 h-16 rounded-lg overflow-hidden border border-slate-200">
-                            <img src={st.imageUrl} alt="Step preview" className="w-full h-full object-cover" />
+                            <img loading="lazy" decoding="async" src={st.imageUrl} alt="Step preview" className="w-full h-full object-cover" />
                           </div>
                         )}
 

@@ -211,7 +211,7 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <div className="p-0.5 rounded-full bg-gradient-to-tr from-teal-500 to-cyan-500">
-                <img
+                <img loading="lazy" decoding="async"
                   src={qa.workerAvatarUrl}
                   alt={qa.workerFullName}
                   className="w-7 h-7 rounded-full object-cover border border-white"
@@ -266,6 +266,7 @@ export default function QAHub({
   qaItems, professionals = [], currentUserId, onAskQuestion, onAnswerQuestion, onUpdateQuestion, onDeleteQuestion,
   onUpvoteQA,
   initialView = 'all',
+  onViewChange,
 }) {
   const [questionText, setQuestionText] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('Daily Routine & Worklife');
@@ -273,7 +274,9 @@ export default function QAHub({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const [view, setView] = useState(initialView); // 'all' | 'inbox'
+  const [view, setLocalView] = useState(initialView); // 'all' | 'inbox'
+  // With onViewChange the parent owns the view (the address); otherwise it's local.
+  const setView = onViewChange || setLocalView;
   const [inbox, setInbox] = useState(null); // questions waiting for my answer; null = not loaded
   const [inboxError, setInboxError] = useState('');
 

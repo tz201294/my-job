@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { 
-   Heart, MessageCircle, Bookmark, Star, Wrench, ShieldCheck, 
-   ArrowRight, CheckCircle2, ChevronRight, Share2, Layers, AlertTriangle, Sparkles
- } from 'lucide-react';
+import {
+  Heart, MessageCircle, Bookmark, Star, Wrench, ShieldCheck, ChevronRight, Share2, Layers,
+} from 'lucide-react';
 
 import OwnerActions from './OwnerActions';
 import CommentsSection from './CommentsSection';
@@ -43,7 +42,7 @@ export default function PostCard({
           onClick={() => onOpenUserProfile && onOpenUserProfile(post.authorUsername)}
         >
           <div className="p-0.5 rounded-full bg-gradient-to-tr from-teal-500 to-cyan-400 group-hover:scale-105 transition-all shadow-xs">
-            <img
+            <img loading="lazy" decoding="async"
               src={post.authorAvatarUrl}
               alt={post.authorFullName}
               className="w-11 h-11 rounded-full object-cover border-2 border-white"
@@ -92,7 +91,7 @@ export default function PostCard({
         className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-slate-900 overflow-hidden cursor-pointer group"
         onClick={() => isCaseStudy && onOpenCaseStudy(post)}
       >
-        <img
+        <img loading="lazy" decoding="async"
           src={post.mediaUrl}
           alt={post.title}
           className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 opacity-95 group-hover:opacity-100"

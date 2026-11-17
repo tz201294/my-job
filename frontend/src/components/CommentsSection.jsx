@@ -92,7 +92,7 @@ function CommentItem({ comment, canEdit, canDelete, canReact, onSave, onDelete, 
 
   return (
     <li className="flex gap-2.5">
-      <img src={comment.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-teal-100" />
+      <img loading="lazy" decoding="async" src={comment.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-teal-100" />
       <div className="flex-1 min-w-0">
         <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-2.5">
           <div className="flex items-start justify-between gap-2">

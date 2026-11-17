@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { X, Star, ShieldCheck, Check } from 'lucide-react';
+import {
+  X, Star, Check,
+} from 'lucide-react';
 
 export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
   const [clarity, setClarity] = useState(5);

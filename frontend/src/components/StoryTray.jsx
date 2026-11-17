@@ -1,5 +1,7 @@
 import React from 'react';
-import { Plus, Sparkles, Clock } from 'lucide-react';
+import {
+  Plus, Sparkles,
+} from 'lucide-react';
 
 export default function StoryTray({ stories, myAvatarUrl, onSelectStory, onOpenAddStory }) {
   return (
@@ -27,7 +29,7 @@ export default function StoryTray({ stories, myAvatarUrl, onSelectStory, onOpenA
         >
           <div className="relative">
             <div className="p-0.5 rounded-full bg-gradient-to-tr from-slate-200 to-slate-300 group-hover:from-teal-400 group-hover:to-cyan-400 transition-all">
-              <img
+              <img loading="lazy" decoding="async"
                 src={myAvatarUrl}
                 alt="Add to your story"
                 className="w-14 h-14 rounded-full object-cover border-2 border-white group-hover:scale-105 transition-transform"
@@ -51,7 +53,7 @@ export default function StoryTray({ stories, myAvatarUrl, onSelectStory, onOpenA
           >
             <div className="relative p-[3px] rounded-full story-ring-gradient group-hover:scale-105 transition-transform duration-200">
               <div className="p-0.5 bg-white rounded-full">
-                <img
+                <img loading="lazy" decoding="async"
                   src={story.avatarUrl}
                   alt={story.fullName}
                   className="w-14 h-14 rounded-full object-cover"

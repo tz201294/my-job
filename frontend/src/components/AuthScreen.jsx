@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Briefcase, Loader2, AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import { api, IS_DEMO, tokenStore } from '../api/client';
-import { DEMO_PASSWORD } from '../api/demoBackend';
+import { DEMO_PASSWORD } from '../api/demoConstants';
 
 // Used only if /auth/signup-options cannot be loaded; the server re-validates everything.
 const FALLBACK_OPTIONS = {

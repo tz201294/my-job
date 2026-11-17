@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { menuKeyForRoute, parseRoute, pathForMenuKey, paths, titleForRoute } from './routes';
 import AuthScreen from './components/AuthScreen';
 import { api, IS_DEMO, onUnauthorized, tokenStore } from './api/client';
-import { resetDemoData } from './api/demoBackend';
 import {
   DEFAULT_AVATAR, toCategories, toChallenge, toChallengePayload, toPost, toPostPayload, toPostUpdatePayload,
   toProfileUser,
@@ -25,12 +26,12 @@ import BottomNav from './components/BottomNav';
 import ActivityPage from './components/ActivityPage';
 import SettingsPage from './components/SettingsPage';
 import NotificationsPage from './components/NotificationsPage';
-import PostModal from './components/PostModal';
+import NotFoundPage from './components/NotFoundPage';
 
-import { INITIAL_REELS } from './data/mockData';
+import { INITIAL_REELS } from './data/sampleReels';
 
 import {
-  Loader2, Info
+  Loader2, Info, ArrowLeft
 } from 'lucide-react';
 
 const EMPTY_CATEGORIES = [{ id: 'cat_all', name: 'All Professions', slug: 'all', icon: 'briefcase' }];
@@ -42,19 +43,19 @@ export default function App() {
   // Auth: undefined = checking stored token, null = signed out, object = signed-in account
   const [currentUser, setCurrentUser] = useState(tokenStore.get() ? undefined : null);
 
-  // Which page is shown: 'feed' | 'reels' | 'challenges' | 'qa' | 'activity' | 'notifications' | 'settings'
-  const [activeTab, setActiveTab] = useState('feed');
+  // The address decides which page is shown (see routes.js).
+  const location = useLocation();
+  const go = useNavigate();
+  const route = useMemo(() => parseRoute(location.pathname), [location.pathname]);
+  const activeTab = route.page;
   const [menuOpen, setMenuOpen] = useState(false);
-  // Opening Live Work or Q&A from My activity jumps to a specific challenge / the answer inbox.
-  const [focusChallengeId, setFocusChallengeId] = useState(null);
-  const [qaView, setQaView] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Server data
   const [posts, setPosts] = useState([]);
-  // 'all' = everything, 'following' = people I follow, 'saved' = my bookmarks
-  const [feedView, setFeedView] = useState('all');
+  // 'all' = everything, 'following' = people I follow, 'saved' = my bookmarks (from the address)
+  const feedView = route.page === 'feed' ? route.feedView : 'all';
   const [feedPosts, setFeedPosts] = useState([]);
   const [feedState, setFeedState] = useState('ready'); // 'loading' | 'ready' | 'error'
   const [stories, setStories] = useState([]);
@@ -69,9 +70,13 @@ export default function App() {
   const [loadError, setLoadError] = useState('');
   const [toast, setToast] = useState('');
 
-  // Profile view (null = main feed)
+  // Profile page (/u/<username>), loaded from the address
   const [viewingUser, setViewingUser] = useState(null);
   const [viewingPosts, setViewingPosts] = useState([]);
+  const [profileState, setProfileState] = useState('idle'); // 'loading' | 'ready' | 'notfound' | 'error'
+  // Single post page (/p/<id>)
+  const [pagePost, setPagePost] = useState(null);
+  const [postState, setPostState] = useState('idle'); // 'loading' | 'ready' | 'notfound' | 'error'
 
   // Modals
   const [activeStoryIdx, setActiveStoryIdx] = useState(null);
@@ -80,7 +85,6 @@ export default function App() {
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null); // a post open in the editor
-  const [openedPost, setOpenedPost] = useState(null); // a single post opened from a notification
   const [unreadCount, setUnreadCount] = useState(0);
 
   const showToast = useCallback((msg) => {
@@ -93,14 +97,13 @@ export default function App() {
     setCurrentUser(null);
     setViewingUser(null);
     setPosts([]); setStories([]); setChallenges([]); setQaItems([]); setProfessionals([]);
-    setFeedPosts([]); setFeedView('all');
+    setFeedPosts([]);
     setLoadState('idle');
-    // The next person to sign in starts on Home, not on the page the last one left open.
-    setActiveTab('feed'); setMenuOpen(false); setFocusChallengeId(null); setQaView('all');
+    setMenuOpen(false); setPagePost(null);
     setSearchTerm(''); setSelectedCategory('all');
     setSelectedCaseStudy(null); setReviewModalPost(null); setEditingPost(null); setIsCreateOpen(false);
     setActiveStoryIdx(null); setToast('');
-    setOpenedPost(null); setUnreadCount(0);
+    setUnreadCount(0);
   }, []);
 
   // Any 401 from a token-bearing call means the session expired.
@@ -147,7 +150,12 @@ export default function App() {
     if (userId) loadAll();
   }, [userId, loadAll]);
 
-  const handleLogout = clearSession;
+  // Signing out (as opposed to a session expiring) returns to the home address, so whoever signs in next
+  // starts on Home. An expired session keeps the address and comes back to it after signing in again.
+  const handleLogout = () => {
+    clearSession();
+    go(paths.home, { replace: true });
+  };
 
   // The "following" and "saved" lists are fetched when selected (and again after sign-in changes).
   const loadFeedView = useCallback(async (view) => {
@@ -174,7 +182,7 @@ export default function App() {
     setPosts((ps) => mapById(ps, postId, fn));
     setFeedPosts((ps) => mapById(ps, postId, fn));
     setViewingPosts((ps) => mapById(ps, postId, fn));
-    setOpenedPost((p) => (p && p.id === postId ? fn(p) : p));
+    setPagePost((p) => (p && p.id === postId ? fn(p) : p));
   };
 
   const handleLikePost = async (postId) => {
@@ -253,7 +261,7 @@ export default function App() {
     setFeedPosts(replace);
     setViewingPosts(replace);
     setSelectedCaseStudy((cs) => (cs && cs.id === updated.id ? updated : cs));
-    setOpenedPost((p) => (p && p.id === updated.id ? updated : p));
+    setPagePost((p) => (p && p.id === updated.id ? updated : p));
   };
 
   // The comments panel reports the real total after loading or changing comments.
@@ -262,7 +270,7 @@ export default function App() {
     setPosts(set);
     setFeedPosts(set);
     setViewingPosts(set);
-    setOpenedPost((p) => (p && p.id === postId && p.commentsCount !== total ? { ...p, commentsCount: total } : p));
+    setPagePost((p) => (p && p.id === postId && p.commentsCount !== total ? { ...p, commentsCount: total } : p));
   }, []);
 
   const handleUpdatePost = async (postId, draft) => {
@@ -281,7 +289,7 @@ export default function App() {
     setFeedPosts(drop);
     setViewingPosts(drop);
     setSelectedCaseStudy((cs) => (cs && cs.id === postId ? null : cs));
-    setOpenedPost((p) => (p && p.id === postId ? null : p));
+    if (route.page === 'post' && route.postId === postId) go(paths.home, { replace: true });
     setViewingUser((u) => (u && u.id === currentUser.id ? { ...u, postsCount: Math.max(0, (u.postsCount || 1) - 1) } : u));
     showToast('Post deleted');
   };
@@ -374,7 +382,7 @@ export default function App() {
     if (viewingUser && viewingUser.username === created.authorUsername) {
       setViewingPosts((ps) => [created, ...ps]);
     }
-    setActiveTab('feed');
+    if (route.page !== 'feed') go(paths.home);
   };
 
   const handleAddStory = async (draft) => {
@@ -385,7 +393,7 @@ export default function App() {
   const handleAddChallenge = async (draft) => {
     const created = toChallenge(await api.createChallenge(toChallengePayload(draft)));
     setChallenges((cs) => [created, ...cs]);
-    setActiveTab('challenges');
+    go(paths.challenge(created.id));
   };
 
   const handleAddSuggestion = async (challengeId, draft) => {
@@ -457,61 +465,76 @@ export default function App() {
     }
   };
 
-  const openProfile = async (username) => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    try {
-      const [u, theirPosts] = await Promise.all([api.getUserProfile(username), api.getPostsByAuthor(username)]);
-      setViewingUser(toProfileUser(u));
-      setViewingPosts(theirPosts.map(toPost));
-    } catch (err) {
-      showToast(err.status === 404 ? `No profile found for @${username}` : `Couldn't open profile: ${err.message}`);
-    }
-  };
+  // Load the profile named in the address (/u/<username>).
+  const profileUsername = route.page === 'profile' ? route.username : null;
+  useEffect(() => {
+    if (!profileUsername || !userId) return undefined;
+    let cancelled = false;
+    setProfileState('loading');
+    Promise.all([api.getUserProfile(profileUsername), api.getPostsByAuthor(profileUsername)])
+      .then(([u, theirPosts]) => {
+        if (cancelled) return;
+        setViewingUser(toProfileUser(u));
+        setViewingPosts(theirPosts.map(toPost));
+        setProfileState('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setViewingUser(null);
+        setProfileState(err.status === 404 ? 'notfound' : 'error');
+      });
+    return () => { cancelled = true; };
+  }, [profileUsername, userId]);
 
-  const handleOpenUserProfile = (username) => openProfile(username);
-  const handleOpenMyProfile = () => openProfile(currentUser.username);
+  // Load the post named in the address (/p/<id>).
+  const pagePostId = route.page === 'post' ? route.postId : null;
+  useEffect(() => {
+    if (!pagePostId || !userId) return undefined;
+    let cancelled = false;
+    setPostState('loading');
+    api.getPostById(pagePostId)
+      .then((p) => {
+        if (cancelled) return;
+        setPagePost(toPost(p));
+        setPostState('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setPagePost(null);
+        setPostState(err.status === 404 ? 'notfound' : 'error');
+      });
+    return () => { cancelled = true; };
+  }, [pagePostId, userId]);
 
-  // One place for all navigation: the sidebar, the phone menu, the bottom bar and the header.
-  const navigate = (key) => {
-    window.scrollTo({ top: 0 });
-    if (key === 'profile') {
-      handleOpenMyProfile();
+  // Each page starts at the top, and the browser tab says where you are.
+  useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
+  useEffect(() => {
+    if (currentUser === null) {
+      document.title = 'Log in · MyJob';
       return;
     }
-    setViewingUser(null);
-    if (key === 'saved') {
-      setActiveTab('feed');
-      setFeedView('saved');
-      return;
-    }
-    if (key === 'feed' && activeTab === 'feed' && feedView === 'saved') setFeedView('all');
-    if (key === 'challenges') setFocusChallengeId(null);
-    if (key === 'qa') setQaView('all');
-    setActiveTab(key);
-  };
+    const extra = route.page === 'profile' && viewingUser?.username === route.username
+      ? `${viewingUser.fullName} (@${viewingUser.username})`
+      : route.page === 'post' && pagePost?.id === route.postId ? pagePost.title : null;
+    document.title = titleForRoute(route, extra);
+  }, [route, viewingUser, pagePost, currentUser]);
 
-  const goToChallenge = (challengeId) => {
-    navigate('challenges');
-    setFocusChallengeId(challengeId);
-  };
+  const handleOpenUserProfile = (username) => go(paths.profile(username));
 
-  const goToQA = (view) => {
-    navigate('qa');
-    setQaView(view);
-  };
+  // One place for menu navigation: the sidebar, the phone menu, the bottom bar and the header.
+  const navigate = (key) => go(pathForMenuKey(key, currentUser.username));
+  const goToChallenge = (challengeId) => go(paths.challenge(challengeId));
+  const goToQA = (view) => go(view === 'inbox' ? paths.qaInbox : paths.qa);
 
   const openPostFromActivity = (post) => {
     if (post.taskDetails) setSelectedCaseStudy(post);
-    else handleOpenMyProfile();
+    else go(paths.post(post.id));
   };
 
   // Typing a search shows the feed, where search applies.
   const handleSearchChange = (value) => {
     setSearchTerm(value);
-    if (value && (activeTab !== 'feed' || viewingUser)) {
-      setViewingUser(null);
-      setActiveTab('feed');
-    }
+    if (value && route.page !== 'feed') go(paths.home);
   };
 
   // ---------- Settings ----------
@@ -556,6 +579,7 @@ export default function App() {
   const handleDeleteAccount = async (data) => {
     await api.deleteMe(data);
     clearSession();
+    go(paths.home, { replace: true });
     showToast('Your account was deleted.');
   };
 
@@ -582,11 +606,12 @@ export default function App() {
     };
   }, [currentUser?.id, refreshUnread]);
 
-  const openPostById = async (postId, preferCaseStudy) => {
+  // A review opens the case study it is about (over the current page); anything else opens the post's page.
+  const openReviewedPost = async (postId) => {
     try {
       const p = toPost(await api.getPostById(postId));
-      if (preferCaseStudy && p.taskDetails) setSelectedCaseStudy(p);
-      else setOpenedPost(p);
+      if (p.taskDetails) setSelectedCaseStudy(p);
+      else go(paths.post(postId));
     } catch (err) {
       showToast(err.status === 404 ? 'That post is no longer available.' : `Couldn't open the post: ${err.message}`);
     }
@@ -596,7 +621,7 @@ export default function App() {
   const handleOpenNotification = (n) => {
     switch (n.type) {
       case 'follow':
-        openProfile(n.actorUsername);
+        handleOpenUserProfile(n.actorUsername);
         break;
       case 'question':
         goToQA('inbox');
@@ -609,15 +634,20 @@ export default function App() {
         if (challenges.some((c) => c.id === n.challengeId)) goToChallenge(n.challengeId);
         else showToast('That challenge is no longer available.');
         break;
-      default: // comment, reaction, review
-        if (n.postId) openPostById(n.postId, n.type === 'review');
+      case 'review':
+        if (n.postId) openReviewedPost(n.postId);
+        break;
+      default: // comment, reaction
+        if (n.postId) go(paths.post(n.postId));
     }
   };
 
-  const handleResetDemo = () => {
+  const handleResetDemo = async () => {
     if (!window.confirm('Reset the demo? Everything you did in this browser is removed and you are signed out.')) return;
+    const { resetDemoData } = await import('./api/demoBackend');
     resetDemoData();
     clearSession();
+    go(paths.home, { replace: true });
   };
 
   const handleSelectHighlight = (highlight) => {
@@ -672,9 +702,7 @@ export default function App() {
   const me = toProfileUser(currentUser);
 
   // What the menus highlight as the current page.
-  const activeKey = viewingUser
-    ? (viewingUser.id === currentUser.id ? 'profile' : null)
-    : activeTab === 'feed' && feedView === 'saved' ? 'saved' : activeTab;
+  const activeKey = menuKeyForRoute(route, currentUser.username);
 
   const menuProps = { me, activeKey, onNavigate: navigate, onLogout: handleLogout, unreadCount };
 
@@ -685,7 +713,7 @@ export default function App() {
         onOpenCreate={() => setIsCreateOpen(true)}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
-        onGoHome={() => navigate('feed')}
+        onGoHome={() => go(paths.home)}
         onOpenMenu={() => setMenuOpen(true)}
         onOpenNotifications={() => navigate('notifications')}
         onOpenMyProfile={() => navigate('profile')}
@@ -722,23 +750,69 @@ export default function App() {
               Try again
             </button>
           </div>
-        ) : viewingUser ? (
-          /* VIEWING PROFILE VIEW */
+        ) : route.page === 'notFound' ? (
+          <NotFoundPage />
+        ) : route.page === 'profile' && (profileState === 'notfound' || profileState === 'error') ? (
+          <NotFoundPage
+            title={profileState === 'notfound' ? 'Profile not found' : "Couldn't load this profile"}
+            message={profileState === 'notfound'
+              ? `There is no one called @${route.username} on MyJob.`
+              : 'Please check your connection and try again.'}
+          />
+        ) : route.page === 'profile' && viewingUser?.username !== route.username ? (
+          <div className="flex justify-center py-20" role="status" aria-label="Loading">
+            <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
+          </div>
+        ) : route.page === 'profile' ? (
           <UserProfile
+            key={viewingUser.username}
             user={viewingUser}
             posts={viewingPosts}
             qaItems={qaItems}
-            challenges={challenges}
             isOwnProfile={viewingUser.id === currentUser.id}
             onToggleFollow={handleToggleFollow}
-            onBack={() => setViewingUser(null)}
+            onBack={() => (location.key !== 'default' ? go(-1) : go(paths.home))}
             onOpenCaseStudy={setSelectedCaseStudy}
-            onOpenReviewModal={setReviewModalPost}
             onAskQuestion={handleAskQuestion}
             onSelectHighlight={handleSelectHighlight}
             onEditPost={setEditingPost}
             onDeletePost={handleDeletePost}
           />
+        ) : route.page === 'post' ? (
+          postState === 'notfound' || postState === 'error' ? (
+            <NotFoundPage
+              title={postState === 'notfound' ? 'Post not found' : "Couldn't load this post"}
+              message={postState === 'notfound'
+                ? 'It may have been deleted by its author.'
+                : 'Please check your connection and try again.'}
+            />
+          ) : pagePost?.id !== route.postId ? (
+            <div className="flex justify-center py-20" role="status" aria-label="Loading">
+              <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <button type="button" onClick={() => (location.key !== 'default' ? go(-1) : go(paths.home))}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-teal-700">
+                <ArrowLeft className="w-4 h-4" /> Back
+              </button>
+              <PostCard
+                key={pagePost.id}
+                post={pagePost}
+                initialShowComments
+                onLike={handleLikePost}
+                onBookmark={handleBookmarkPost}
+                onOpenCaseStudy={setSelectedCaseStudy}
+                onOpenReviewModal={setReviewModalPost}
+                onOpenUserProfile={handleOpenUserProfile}
+                isOwn={pagePost.authorId === me.id}
+                currentUserId={me.id}
+                onCommentsCountChange={handleCommentsCountChange}
+                onEdit={setEditingPost}
+                onDelete={handleDeletePost}
+              />
+            </div>
+          )
         ) : activeTab === 'activity' ? (
           <ActivityPage
             me={me}
@@ -793,7 +867,7 @@ export default function App() {
                       key={view}
                       role="tab"
                       aria-selected={feedView === view}
-                      onClick={() => setFeedView(view)}
+                      onClick={() => go(view === 'all' ? paths.home : view === 'following' ? paths.following : paths.saved)}
                       className={`px-4 py-1.5 rounded-full border transition-colors ${
                         feedView === view
                           ? 'bg-slate-900 text-white border-slate-900'
@@ -868,8 +942,8 @@ export default function App() {
             {/* CHALLENGES TAB CONTENT */}
             {activeTab === 'challenges' && (
               <ChallengesHub
-                key={focusChallengeId || 'challenges'}
-                initialChallengeId={focusChallengeId}
+                selectedChallengeId={route.challengeId}
+                onSelectChallenge={(id) => go(paths.challenge(id), { replace: true })}
                 challenges={challenges}
                 onAddSuggestion={handleAddSuggestion}
                 onUpvoteSuggestion={handleUpvoteSuggestion}
@@ -887,8 +961,9 @@ export default function App() {
             {/* QA AMAs TAB CONTENT */}
             {activeTab === 'qa' && (
               <QAHub
-                key={qaView}
-                initialView={qaView}
+                key={route.qaView}
+                initialView={route.qaView}
+                onViewChange={(v) => go(v === 'inbox' ? paths.qaInbox : paths.qa, { replace: true })}
                 qaItems={qaItems}
                 professionals={professionals}
                 currentUserId={me.id}
@@ -914,24 +989,6 @@ export default function App() {
           currentUserId={me.id}
           onDeleteStory={handleDeleteStory}
           onClose={() => setActiveStoryIdx(null)}
-        />
-      )}
-
-      {/* A single post opened from a notification, with its comments */}
-      {openedPost && (
-        <PostModal
-          post={openedPost}
-          onClose={() => setOpenedPost(null)}
-          onLike={handleLikePost}
-          onBookmark={handleBookmarkPost}
-          onOpenCaseStudy={(p) => { setOpenedPost(null); setSelectedCaseStudy(p); }}
-          onOpenReviewModal={(p) => { setOpenedPost(null); setReviewModalPost(p); }}
-          onOpenUserProfile={(u) => { setOpenedPost(null); handleOpenUserProfile(u); }}
-          isOwn={openedPost.authorId === me.id}
-          onEdit={(p) => { setOpenedPost(null); setEditingPost(p); }}
-          onDelete={handleDeletePost}
-          currentUserId={me.id}
-          onCommentsCountChange={handleCommentsCountChange}
         />
       )}
 

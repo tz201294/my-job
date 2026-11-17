@@ -118,7 +118,7 @@ export default function Header({
             onClick={onOpenMyProfile}
             title={`View your profile (@${currentUser.username})`}
           >
-            <img
+            <img loading="lazy" decoding="async"
               src={currentUser.avatar_url || DEFAULT_AVATAR}
               alt={`${currentUser.full_name} — your profile`}
               className="w-9 h-9 rounded-full object-cover ring-2 ring-teal-500 hover:ring-cyan-400 shadow-sm hover:scale-105 transition-all"

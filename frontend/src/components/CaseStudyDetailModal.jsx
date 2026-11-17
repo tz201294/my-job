@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  X, CheckCircle, ChevronLeft, ChevronRight, Wrench, ShieldAlert,
-  Lightbulb, Star, ShieldCheck, MessageSquare, ThumbsUp, Sparkles
+  X, ChevronLeft, ChevronRight, Wrench, ShieldAlert, Lightbulb, Star, ShieldCheck,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { timeAgo } from '../api/mappers';
@@ -13,14 +12,15 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
   const [reviewsError, setReviewsError] = useState('');
 
   // Reload when a review is submitted (reviewsVersion bumps) so the list stays current.
+  const postId = post?.id;
   useEffect(() => {
-    if (!post) return;
+    if (!postId) return undefined;
     let cancelled = false;
-    api.getReviews(post.id)
+    api.getReviews(postId)
       .then((r) => { if (!cancelled) { setReviews(r); setReviewsError(''); } })
       .catch((err) => { if (!cancelled) setReviewsError(err.message); });
     return () => { cancelled = true; };
-  }, [post?.id, reviewsVersion]);
+  }, [postId, reviewsVersion]);
 
   if (!post || !post.taskDetails) return null;
   const task = post.taskDetails;
@@ -52,7 +52,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
         {/* Header bar */}
         <div className="p-4 sm:px-6 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <img
+            <img loading="lazy" decoding="async"
               src={post.authorAvatarUrl}
               alt={post.authorFullName}
               className="w-10 h-10 rounded-full object-cover border border-white/20"
@@ -199,7 +199,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
                 {/* Step Image */}
                 {currentStep.imageUrl && (
                   <div className="rounded-2xl overflow-hidden aspect-video max-h-72 w-full bg-slate-900">
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={currentStep.imageUrl}
                       alt={currentStep.title}
                       className="w-full h-full object-cover"

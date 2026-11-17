@@ -1,4 +1,9 @@
-import { demoRequest, demoSignOut } from './demoBackend';
+// The demo backend (and its sample data) is loaded only in demo mode, so the real app doesn't download it.
+let demoModule = null;
+const demo = () => {
+  demoModule = demoModule || import('./demoBackend');
+  return demoModule;
+};
 
 // Demo mode runs the whole app in the browser with sample data and no backend. It is on for static
 // hosting (GitHub Pages) or when built with VITE_DEMO_MODE=true. It is never used as a fallback for a
@@ -22,7 +27,7 @@ export const tokenStore = {
   set: (t) => localStorage.setItem(TOKEN_KEY, t),
   clear: () => {
     localStorage.removeItem(TOKEN_KEY);
-    if (IS_DEMO) demoSignOut();
+    if (IS_DEMO) demo().then((m) => m.demoSignOut());
   },
 };
 
@@ -49,7 +54,7 @@ let unauthorizedHandler = null;
 export const onUnauthorized = (fn) => { unauthorizedHandler = fn; };
 
 async function request(endpoint, options = {}) {
-  if (IS_DEMO) return demoRequest(endpoint, options);
+  if (IS_DEMO) return (await demo()).demoRequest(endpoint, options);
 
   let res;
   try {
