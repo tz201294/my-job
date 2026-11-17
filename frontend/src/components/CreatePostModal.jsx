@@ -3,6 +3,8 @@ import {
   X, Plus, Trash2,
 } from 'lucide-react';
 import { PLACEHOLDER_IMAGE } from '../api/mappers';
+import TagInput from './TagInput';
+import { MAX_TAGS, normalizeTag } from '../api/tags';
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'];
 
@@ -32,7 +34,8 @@ export default function CreatePostModal({
   const [mediaUrl, setMediaUrl] = useState(
     editPost?.mediaUrl && editPost.mediaUrl !== PLACEHOLDER_IMAGE ? editPost.mediaUrl : ''
   );
-  const [tags] = useState((editPost?.tags || []).join(', '));
+  const [tags, setTags] = useState(editPost?.tags || []);
+  const [pendingTag, setPendingTag] = useState('');
 
   // Case Study Specific Fields
   const [category, setCategory] = useState(
@@ -88,6 +91,20 @@ export default function CreatePostModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    // A tag typed but not confirmed with Enter still counts.
+    let allTags = tags;
+    if (pendingTag.trim()) {
+      const { tag, error: tagError } = normalizeTag(pendingTag);
+      if (tagError) {
+        setError(tagError);
+        return;
+      }
+      if (tag && !tags.includes(tag)) allTags = [...tags, tag];
+    }
+    if (allTags.length > MAX_TAGS) {
+      setError(`Use at most ${MAX_TAGS} tags.`);
+      return;
+    }
     setBusy(true);
     try {
       if (contentType === 'story') {
@@ -100,7 +117,7 @@ export default function CreatePostModal({
           title,
           caption,
           mediaUrl: mediaUrl.trim(),
-          tags: splitList(tags),
+          tags: allTags,
           taskDetails: contentType === 'pro_case_study' ? {
             problemStatement,
             category,
@@ -305,6 +322,14 @@ export default function CreatePostModal({
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
                   required
                 />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label htmlFor="post-tags" className="block text-xs font-bold text-slate-800 mb-1">
+                  Tags (optional)
+                </label>
+                <TagInput id="post-tags" tags={tags} onChange={setTags} pending={pendingTag} onPendingChange={setPendingTag} />
               </div>
 
               {/* Cover media (URL only until file uploads exist) */}

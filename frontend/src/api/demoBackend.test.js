@@ -333,3 +333,16 @@ describe('demo backend', () => {
     await rejects(req('/auth/login', 'POST', { username_or_email: 'alex_driver', password: 'longenough1' }), 401);
   });
 });
+
+describe('demo backend: tags', () => {
+  it('normalizes and validates tags like the server', async () => {
+    await req('/auth/login', 'POST', { username_or_email: 'sarah_plumber', password: 'demo1234' });
+    const p = toPost(await req('/posts', 'POST', {
+      title: 'T', caption: 'C', post_type: 'general_post', media: [], tags: [' #Plumbing ', 'plumbing', 'valve-repair', 'צנרת'],
+    }));
+    assert.deepEqual(p.tags, ['plumbing', 'valve-repair', 'צנרת']);
+    await rejects(req('/posts', 'POST', { title: 'T', caption: 'C', tags: ['two words'] }), 422);
+    await rejects(req(`/posts/${p.id}`, 'PATCH', { tags: Array.from({ length: 11 }, (_, i) => `t${i}`) }), 422);
+    assert.deepEqual((await req(`/posts/${p.id}`, 'PATCH', { tags: ['#New'] })).tags, ['new']);
+  });
+});

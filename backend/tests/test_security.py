@@ -159,3 +159,16 @@ async def test_step_images_stories_and_challenges_reject_other_schemes(client, a
     assert (
         await client.post(f"{API}/community/challenges", json={**challenge, "media_url": ""}, headers=auth_headers)
     ).status_code == 201
+
+
+# ---------- database URLs from hosting providers ----------
+
+@pytest.mark.parametrize("given, expected", [
+    ("postgres://u:p@host:5432/db", "postgresql+asyncpg://u:p@host:5432/db"),
+    ("postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+     "postgresql+asyncpg://u:p@ep-x.eu-central-1.aws.neon.tech/neondb?ssl=require"),
+    ("postgresql+asyncpg://u:p@h/db?ssl=require", "postgresql+asyncpg://u:p@h/db?ssl=require"),
+    ("sqlite+aiosqlite:///./myjob.db", "sqlite+aiosqlite:///./myjob.db"),
+])
+def test_database_url_is_normalized(given, expected):
+    assert make_settings(ENVIRONMENT="development", DATABASE_URL=given).DATABASE_URL == expected

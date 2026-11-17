@@ -27,6 +27,7 @@ import ActivityPage from './components/ActivityPage';
 import SettingsPage from './components/SettingsPage';
 import NotificationsPage from './components/NotificationsPage';
 import NotFoundPage from './components/NotFoundPage';
+import { Loading } from './components/SlowHint';
 
 import { INITIAL_REELS } from './data/sampleReels';
 
@@ -689,8 +690,8 @@ export default function App() {
 
   if (currentUser === undefined) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center" role="status" aria-label="Loading">
-        <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loading className="" />
       </div>
     );
   }
@@ -736,9 +737,7 @@ export default function App() {
       <Sidebar {...menuProps} />
       <main className="flex-1 min-w-0 max-w-2xl mx-auto lg:mx-0 py-4 sm:py-6 pb-24 lg:pb-8">
         {loadState === 'loading' || loadState === 'idle' ? (
-          <div className="flex justify-center py-20" role="status" aria-label="Loading">
-            <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
-          </div>
+          <Loading />
         ) : loadState === 'error' ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-slate-200" role="alert">
             <p className="text-sm font-bold text-slate-700">Couldn't load MyJob</p>
@@ -760,9 +759,7 @@ export default function App() {
               : 'Please check your connection and try again.'}
           />
         ) : route.page === 'profile' && viewingUser?.username !== route.username ? (
-          <div className="flex justify-center py-20" role="status" aria-label="Loading">
-            <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
-          </div>
+          <Loading />
         ) : route.page === 'profile' ? (
           <UserProfile
             key={viewingUser.username}
@@ -787,9 +784,7 @@ export default function App() {
                 : 'Please check your connection and try again.'}
             />
           ) : pagePost?.id !== route.postId ? (
-            <div className="flex justify-center py-20" role="status" aria-label="Loading">
-              <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
-            </div>
+            <Loading />
           ) : (
             <div className="space-y-3">
               <button type="button" onClick={() => (location.key !== 'default' ? go(-1) : go(paths.home))}

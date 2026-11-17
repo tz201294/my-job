@@ -43,9 +43,12 @@ jobs:
 
       # The site lives under /my-job/ on GitHub Pages. Pages has no rewrite rules, so 404.html (a copy of the app)
       # serves direct links such as /my-job/u/sarah_plumber; the app then reads the address and shows that page.
+      # With the repository variable VITE_API_URL set (Settings > Secrets and variables > Actions > Variables),
+      # the site uses that API; without it, the site is the in-browser demo.
       - name: Build Application
         env:
           VITE_BASE: /my-job/
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
           cd frontend
           npm run build

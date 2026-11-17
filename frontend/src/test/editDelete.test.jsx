@@ -79,3 +79,37 @@ describe('editing and deleting your own content', () => {
     expect(within(sidebar()).getByRole('button', { name: 'Live Work' }).getAttribute('aria-current')).toBe('page');
   });
 });
+
+describe('post tags', () => {
+  it('adds, removes and validates tags in the post form', async () => {
+    const { fireEvent, act } = await import('@testing-library/react');
+    renderApp('/');
+    await loginAndWaitForFeed('sarah_plumber');
+    await click(screen.getAllByRole('button', { name: 'Edit post' })[0]);
+    const box = screen.getByLabelText('Tags (optional)');
+    // Existing tags are shown as chips
+    const existing = screen.getAllByRole('button', { name: /^Remove tag / });
+    expect(existing.length).toBeGreaterThan(0);
+
+    // Typing + Enter adds a normalized tag
+    await type(box, '#Night-Shift');
+    await act(async () => { fireEvent.keyDown(box, { key: 'Enter' }); });
+    expect(screen.getByRole('button', { name: 'Remove tag night-shift' })).toBeTruthy();
+    // Invalid tag shows a message and isn't added
+    await type(box, 'two words');
+    await act(async () => { fireEvent.keyDown(box, { key: 'Enter' }); });
+    expect(screen.getByText(/can't be a tag/)).toBeTruthy();
+    await type(box, '');
+    // Remove one of the old tags
+    const removed = existing[0].getAttribute('aria-label').replace('Remove tag ', '');
+    await click(existing[0]);
+    expect(screen.queryByRole('button', { name: `Remove tag ${removed}` })).toBeNull();
+    // A tag typed but not confirmed still counts on save
+    await type(box, 'pending-one');
+    await click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Edit post' })).toBeNull());
+    expect(screen.getAllByText('#night-shift').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('#pending-one').length).toBeGreaterThan(0);
+    expect(screen.queryAllByText(`#${removed}`).length).toBe(0);
+  });
+});

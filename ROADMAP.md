@@ -16,31 +16,18 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Notifications (bell badge, list, open the related post/question/challenge/profile) and emoji reactions
   on comments (❤️ 👍 😂 😮 👏 💡).
 - Teal + cyan color theme.
+- Tags field in the post form (validated the same way on the server).
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.
 
 ## Next
 
-### 1. Deploy the real backend (waiting on a decision)
-Today only the demo is online; the real API and database run only locally, so nobody else can sign up and
-keep their data. This step puts the API and a Postgres database on a hosting service and points the
-frontend at it.
-
-**Decisions needed before starting:**
-- **Host:** Render (simplest, free tier sleeps when idle, so the first request is slow), Railway (simple,
-  always on, about $5/month) or Fly.io (more control, a bit more setup). All three can provide Postgres.
-- **Budget:** free with sleeping, or a few dollars a month for an always-on backend.
-
-**What the step involves:**
-- Create the account on the chosen host and sign in (only the owner can do this).
-- Add the host's config file to the repo and set the environment variables: `ENVIRONMENT=production`,
-  a random `SECRET_KEY` (32+ characters), `DATABASE_URL` from the host's Postgres, `SEED_DEMO_DATA=false`,
-  `BACKEND_CORS_ORIGINS` set to the frontend address.
-- Run `alembic upgrade head` on deploy (the Dockerfile already does this).
-- Build the frontend with `VITE_API_URL` pointing at the deployed API. Decide whether GitHub Pages keeps
-  showing the demo or switches to the real app.
-- Move the login rate limit to Redis if more than one API worker is used.
+### 1. Deploy the real backend — ready, waiting for the account sign-ups
+Decision made: start free (Render free web service + Neon free Postgres + GitHub Pages), move to paid later
+without code changes. Everything is in the repo (`render.yaml`, deploy workflow reads `VITE_API_URL`); follow
+[docs/DEPLOY.md](docs/DEPLOY.md). Rehearsed locally in production mode (sign-up, posts, comments, reactions,
+settings, deep links) against SQLite; the first real Postgres run happens on Neon.
 
 ### 2. Real file uploads
 Upload photos and videos instead of pasting links: storage (local disk first, then an S3-compatible bucket
@@ -54,7 +41,6 @@ The frontend itself is ready; these depend on the backend steps above or are pol
 - Photo/video upload UI (step 2).
 - "Forgot password" and email verification (need email sending on the server).
 - Error reporting service (e.g. Sentry) hooked into the crash screen, and basic analytics if wanted.
-- A tags field in the post form (tags are stored and shown, but can't be entered yet).
 - An accessibility pass with a screen reader, and loading skeletons.
 
 ## Ideas for later

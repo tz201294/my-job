@@ -63,6 +63,10 @@ CI runs lint, tests and the build on every push; the GitHub Pages deploy also ru
 single posts with their comments; anything else shows "Page not found". Links work when opened directly, and
 after logging in you land on the page the link pointed to.
 
+**Putting it online (free):** see [docs/DEPLOY.md](docs/DEPLOY.md) — Render (API, `render.yaml`) + Neon
+(Postgres) + GitHub Pages (website, using the `VITE_API_URL` repository variable). `DATABASE_URL` may be given in
+the form hosts hand out (`postgresql://...?sslmode=require`); the app converts it for asyncpg.
+
 **Deploying the frontend.** Build with `VITE_API_URL=https://your-api.example.com/api/v1` (or serve it behind a
 proxy that forwards `/api`), and set `VITE_BASE` if it isn't served from the site root (GitHub Pages uses
 `VITE_BASE=/my-job/`). The host must send unknown paths to `index.html` (single-page app fallback); on GitHub

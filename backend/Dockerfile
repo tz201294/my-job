@@ -21,7 +21,8 @@ USER appuser
 
 EXPOSE 8000
 
-# Apply DB migrations, then start the API. --proxy-headers trusts X-Forwarded-For only from
-# FORWARDED_ALLOW_IPS (default 127.0.0.1), so the login rate limit sees real client addresses
-# behind a local reverse proxy.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"]
+# Apply DB migrations, then start the API on $PORT (set by hosts such as Render; 8000 otherwise).
+# --proxy-headers trusts X-Forwarded-For only from FORWARDED_ALLOW_IPS (default 127.0.0.1), so the login rate
+# limit sees real client addresses behind a reverse proxy. On a host whose proxy is the only way in (Render),
+# set FORWARDED_ALLOW_IPS=*.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers"]

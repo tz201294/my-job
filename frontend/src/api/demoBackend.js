@@ -16,6 +16,7 @@ import {
 } from './mappers';
 
 import { DEMO_PASSWORD } from './demoConstants';
+import { MAX_TAGS, normalizeTag } from './tags';
 
 export { DEMO_PASSWORD };
 export const DEMO_TOKEN = 'demo_token';
@@ -303,11 +304,24 @@ function authorFields(u) {
   };
 }
 
+// Same tag rules as the server (see TagInput.normalizeTag).
+function cleanTags(tags) {
+  const out = [];
+  for (const raw of tags || []) {
+    const { tag, error } = normalizeTag(raw);
+    if (error) fail(422, `tags: ${error}`);
+    if (tag && !out.includes(tag)) out.push(tag);
+  }
+  if (out.length > MAX_TAGS) fail(422, `tags: Use at most ${MAX_TAGS} tags`);
+  return out;
+}
+
 function createPost(body) {
   const s = load();
   const u = me();
   const post = toPost({
     ...body,
+    tags: cleanTags(body.tags),
     ...authorFields(u),
     id: newId('post'),
     likes_count: 0,
@@ -551,7 +565,7 @@ function updatePost(postId, body) {
   }
   if (title !== undefined) p.title = title;
   if (caption !== undefined) p.caption = caption;
-  if ('tags' in body) p.tags = body.tags || [];
+  if ('tags' in body) p.tags = cleanTags(body.tags);
   if ('media' in body) p.mediaUrl = body.media?.[0]?.url?.trim() || PLACEHOLDER_IMAGE;
   if ('task_details' in body) {
     p.taskDetails = body.task_details ? toPost({ task_details: body.task_details }).taskDetails : undefined;

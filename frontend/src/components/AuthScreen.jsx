@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Briefcase, Loader2, AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import { api, IS_DEMO, tokenStore } from '../api/client';
+import { SlowHint } from './SlowHint';
 import { DEMO_PASSWORD } from '../api/demoConstants';
 
 // Used only if /auth/signup-options cannot be loaded; the server re-validates everything.
@@ -232,6 +233,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                   onChange={(e) => setLogin({ ...login, password: e.target.value })} />
               </Field>
               <SubmitButton busy={busy}>Log in</SubmitButton>
+              <SlowHint active={busy} className="text-center" />
               <p className="text-center text-xs text-slate-500">
                 New here?{' '}
                 <button type="button" onClick={() => switchMode('signup')} className="font-bold text-teal-600 hover:underline">
@@ -367,6 +369,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                 )}
                 <SubmitButton busy={busy}>{lastStep ? 'Create account' : 'Continue'}</SubmitButton>
               </div>
+              <SlowHint active={busy} className="text-center" />
             </form>
           )}
         </div>

@@ -1,5 +1,6 @@
 """Shared field types for request schemas."""
-from typing import Annotated, ClassVar, Optional
+import re
+from typing import Annotated, ClassVar, List, Optional
 from urllib.parse import urlsplit
 
 from pydantic import AfterValidator, BaseModel, BeforeValidator, Field, StringConstraints, model_validator
@@ -56,3 +57,31 @@ class PartialUpdate(BaseModel):
 
     def changes(self) -> dict:
         return {f: getattr(self, f) for f in self.model_fields_set}
+
+
+MAX_TAGS = 10
+MAX_TAG_LENGTH = 30
+# A letter or digit (any language), then letters, digits or dashes.
+_TAG_RE = re.compile(r"^[^\W_][\w-]*$")
+
+
+def _normalize_tags(tags: List[str]) -> List[str]:
+    """Trims, drops a leading '#', lower-cases and de-duplicates; blank entries are ignored."""
+    out: List[str] = []
+    for raw in tags:
+        tag = raw.strip().lstrip("#").strip().lower()
+        if not tag:
+            continue
+        if len(tag) > MAX_TAG_LENGTH or not _TAG_RE.match(tag) or "_" in tag:
+            raise ValueError(
+                f'"{raw}" is not a valid tag: use letters, numbers and dashes, up to {MAX_TAG_LENGTH} characters'
+            )
+        if tag not in out:
+            out.append(tag)
+    if len(out) > MAX_TAGS:
+        raise ValueError(f"Use at most {MAX_TAGS} tags")
+    return out
+
+
+# Post tags as users type them ("#Plumbing", " valve-repair ") stored in one consistent form.
+Tags = Annotated[List[str], AfterValidator(_normalize_tags)]

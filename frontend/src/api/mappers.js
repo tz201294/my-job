@@ -1,13 +1,22 @@
 // Translates between the API's snake_case payloads and the camelCase shapes the UI components use.
 
+// Neutral silhouette for people without a profile photo (never a real person's picture).
 export const DEFAULT_AVATAR =
-  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80';
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#ccfbf1"/>' +
+      '<circle cx="32" cy="25" r="12" fill="#5eead4"/><path d="M10 60c2-13 11-20 22-20s20 7 22 20" fill="#5eead4"/></svg>'
+  );
 
-// Neutral grey tile for posts that have no media.
+// Soft teal cover for posts that have no photo, so text-only posts still look intentional.
 export const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675"><rect width="100%" height="100%" fill="#1e293b"/></svg>'
+    '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0" stop-color="#0f766e"/><stop offset="1" stop-color="#0e7490"/></linearGradient></defs>' +
+      '<rect width="100%" height="100%" fill="url(#g)"/>' +
+      '<g fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="2">' +
+      '<circle cx="1050" cy="120" r="180"/><circle cx="1050" cy="120" r="260"/><circle cx="150" cy="600" r="200"/></g></svg>'
   );
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);

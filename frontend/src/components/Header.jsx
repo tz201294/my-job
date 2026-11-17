@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Briefcase, Search, PlusSquare, Bell, Menu, X } from 'lucide-react';
 
-const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80';
+import { DEFAULT_AVATAR } from '../api/mappers';
 
 export default function Header({
   currentUser,

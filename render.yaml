@@ -1,0 +1,27 @@
+# Render Blueprint for the MyJob API (free plan). See docs/DEPLOY.md for the step-by-step guide.
+# The database is a free Neon Postgres (Render's free Postgres is deleted after 30 days); paste its connection
+# string into DATABASE_URL when Render asks for it.
+services:
+  - type: web
+    name: myjob-api
+    runtime: docker
+    plan: free            # change to "starter" (paid, always on) when you're ready; nothing else changes
+    region: frankfurt     # closest Render region to Israel
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true      # redeploys on every push to the default branch
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true          # Render creates a long random value once and keeps it
+      - key: DATABASE_URL
+        sync: false                  # you paste Neon's connection string in the Render dashboard
+      - key: BACKEND_CORS_ORIGINS
+        value: '["https://tz201294.github.io"]'
+      - key: SEED_DEMO_DATA
+        value: "false"
+      - key: FORWARDED_ALLOW_IPS     # Render's proxy is the only way in; lets the login lockout see real IPs
+        value: "*"

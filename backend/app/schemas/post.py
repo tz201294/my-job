@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-from app.schemas.common import HttpUrlStr, NonEmptyStr, PartialUpdate
+from app.schemas.common import HttpUrlStr, NonEmptyStr, PartialUpdate, Tags
 from app.schemas.task import TaskDetailsBase, TaskDetailsCreate, TaskDetailsResponse
 
 
@@ -33,6 +33,7 @@ class PostBase(BaseModel):
 
 class PostCreate(PostBase):
     media: List[MediaItemCreate] = []
+    tags: Tags = []
     task_details: Optional[TaskDetailsCreate] = None
 
 
@@ -43,7 +44,7 @@ class PostUpdate(PartialUpdate):
     title: Optional[NonEmptyStr(255)] = None
     caption: Optional[NonEmptyStr(20000)] = None
     media: Optional[List[MediaItemCreate]] = None
-    tags: Optional[List[str]] = None
+    tags: Optional[Tags] = None
     task_details: Optional[TaskDetailsCreate] = None
 
 

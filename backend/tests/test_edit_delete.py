@@ -228,3 +228,22 @@ async def test_challenge_and_suggestion_limits_on_create(client, auth_headers):
     chal = (await client.post(url, json=CHALLENGE, headers=auth_headers)).json()
     r = await client.post(f"{url}/{chal['id']}/suggest", json={"suggestion_text": " "}, headers=auth_headers)
     assert r.status_code == 422
+
+
+# ---------- tags ----------
+
+async def test_tags_are_normalized_on_create_and_edit(client, auth_headers):
+    body = {"title": "T", "caption": "C", "tags": [" #Plumbing ", "plumbing", "valve-repair", "", "צנרת", "#2024"]}
+    r = await client.post(f"{API}/posts", json=body, headers=auth_headers)
+    assert r.status_code == 201, r.text
+    post = r.json()
+    assert post["tags"] == ["plumbing", "valve-repair", "צנרת", "2024"]
+    r = await client.patch(f"{API}/posts/{post['id']}", json={"tags": ["#NewTag"]}, headers=auth_headers)
+    assert r.json()["tags"] == ["newtag"]
+
+
+async def test_invalid_tags_are_rejected(client, auth_headers):
+    url = f"{API}/posts"
+    for tags in (["two words"], ["semi;colon"], ["x" * 31], ["-dash-first"], ["snake_case"], [f"t{i}" for i in range(11)]):
+        r = await client.post(url, json={"title": "T", "caption": "C", "tags": tags}, headers=auth_headers)
+        assert r.status_code == 422, tags
