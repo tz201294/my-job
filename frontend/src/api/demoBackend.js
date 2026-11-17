@@ -3,6 +3,7 @@
 // the real backend for every endpoint the app calls, so the rest of the app behaves identically.
 import {
   INITIAL_CATEGORIES,
+  INITIAL_COMMENTS,
   INITIAL_CHALLENGES,
   INITIAL_POSTS,
   INITIAL_QA_ITEMS,
@@ -10,14 +11,14 @@ import {
   INITIAL_USERS,
 } from '../data/mockData';
 import {
-  DEFAULT_AVATAR, PLACEHOLDER_IMAGE, toChallenge, toPost, toQuestion, toStory, toSuggestion,
+  DEFAULT_AVATAR, PLACEHOLDER_IMAGE, toChallenge, toComment, toPost, toQuestion, toStory, toSuggestion,
 } from './mappers';
 
 export const DEMO_PASSWORD = 'demo1234';
 export const DEMO_TOKEN = 'demo_token';
 
 // Bump the version when the sample data changes so returning visitors get the new data.
-const STORE_KEY = 'myjob_demo_store_v3';
+const STORE_KEY = 'myjob_demo_store_v4';
 // undefined (a 204 No Content reply) becomes null, like an empty response body.
 const clone = (x) => (x === undefined ? null : JSON.parse(JSON.stringify(x)));
 
@@ -49,6 +50,7 @@ function freshStore() {
     challenges: clone(INITIAL_CHALLENGES),
     questions: clone(INITIAL_QA_ITEMS),
     reviews: [], // API shape, as CaseStudyDetailModal renders them directly
+    comments: clone(INITIAL_COMMENTS), // UI shape, oldest first
   };
 }
 
@@ -481,6 +483,7 @@ function deletePost(postId) {
   if (p.authorUsername !== u.username) fail(403, 'You can only change your own posts');
   s.posts = s.posts.filter((x) => x.id !== postId);
   s.reviews = s.reviews.filter((r) => r.post_id !== postId);
+  s.comments = s.comments.filter((c) => c.postId !== postId);
   save();
 }
 
@@ -575,6 +578,81 @@ function deleteSuggestion(suggestionId) {
   save();
 }
 
+// ---------- comments ----------
+
+function postComments(postId) {
+  return load().comments.filter((c) => c.postId === postId);
+}
+
+function syncCommentsCount(post) {
+  post.commentsCount = postComments(post.id).length;
+}
+
+function listComments(postId, params) {
+  byId(load().posts, postId) || fail(404, 'Post not found');
+  const all = postComments(postId);
+  const limit = Number(params.get('limit')) || 50;
+  const offset = Number(params.get('offset')) || 0;
+  return { total: all.length, comments: all.slice(offset, offset + limit) };
+}
+
+function commentBody(body) {
+  const text = String(body?.body ?? '').trim();
+  if (!text) fail(422, "body: can't be empty");
+  if (text.length > 2000) fail(422, 'body: String should have at most 2000 characters');
+  return text;
+}
+
+function addComment(postId, body) {
+  const s = load();
+  const u = me();
+  const post = byId(s.posts, postId) || fail(404, 'Post not found');
+  const c = toComment({
+    id: newId('cmt'),
+    post_id: postId,
+    user_id: u.id,
+    username: u.username,
+    full_name: u.full_name,
+    avatar_url: u.avatar_url,
+    profession_title: u.profession?.title || null,
+    body: commentBody(body),
+    created_at: nowIso(),
+  });
+  s.comments.push(c);
+  syncCommentsCount(post);
+  save();
+  return c;
+}
+
+function findComment(postId, commentId) {
+  const s = load();
+  const post = byId(s.posts, postId) || fail(404, 'Post not found');
+  const c = s.comments.find((x) => x.id === commentId && x.postId === postId) || fail(404, 'Comment not found');
+  return [post, c];
+}
+
+function updateComment(postId, commentId, body) {
+  const u = me();
+  const [, c] = findComment(postId, commentId);
+  if (c.userId !== u.id) fail(403, 'You can only edit your own comments');
+  c.body = commentBody(body);
+  c.edited = true;
+  save();
+  return c;
+}
+
+function deleteComment(postId, commentId) {
+  const s = load();
+  const u = me();
+  const [post, c] = findComment(postId, commentId);
+  if (u.id !== c.userId && u.id !== post.authorId) {
+    fail(403, "Only the commenter or the post's author can delete this comment");
+  }
+  s.comments = s.comments.filter((x) => x.id !== commentId);
+  syncCommentsCount(post);
+  save();
+}
+
 // ---------- router ----------
 
 // Returns a copy, like a network response would, so callers never share objects with the store.
@@ -626,6 +704,10 @@ function handle(endpoint, options) {
     if (parts[2] === 'bookmark' && method === 'POST') return toggleBookmark(parts[1]);
     if (!parts[2] && method === 'GET') return byId(s.posts, parts[1]) || fail(404, 'Post not found');
     if (!parts[2] && method === 'PATCH') return updatePost(parts[1], body || {});
+    if (parts[2] === 'comments' && !parts[3] && method === 'GET') return listComments(parts[1], url.searchParams);
+    if (parts[2] === 'comments' && !parts[3] && method === 'POST') return addComment(parts[1], body);
+    if (parts[2] === 'comments' && parts[3] && method === 'PATCH') return updateComment(parts[1], parts[3], body);
+    if (parts[2] === 'comments' && parts[3] && method === 'DELETE') return deleteComment(parts[1], parts[3]);
     if (!parts[2] && method === 'DELETE') return deletePost(parts[1]);
   }
 

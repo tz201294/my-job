@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.core.time import utcnow
 from app.models import (
-    ChallengeSuggestion, Follow, Post, ProfessionProfile, QAQuestion, Story, TaskDetails, TaskReview, User,
+    ChallengeSuggestion, Follow, Post, PostComment, ProfessionProfile, QAQuestion, Story, TaskDetails, TaskReview, User,
     UserInterest, UserSurvey, WorkChallenge,
 )
 
@@ -58,7 +58,7 @@ EXPLORERS = [
 
 POSTS = [
     dict(
-        author="elena_lawyer", type="pro_case_study", likes=1450, comments=88,
+        author="elena_lawyer", type="pro_case_study", likes=1450,
         title="Mastering the Subpoena Duces Tecum: How to Compel Critical Evidence Step-by-Step",
         caption="A breakdown of how litigation attorneys draft, scope, and serve third-party discovery subpoenas without getting them quashed.",
         media=[dict(url=U + "photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80", media_type="image",
@@ -85,7 +85,7 @@ POSTS = [
             ]),
     ),
     dict(
-        author="sarah_plumber", type="task_walkthrough", likes=894, comments=42,
+        author="sarah_plumber", type="task_walkthrough", likes=894,
         title="Fixing a high-pressure brass valve leak in a multi-story commercial building",
         caption="Walkthrough of diagnosing water hammer and swapping out a compromised 2-inch pressure reducing valve.",
         media=[dict(url=U + "photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=800&q=80", media_type="image",
@@ -112,7 +112,7 @@ POSTS = [
             ]),
     ),
     dict(
-        author="alex_driver", type="task_walkthrough", likes=612, comments=19,
+        author="alex_driver", type="task_walkthrough", likes=612,
         title="Downtown rush-hour route navigation: Maneuvering a 60ft articulated hybrid",
         caption="How we manage tight right turns, blind spot clearance, and passenger stop pacing during peak rain hours.",
         media=[dict(url=U + "photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80", media_type="image",
@@ -177,14 +177,16 @@ async def seed_demo_data(db: AsyncSession) -> bool:
     await db.flush()
 
     now = utcnow()
+    seeded_posts = {}
     for i, d in enumerate(POSTS):
         post = Post(
             author_id=users[d["author"]].id, title=d["title"], caption=d["caption"], post_type=d["type"],
-            media=d["media"], tags=d["tags"], likes_count=d["likes"], comments_count=d["comments"],
+            media=d["media"], tags=d["tags"], likes_count=d["likes"], comments_count=0,
             created_at=now - timedelta(hours=i),
         )
         post.task_details = TaskDetails(**d["task"])
         db.add(post)
+        seeded_posts[d["author"]] = post
         if d["author"] == "elena_lawyer":
             await db.flush()
             db.add(TaskReview(
@@ -265,6 +267,21 @@ async def seed_demo_data(db: AsyncSession) -> bool:
             challenge_id=open_chal.id, suggester_id=users[suggester].id, suggestion_text=text,
             suggested_tool_or_reference=ref, upvotes_count=votes,
         ))
+
+    # A few real comments; comments_count matches the rows.
+    await db.flush()
+    for post_author, commenter, body, hours_ago in [
+        ("elena_lawyer", "law_student_sam", "Saving this for my Civil Procedure exam. The 5-day notice tip is gold.", 2),
+        ("elena_lawyer", "sarah_plumber", "Never knew how much prep goes into one subpoena. Respect.", 1),
+        ("sarah_plumber", "homeowner_dave", "I had exactly this leak last winter. Wish I had seen this first!", 3),
+        ("sarah_plumber", "alex_driver", "Clear steps. The photo of the valve seat helped a lot.", 1),
+        ("alex_driver", "elena_lawyer", "The tail-swing diagram makes me a calmer driver behind buses.", 2),
+    ]:
+        db.add(PostComment(
+            post_id=seeded_posts[post_author].id, user_id=users[commenter].id, body=body,
+            created_at=now - timedelta(hours=hours_ago),
+        ))
+        seeded_posts[post_author].comments_count += 1
 
     # A small demo social graph so the 'following' feed has something to show.
     for follower, followee in [

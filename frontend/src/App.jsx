@@ -233,6 +233,14 @@ export default function App() {
     setSelectedCaseStudy((cs) => (cs && cs.id === updated.id ? updated : cs));
   };
 
+  // The comments panel reports the real total after loading or changing comments.
+  const handleCommentsCountChange = useCallback((postId, total) => {
+    const set = (ps) => ps.map((p) => (p.id === postId && p.commentsCount !== total ? { ...p, commentsCount: total } : p));
+    setPosts(set);
+    setFeedPosts(set);
+    setViewingPosts(set);
+  }, []);
+
   const handleUpdatePost = async (postId, draft) => {
     replacePost(toPost(await api.updatePost(postId, toPostUpdatePayload(draft))));
   };
@@ -652,6 +660,8 @@ export default function App() {
                       onOpenReviewModal={setReviewModalPost}
                       onOpenUserProfile={handleOpenUserProfile}
                       isOwn={post.authorId === me.id}
+                      currentUserId={me.id}
+                      onCommentsCountChange={handleCommentsCountChange}
                       onEdit={setEditingPost}
                       onDelete={handleDeletePost}
                     />

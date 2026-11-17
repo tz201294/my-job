@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, Integer, Text, ForeignKey, JSON, Float
+from sqlalchemy import Column, String, DateTime, Integer, Text, ForeignKey, JSON, Float, Index
 from sqlalchemy.orm import relationship
 from app.core.time import utcnow
 from app.db.base import Base
@@ -52,3 +52,19 @@ class TaskDetails(Base):
     steps = Column(JSON, default=list)  # [{step_number: 1, title: "...", description: "...", image_url: "...", tip: "..."}]
 
     post = relationship("Post", back_populates="task_details")
+
+
+class PostComment(Base):
+    """A comment on a post. Comments are flat (no replies) and listed oldest first."""
+    __tablename__ = "post_comments"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    post_id = Column(String, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    body = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, nullable=True)  # set when the author edits it
+
+    author = relationship("User", lazy="selectin")
+
+    __table_args__ = (Index("ix_post_comments_post_id_created_at", "post_id", "created_at"),)

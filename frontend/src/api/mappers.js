@@ -158,6 +158,22 @@ export function toQuestion(q) {
   };
 }
 
+export function toComment(c) {
+  if (c.userId && c.body !== undefined && c.timeAgo !== undefined) return c;
+  return {
+    id: c.id,
+    postId: c.post_id,
+    userId: c.user_id,
+    username: c.username,
+    fullName: c.full_name || c.username,
+    avatarUrl: c.avatar_url || DEFAULT_AVATAR,
+    professionTitle: c.profession_title || null,
+    body: c.body,
+    timeAgo: timeAgo(c.created_at),
+    edited: !!c.updated_at,
+  };
+}
+
 export function toCategories(list) {
   if (!Array.isArray(list)) return [{ id: 'cat_all', name: 'All Professions', slug: 'all', icon: 'briefcase' }];
   if (list.some((c) => c.slug === 'all')) return list;

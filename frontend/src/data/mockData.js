@@ -153,7 +153,7 @@ export const INITIAL_POSTS = [
     mediaUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80",
     tags: ["litigation", "subpoena", "lawpractice", "evidence", "discovery"],
     likesCount: 1450,
-    commentsCount: 88,
+    commentsCount: 2,
     isLiked: false,
     isBookmarked: false,
     rating: 4.9,
@@ -205,7 +205,7 @@ export const INITIAL_POSTS = [
     mediaUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
     tags: ["verdict", "litigationwin", "teamwork", "milestone"],
     likesCount: 2310,
-    commentsCount: 114,
+    commentsCount: 1,
     isLiked: false,
     isBookmarked: false,
     timeAgo: "1 day ago"
@@ -224,7 +224,7 @@ export const INITIAL_POSTS = [
     mediaUrl: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=1200&q=80",
     tags: ["plumbing", "commercialtrades", "valverepair", "waterhammer"],
     likesCount: 894,
-    commentsCount: 42,
+    commentsCount: 2,
     isLiked: false,
     isBookmarked: false,
     rating: 4.8,
@@ -276,7 +276,7 @@ export const INITIAL_POSTS = [
     mediaUrl: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80",
     tags: ["transit", "busdriver", "roadsafety", "logistics"],
     likesCount: 612,
-    commentsCount: 19,
+    commentsCount: 1,
     isLiked: false,
     isBookmarked: false,
     rating: 4.9,
@@ -578,4 +578,26 @@ export const INITIAL_REELS = [
     isBookmarked: false,
     audioTitle: "Alex Rivera • City Rush Hour Ambiance"
   }
+];
+
+// Sample comments for demo mode (oldest first per post); each post's commentsCount matches.
+export const INITIAL_COMMENTS = [
+  { id: "cmt_01", postId: "post_503", userId: "usr_201", username: "law_student_sam", fullName: "Sam Okafor",
+    avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80", professionTitle: null,
+    body: "Saving this for my Civil Procedure exam. The 5-day notice tip is gold.", timeAgo: "2h ago", edited: false },
+  { id: "cmt_02", postId: "post_503", userId: "usr_101", username: "sarah_plumber", fullName: "Sarah Jenkins",
+    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80", professionTitle: "Master Plumber",
+    body: "Never knew how much prep goes into one subpoena. Respect.", timeAgo: "1h ago", edited: false },
+  { id: "cmt_03", postId: "post_504", userId: "usr_102", username: "alex_driver", fullName: "Alex Rivera",
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80", professionTitle: "Transit Bus Operator",
+    body: "Fourteen months! Congratulations to the whole team.", timeAgo: "20h ago", edited: false },
+  { id: "cmt_04", postId: "post_501", userId: "usr_202", username: "homeowner_dave", fullName: "Dave Miller",
+    avatarUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=400&q=80", professionTitle: null,
+    body: "I had exactly this leak last winter. Wish I had seen this first!", timeAgo: "3h ago", edited: false },
+  { id: "cmt_05", postId: "post_501", userId: "usr_102", username: "alex_driver", fullName: "Alex Rivera",
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80", professionTitle: "Transit Bus Operator",
+    body: "Clear steps. The photo of the valve seat helped a lot.", timeAgo: "1h ago", edited: false },
+  { id: "cmt_06", postId: "post_502", userId: "usr_103", username: "elena_lawyer", fullName: "Elena Vance, Esq.",
+    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80", professionTitle: "Commercial Litigation Partner",
+    body: "The tail-swing diagram makes me a calmer driver behind buses.", timeAgo: "2h ago", edited: false },
 ];

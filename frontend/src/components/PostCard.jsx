@@ -5,6 +5,7 @@ import {
  } from 'lucide-react';
 
 import OwnerActions from './OwnerActions';
+import CommentsSection from './CommentsSection';
 
 const difficultyGradients = {
   expert: 'from-purple-600 via-fuchsia-600 to-pink-600',
@@ -23,7 +24,10 @@ export default function PostCard({
   isOwn = false,
   onEdit,
   onDelete,
+  currentUserId,
+  onCommentsCountChange,
 }) {
+  const [showComments, setShowComments] = useState(false);
   const isCaseStudy = post.postType === 'pro_case_study' || post.postType === 'task_walkthrough';
   const task = post.taskDetails;
   const diffKey = task?.difficulty?.toLowerCase() || 'expert';
@@ -198,9 +202,11 @@ export default function PostCard({
             </button>
 
             {/* Comments */}
-            <button 
-              onClick={() => onOpenCaseStudy(post)}
-              className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"
+            <button
+              onClick={() => setShowComments((v) => !v)}
+              aria-expanded={showComments}
+              aria-label={`Comments (${post.commentsCount})`}
+              className={`flex items-center gap-1.5 transition-colors ${showComments ? 'text-indigo-600' : 'hover:text-indigo-600'}`}
             >
               <MessageCircle className="w-4 h-4" />
               <span>{post.commentsCount}</span>
@@ -239,6 +245,10 @@ export default function PostCard({
             </button>
           </div>
         </div>
+
+        {showComments && (
+          <CommentsSection post={post} currentUserId={currentUserId} onCountChange={onCommentsCountChange} />
+        )}
       </div>
     </div>
   );

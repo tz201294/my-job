@@ -76,8 +76,13 @@ Q&A questions and upvotes, live-work challenges, suggestions and upvotes, real p
 (`/auth/users/{username}`, `/posts/feed?author_username=`), **follows** (real follower/following counts, a
 "Following" feed) and **saved posts** (private bookmarks, a "Saved" feed).
 
-Still sample/local only: **Reels** (labelled in the UI), story highlights and post comments. Media is
+Still sample/local only: **Reels** (labelled in the UI) and story highlights. Media is
 link-only for now (no file uploads).
+
+Comments: `GET /posts/{id}/comments?limit=&offset=` (public, oldest first, returns `{total, comments}`),
+`POST /posts/{id}/comments` (`{"body": "..."}`, 1–2000 chars), `PATCH /posts/{id}/comments/{comment_id}` (the
+commenter only) and `DELETE` on the same URL (the commenter or the post's author). A post's `comments_count` is
+recounted from the rows on every change; migration `0005` adds the table and resets the old placeholder counts to 0.
 
 Q&A: `POST /community/qa/questions/{id}/answer` (`answer_text`, optional `video_response_url`) lets the
 professional who was asked answer, or edit their answer (403 for anyone else). `GET /community/qa?worker_id=…&answered=false`

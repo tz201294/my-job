@@ -6,9 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_optional_user
-from app.api.serializers import bookmarked_ids_for, liked_ids_for, post_out
+from app.api.serializers import bookmarked_ids_for, comment_out, liked_ids_for, post_out
+from app.core.time import utcnow
 from app.db.session import get_db
-from app.models import Bookmark, Follow, Post, PostLike, TaskDetails, TaskReview, User
+from app.models import Bookmark, Follow, Post, PostComment, PostLike, TaskDetails, TaskReview, User
+from app.schemas.comment import CommentCreate, CommentPage, CommentResponse, CommentUpdate
 from app.schemas.post import PostCreate, PostResponse, PostType, PostUpdate
 
 router = APIRouter()
@@ -163,9 +165,114 @@ async def delete_post(
     """The author deletes their post, with its likes, saves and reviews."""
     post = await _own_post(db, user, post_id)
     # Removed explicitly so nothing is left behind on databases that don't enforce ON DELETE CASCADE (SQLite).
-    for model in (PostLike, Bookmark, TaskReview):
+    for model in (PostLike, Bookmark, TaskReview, PostComment):
         await db.execute(delete(model).where(model.post_id == post_id))
     await db.delete(post)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------- comments ----------
+
+async def _post_or_404(db: AsyncSession, post_id: str) -> Post:
+    post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return post
+
+
+async def _comment_or_404(db: AsyncSession, post_id: str, comment_id: str) -> PostComment:
+    c = (
+        await db.execute(select(PostComment).where(PostComment.id == comment_id, PostComment.post_id == post_id))
+    ).scalar_one_or_none()
+    if not c:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    return c
+
+
+async def _sync_comments_count(db: AsyncSession, post_id: str) -> int:
+    """Recount instead of incrementing, so the stored number can't drift from the real rows."""
+    count = (
+        await db.execute(select(func.count()).select_from(PostComment).where(PostComment.post_id == post_id))
+    ).scalar_one()
+    await db.execute(update(Post).where(Post.id == post_id).values(comments_count=count))
+    return count
+
+
+@router.get("/{post_id}/comments", response_model=CommentPage)
+async def list_comments(
+    post_id: str,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+):
+    """Comments on a post, oldest first. Public."""
+    await _post_or_404(db, post_id)
+    total = (
+        await db.execute(select(func.count()).select_from(PostComment).where(PostComment.post_id == post_id))
+    ).scalar_one()
+    rows = (
+        await db.execute(
+            select(PostComment)
+            .where(PostComment.post_id == post_id)
+            .order_by(PostComment.created_at, PostComment.id)
+            .limit(limit)
+            .offset(offset)
+        )
+    ).scalars().all()
+    return {"total": total, "comments": [comment_out(c) for c in rows]}
+
+
+@router.post("/{post_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+async def add_comment(
+    post_id: str,
+    c_in: CommentCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    await _post_or_404(db, post_id)
+    comment = PostComment(post_id=post_id, user_id=user.id, body=c_in.body)
+    db.add(comment)
+    await db.flush()
+    await _sync_comments_count(db, post_id)
+    await db.commit()
+    comment = await _comment_or_404(db, post_id, comment.id)
+    return comment_out(comment)
+
+
+@router.patch("/{post_id}/comments/{comment_id}", response_model=CommentResponse)
+async def edit_comment(
+    post_id: str,
+    comment_id: str,
+    c_in: CommentUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The author edits their comment."""
+    comment = await _comment_or_404(db, post_id, comment_id)
+    if comment.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own comments")
+    comment.body = c_in.body
+    comment.updated_at = utcnow()
+    await db.commit()
+    return comment_out(comment)
+
+
+@router.delete("/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_comment(
+    post_id: str,
+    comment_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The comment's author, or the post's author (moderating their own post), deletes a comment."""
+    comment = await _comment_or_404(db, post_id, comment_id)
+    post = await _post_or_404(db, post_id)
+    if user.id not in (comment.user_id, post.author_id):
+        raise HTTPException(status_code=403, detail="Only the commenter or the post's author can delete this comment")
+    await db.delete(comment)
+    await db.flush()
+    await _sync_comments_count(db, post_id)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

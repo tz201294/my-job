@@ -105,6 +105,11 @@ export const api = {
   toggleLike: (postId) => post(`/posts/${postId}/like`),
   toggleBookmark: (postId) => post(`/posts/${postId}/bookmark`),
   getBookmarks: () => request('/posts/bookmarks?limit=100'),
+  getComments: (postId, { limit = 20, offset = 0 } = {}) =>
+    request(`/posts/${postId}/comments?limit=${limit}&offset=${offset}`),
+  addComment: (postId, data) => post(`/posts/${postId}/comments`, data),
+  updateComment: (postId, commentId, data) => patch(`/posts/${postId}/comments/${commentId}`, data),
+  deleteComment: (postId, commentId) => del(`/posts/${postId}/comments/${commentId}`),
 
   // Discovery & Taxonomy
   getCategories: () => request('/discovery/categories'),

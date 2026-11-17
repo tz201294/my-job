@@ -199,6 +199,22 @@ def question_out(q: QAQuestion, upvoted_ids: Set[str] = frozenset()) -> dict:
     }
 
 
+def comment_out(c) -> dict:
+    u = c.author
+    return {
+        "id": c.id,
+        "post_id": c.post_id,
+        "user_id": c.user_id,
+        "username": u.username,
+        "full_name": u.full_name,
+        "avatar_url": u.avatar_url,
+        "profession_title": _prof_title(u),
+        "body": c.body,
+        "created_at": c.created_at,
+        "updated_at": c.updated_at,
+    }
+
+
 def suggestion_out(s: ChallengeSuggestion, upvoted_ids: Set[str] = frozenset()) -> dict:
     u = s.suggester
     return {
