@@ -48,11 +48,14 @@ jobs:
       #                   Actions > Variables) it uses that API; without it, it is the in-browser demo too.
       #   /my-job/demo/   always the in-browser demo with sample accounts and posts.
       # 404.html (a copy of the app) serves direct links; links into /demo/ are handed on to the demo (spaFallback.js).
+      # Error reporting is on when the repository variable VITE_SENTRY_DSN is set (docs/DEPLOY.md step 4).
       - name: Build Application
         env:
           VITE_BASE: /my-job/
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_DEMO_PATH: demo/
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_SENTRY_RELEASE: ${{ github.sha }}
         run: |
           cd frontend
           npm run build
@@ -64,6 +67,8 @@ jobs:
           VITE_DEMO_MODE: 'true'
           # The demo links to the real app only when there is one.
           VITE_REAL_APP_URL: ${{ vars.VITE_API_URL && '/my-job/' || '' }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_SENTRY_RELEASE: ${{ github.sha }}
         run: |
           cd frontend
           npx vite build --outDir dist/demo --emptyOutDir

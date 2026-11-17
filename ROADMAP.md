@@ -19,6 +19,9 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Tags field in the post form (validated the same way on the server).
 - Rebrand to Prologue ("A story behind every profession"), new icon and wordmark.
 - The demo stays online at /my-job/demo/ next to the real app (separate logins, links both ways).
+- Backend tests and migrations run on Postgres 17 in CI; Render deploys only after CI passes.
+- Error reporting (Sentry, API + website, no personal data, off until a DSN is set), `/health/db`, and an
+  uptime-alert guide (UptimeRobot). Setup: docs/DEPLOY.md step 4.
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.
@@ -42,7 +45,7 @@ The frontend itself is ready; these depend on the backend steps above or are pol
 - Point the build at the deployed API (`VITE_API_URL`) once step 1 is done (the demo stays at /demo/).
 - Photo/video upload UI (step 2).
 - "Forgot password" and email verification (need email sending on the server).
-- Error reporting service (e.g. Sentry) hooked into the crash screen, and basic analytics if wanted.
+- Basic analytics, if wanted.
 - An accessibility pass with a screen reader, and loading skeletons.
 
 ## Ideas for later

@@ -69,15 +69,66 @@ comments (password `demo1234`). It runs entirely in the visitor's browser and ne
 The real login page shows a "Try the demo" link, and the demo links back to the real app. Each keeps its own
 login, so trying the demo doesn't sign anyone out of their real account.
 
+## 4. Get told when something breaks (free, about 15 minutes)
+
+Optional, but strongly recommended before inviting people. Without it, you only find out about problems when
+someone tells you.
+
+### Errors: Sentry
+
+Sentry emails you when the app crashes (the "Something went wrong" screen) or the API hits an unexpected error,
+with the stack trace needed to fix it. The free plan covers 5,000 errors a month. The app sends no personal data:
+no passwords, post text, login tokens or IP addresses.
+
+1. Go to **sentry.io** and sign up (the free **Developer** plan).
+2. Create two projects:
+   - Platform **FastAPI**, name `prologue-api`.
+   - Platform **React**, name `prologue-web`.
+
+   Skip the setup instructions Sentry shows; the code is already in place.
+3. **Settings** → **Security & Privacy**: turn on **Prevent Storing of IP Addresses**, as an extra safety net.
+4. For each project, **Settings** → **Client Keys (DSN)**: copy the DSN, an address like
+   `https://abc123@o456.ingest.de.sentry.io/789`.
+5. **API:** Render → **prologue-api** → **Environment** → set **SENTRY_DSN** to the `prologue-api` DSN → **Save**.
+   Render redeploys by itself.
+6. **Website:** GitHub → **Settings** → **Secrets and variables** → **Actions** → **Variables** → **New repository
+   variable**: name `VITE_SENTRY_DSN`, value the `prologue-web` DSN. Then re-run the **Deploy Prologue to GitHub
+   Pages** workflow. (The website's DSN isn't a secret: it ends up in the page anyway.)
+
+Errors from the demo are reported too, under the environment **demo**, so you can tell them apart from the real
+app's (**production**). Sentry emails you about every new kind of error by default; **Alerts** changes that.
+
+To switch it off, delete the value in Render and the variable in GitHub (then re-run the deploy).
+
+### Downtime: UptimeRobot
+
+UptimeRobot checks the API every few minutes and emails you when it stops answering, and again when it's back.
+
+1. Go to **uptimerobot.com** and sign up (free plan).
+2. **New monitor** → **HTTP(s)**:
+   - **URL:** `https://<your-address>/health`
+   - **Interval:** 5 minutes
+   - **Alert contact:** your email
+3. Optionally a second monitor for the database:
+   - **URL:** `https://<your-address>/health/db`
+   - **Interval:** **60 minutes**
+
+   It answers with an error if the API can't reach the database. Keep it hourly: every check wakes the database up,
+   and the free Neon plan has a monthly compute allowance. `/health` never touches the database, so checking it
+   every 5 minutes is fine.
+
+Side effect of the 5-minute check: Render's free service never goes to sleep, so visitors don't wait for it to wake
+up. Render's free plan includes 750 hours a month, enough for one service running all month.
+
 ---
 
 ## Good to know
 
 - **The first visit after a quiet period is slow** (up to about a minute) on Render's free plan. That's the server
-  waking up, not a bug.
+  waking up, not a bug. The UptimeRobot check in step 4 keeps it awake.
 - **Updates deploy themselves.** Every push to `master` redeploys the API on Render (after CI) and the website on
   GitHub Pages.
-- **Logs:** Render dashboard → **prologue-api** → **Logs**.
+- **Logs:** Render dashboard → **prologue-api** → **Logs**. Errors with stack traces: Sentry (step 4).
 - **If the site says "Can't reach the Prologue server":** check that the Render service is Live and that
   `VITE_API_URL` has no typo (it must end in `/api/v1`).
 - **CORS:** the API only accepts requests from `https://tz201294.github.io` (set in `render.yaml`). If you later

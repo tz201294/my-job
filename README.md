@@ -73,6 +73,8 @@ after logging in you land on the page the link pointed to.
 **Putting it online (free):** see [docs/DEPLOY.md](docs/DEPLOY.md) — Render (API, `render.yaml`) + Neon
 (Postgres) + GitHub Pages (website, using the `VITE_API_URL` repository variable). `DATABASE_URL` may be given in
 the form hosts hand out (`postgresql://...?sslmode=require`); the app converts it for asyncpg.
+Error reporting (Sentry) is off unless `SENTRY_DSN` (API) / `VITE_SENTRY_DSN` (website) is set; `/health` is a
+database-free liveness check, `/health/db` also checks the database.
 
 **Deploying the frontend.** Build with `VITE_API_URL=https://your-api.example.com/api/v1` (or serve it behind a
 proxy that forwards `/api`), and set `VITE_BASE` if it isn't served from the site root (GitHub Pages uses

@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     SEED_DEMO_DATA: bool = False
     DEMO_PASSWORD: str = "demo1234"
 
+    # Error reporting (see app/core/monitoring.py). Empty = off. The DSN comes from the Sentry project's settings.
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+
     @field_validator("DATABASE_URL")
     @classmethod
     def _normalize_database_url(cls, v: str) -> str:

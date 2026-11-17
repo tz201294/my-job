@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { fallbackRedirect, restoredPath } from './spaFallback';
+import { startErrorReporting } from './monitoring';
+import { IS_DEMO } from './api/client';
 import './index.css';
 
 // Vite's base ('/' normally, '/my-job/' or '/my-job/demo/' on GitHub Pages) is where the app lives; routes are
@@ -19,6 +21,8 @@ if (redirect) {
   // A direct link into the demo reached the main app (see spaFallback.js): hand it to the demo.
   window.location.replace(redirect);
 } else {
+  startErrorReporting(IS_DEMO);
+
   const restored = restoredPath({ search: window.location.search, base });
   if (restored) window.history.replaceState(null, '', restored);
 

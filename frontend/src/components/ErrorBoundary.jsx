@@ -1,4 +1,5 @@
 import React from 'react';
+import { reportError } from '../monitoring';
 
 // Last line of defence: if rendering crashes, show a friendly page with a reload button instead of a blank screen.
 export default class ErrorBoundary extends React.Component {
@@ -12,8 +13,9 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // Visible in the browser console; a real error-reporting service can be plugged in here later.
+    // Visible in the browser console, and sent to Sentry when error reporting is on (see monitoring.js).
     console.error('Prologue crashed:', error, info?.componentStack);
+    reportError(error, { componentStack: info?.componentStack });
   }
 
   render() {
