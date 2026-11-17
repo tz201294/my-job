@@ -5,6 +5,8 @@ import {
   Send, ExternalLink, Bookmark, Heart, ChevronRight, Flame
 } from 'lucide-react';
 
+import OwnerActions from './OwnerActions';
+
 export default function UserProfile({
   user,
   posts,
@@ -16,8 +18,21 @@ export default function UserProfile({
   onOpenCaseStudy,
   onOpenReviewModal,
   onAskQuestion,
-  onSelectHighlight
+  onSelectHighlight,
+  onEditPost,
+  onDeletePost,
 }) {
+  // Edit/delete buttons on your own profile's cards.
+  const ownerActions = (post, tone) => isOwnProfile && onEditPost && (
+    <OwnerActions
+      label="post"
+      tone={tone}
+      onEdit={() => onEditPost(post)}
+      onDelete={() => onDeletePost(post.id)}
+      confirmText="Delete this post? Its likes, saves and reviews are removed too. This cannot be undone."
+    />
+  );
+
   const [profileTab, setProfileTab] = useState('case_studies'); // 'case_studies' | 'posts' | 'qa' | 'challenges'
   const isFollowing = user.isFollowing;
   const followersCount = user.followersCount || 0;
@@ -295,6 +310,7 @@ export default function UserProfile({
                         {post.taskDetails?.difficulty || 'Guide'}
                       </span>
                     </div>
+                    <div className="absolute top-3 right-3">{ownerActions(post, 'dark')}</div>
                   </div>
 
                   <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
@@ -334,8 +350,9 @@ export default function UserProfile({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {userGeneralPosts.map((post) => (
-                <div key={post.id} className="bg-white/95 border border-indigo-100 rounded-3xl overflow-hidden shadow-2xs card-glow">
+                <div key={post.id} className="relative bg-white/95 border border-indigo-100 rounded-3xl overflow-hidden shadow-2xs card-glow">
                   <img src={post.mediaUrl} alt={post.title} className="aspect-[16/10] w-full object-cover" />
+                  <div className="absolute top-3 right-3">{ownerActions(post, 'dark')}</div>
                   <div className="p-4 sm:p-5">
                     <h4 className="font-extrabold text-sm sm:text-base text-slate-900 mb-1">{post.title}</h4>
                     <p className="text-xs text-slate-600 leading-relaxed mb-3 font-medium">{post.caption}</p>

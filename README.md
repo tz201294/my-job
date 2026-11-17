@@ -83,6 +83,17 @@ Q&A: `POST /community/qa/questions/{id}/answer` (`answer_text`, optional `video_
 professional who was asked answer, or edit their answer (403 for anyone else). `GET /community/qa?worker_id=…&answered=false`
 lists a worker's unanswered questions; the Q&A tab shows them under "Waiting for my answer".
 
+Editing and deleting your own content (403 for anyone else; deletes return 204 and also remove likes, saves,
+reviews, upvotes and suggestions that belong to the item):
+
+| What | Edit (`PATCH`, only fields sent change) | Delete (`DELETE`) | Who |
+|---|---|---|---|
+| Post | `/posts/{id}`: title, caption, tags, media, task_details (`null` removes it) | `/posts/{id}` | author |
+| Story | — | `/stories/{id}` | author |
+| Question | `/community/qa/questions/{id}`: text, topic (until answered, else 409) | same URL | asker; delete also the professional asked |
+| Challenge | `/community/challenges/{id}`: title, description, field, urgency | same URL | owner |
+| Idea | `/community/suggestions/{id}`: text, tool (not once accepted, 409) | same URL | author; delete also the challenge owner (reopens it if it was the accepted one) |
+
 Live work challenges: `POST /community/suggestions/{id}/accept` lets the person who posted the challenge mark a
 suggestion as the solution (replacing any earlier one; the challenge becomes solved), and `DELETE` on the same URL
 withdraws it. Both return the updated challenge; anyone else gets 403. Migration `0004` enforces one accepted

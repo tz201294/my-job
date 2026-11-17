@@ -73,6 +73,8 @@ async function request(endpoint, options = {}) {
 }
 
 const post = (endpoint, data) => request(endpoint, { method: 'POST', ...(data ? { body: JSON.stringify(data) } : {}) });
+const patch = (endpoint, data) => request(endpoint, { method: 'PATCH', body: JSON.stringify(data) });
+const del = (endpoint) => request(endpoint, { method: 'DELETE' });
 
 export const api = {
   // Auth
@@ -88,6 +90,7 @@ export const api = {
   // Stories
   getStories: () => request('/stories/feed'),
   createStory: (data) => post('/stories', data),
+  deleteStory: (id) => del(`/stories/${id}`),
 
   // Posts & Case Studies
   getPosts: (params = {}) => {
@@ -97,6 +100,8 @@ export const api = {
   getPostsByAuthor: (username) => request(`/posts/feed?author_username=${encodeURIComponent(username)}&limit=100`),
   getPostById: (id) => request(`/posts/${id}`),
   createPost: (data) => post('/posts', data),
+  updatePost: (id, data) => patch(`/posts/${id}`, data),
+  deletePost: (id) => del(`/posts/${id}`),
   toggleLike: (postId) => post(`/posts/${postId}/like`),
   toggleBookmark: (postId) => post(`/posts/${postId}/bookmark`),
   getBookmarks: () => request('/posts/bookmarks?limit=100'),
@@ -107,6 +112,10 @@ export const api = {
   // Community: Challenges
   getChallenges: () => request('/community/challenges'),
   createChallenge: (data) => post('/community/challenges', data),
+  updateChallenge: (id, data) => patch(`/community/challenges/${id}`, data),
+  deleteChallenge: (id) => del(`/community/challenges/${id}`),
+  updateSuggestion: (id, data) => patch(`/community/suggestions/${id}`, data),
+  deleteSuggestion: (id) => del(`/community/suggestions/${id}`),
   submitSuggestion: (challengeId, data) => post(`/community/challenges/${challengeId}/suggest`, data),
   upvoteSuggestion: (suggestionId) => post(`/community/suggestions/${suggestionId}/upvote`),
   acceptSuggestion: (suggestionId) => post(`/community/suggestions/${suggestionId}/accept`),
@@ -119,6 +128,8 @@ export const api = {
     return request(`/community/qa${query ? `?${query}` : ''}`);
   },
   askQuestion: (workerId, data) => post(`/community/qa/${workerId}/ask`, data),
+  updateQuestion: (id, data) => patch(`/community/qa/questions/${id}`, data),
+  deleteQuestion: (id) => del(`/community/qa/questions/${id}`),
   upvoteQuestion: (questionId) => post(`/community/qa/questions/${questionId}/upvote`),
   answerQuestion: (questionId, data) => post(`/community/qa/questions/${questionId}/answer`, data),
 

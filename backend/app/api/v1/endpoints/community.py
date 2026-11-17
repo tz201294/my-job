@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +15,8 @@ from app.models import (
     ChallengeSuggestion, Post, QAQuestion, QAUpvote, SuggestionUpvote, TaskReview, User, WorkChallenge,
 )
 from app.schemas.community import (
-    ChallengeSuggestionCreate, ChallengeSuggestionResponse, QAAnswerCreate, QAQuestionCreate, QAQuestionResponse,
+    ChallengeSuggestionCreate, ChallengeSuggestionResponse, ChallengeSuggestionUpdate, QAAnswerCreate,
+    QAQuestionCreate, QAQuestionResponse, QAQuestionUpdate, WorkChallengeUpdate,
     QASessionResponse, TaskReviewCreate, TaskReviewResponse, WorkChallengeCreate, WorkChallengeResponse,
 )
 
@@ -179,6 +180,52 @@ async def answer_question(
     return question_out(q, voted)
 
 
+async def _question_or_404(db: AsyncSession, question_id: str) -> QAQuestion:
+    q = (await db.execute(select(QAQuestion).where(QAQuestion.id == question_id))).scalar_one_or_none()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+    return q
+
+
+@router.patch("/qa/questions/{question_id}", response_model=QAQuestionResponse)
+async def update_question(
+    question_id: str,
+    q_in: QAQuestionUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The asker rewords their question. Not allowed once it has been answered."""
+    q = await _question_or_404(db, question_id)
+    if q.asker_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own questions")
+    if q.is_answered:
+        raise HTTPException(status_code=409, detail="This question has been answered, so it can't be edited")
+    changes = q_in.changes()
+    if "question_text" in changes:
+        q.question_text = changes["question_text"]
+    if "topic_tag" in changes:
+        q.topic_tag = changes["topic_tag"] or "General Inquiry"
+    await db.commit()
+    q = (await db.execute(select(QAQuestion).where(QAQuestion.id == question_id))).scalar_one()
+    return question_out(q, await upvoted_question_ids(db, user, [q]))
+
+
+@router.delete("/qa/questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_question(
+    question_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The asker, or the professional it was addressed to, removes a question (and its answer)."""
+    q = await _question_or_404(db, question_id)
+    if user.id not in (q.asker_id, q.worker_id):
+        raise HTTPException(status_code=403, detail="Only the asker or the professional asked can delete this question")
+    await db.execute(delete(QAUpvote).where(QAUpvote.question_id == question_id))
+    await db.delete(q)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post("/qa/questions/{question_id}/upvote")
 async def toggle_question_upvote(
     question_id: str,
@@ -225,6 +272,44 @@ async def create_challenge(
     return challenge_out(chal)
 
 
+async def _own_challenge(db: AsyncSession, user: User, challenge_id: str) -> WorkChallenge:
+    chal = (await db.execute(select(WorkChallenge).where(WorkChallenge.id == challenge_id))).scalar_one_or_none()
+    if not chal:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+    if chal.worker_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only change your own challenges")
+    return chal
+
+
+@router.patch("/challenges/{challenge_id}", response_model=WorkChallengeResponse)
+async def update_challenge(
+    challenge_id: str,
+    chal_in: WorkChallengeUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    chal = await _own_challenge(db, user, challenge_id)
+    for field, value in chal_in.changes().items():
+        setattr(chal, field, value)
+    await db.commit()
+    return await _challenge_response(db, user, challenge_id)
+
+
+@router.delete("/challenges/{challenge_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_challenge(
+    challenge_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The owner deletes their challenge, with all suggestions and their upvotes."""
+    chal = await _own_challenge(db, user, challenge_id)
+    suggestion_ids = select(ChallengeSuggestion.id).where(ChallengeSuggestion.challenge_id == challenge_id)
+    await db.execute(delete(SuggestionUpvote).where(SuggestionUpvote.suggestion_id.in_(suggestion_ids)))
+    await db.delete(chal)  # suggestions go with it (delete-orphan)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post(
     "/challenges/{challenge_id}/suggest",
     response_model=ChallengeSuggestionResponse,
@@ -249,6 +334,59 @@ async def submit_challenge_suggestion(
     await db.commit()
     sug = (await db.execute(select(ChallengeSuggestion).where(ChallengeSuggestion.id == sug.id))).scalar_one()
     return suggestion_out(sug)
+
+
+async def _suggestion_or_404(db: AsyncSession, suggestion_id: str) -> ChallengeSuggestion:
+    sug = (
+        await db.execute(select(ChallengeSuggestion).where(ChallengeSuggestion.id == suggestion_id))
+    ).scalar_one_or_none()
+    if not sug:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    return sug
+
+
+@router.patch("/suggestions/{suggestion_id}", response_model=ChallengeSuggestionResponse)
+async def update_suggestion(
+    suggestion_id: str,
+    sug_in: ChallengeSuggestionUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The author rewords their idea. Not allowed once it was accepted as the solution."""
+    sug = await _suggestion_or_404(db, suggestion_id)
+    if sug.suggester_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own ideas")
+    if sug.is_accepted_by_worker:
+        raise HTTPException(status_code=409, detail="This idea was accepted as the solution, so it can't be edited")
+    for field, value in sug_in.changes().items():
+        setattr(sug, field, value)
+    await db.commit()
+    sug = await _suggestion_or_404(db, suggestion_id)
+    voted = await db.execute(
+        select(SuggestionUpvote.suggestion_id).where(
+            SuggestionUpvote.user_id == user.id, SuggestionUpvote.suggestion_id == suggestion_id
+        )
+    )
+    return suggestion_out(sug, set(voted.scalars().all()))
+
+
+@router.delete("/suggestions/{suggestion_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_suggestion(
+    suggestion_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The author, or the challenge owner, removes an idea. Removing the accepted one reopens the challenge."""
+    sug = await _suggestion_or_404(db, suggestion_id)
+    chal = (await db.execute(select(WorkChallenge).where(WorkChallenge.id == sug.challenge_id))).scalar_one()
+    if user.id not in (sug.suggester_id, chal.worker_id):
+        raise HTTPException(status_code=403, detail="Only the author or the challenge owner can delete this idea")
+    if sug.is_accepted_by_worker:
+        chal.is_solved = False
+    await db.execute(delete(SuggestionUpvote).where(SuggestionUpvote.suggestion_id == suggestion_id))
+    await db.delete(sug)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 async def _owned_challenge_for_suggestion(db: AsyncSession, user: User, suggestion_id: str):

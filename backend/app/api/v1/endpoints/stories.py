@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -57,3 +57,20 @@ async def create_story(
     await db.commit()
     story = (await db.execute(select(Story).where(Story.id == story.id))).scalar_one()
     return story_out(story)
+
+
+@router.delete("/{story_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_story(
+    story_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The author deletes their story before it expires."""
+    story = (await db.execute(select(Story).where(Story.id == story_id))).scalar_one_or_none()
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    if story.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own stories")
+    await db.delete(story)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

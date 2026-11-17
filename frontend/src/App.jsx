@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AuthScreen from './components/AuthScreen';
 import { api, onUnauthorized, tokenStore } from './api/client';
 import {
-  toCategories, toChallenge, toChallengePayload, toPost, toPostPayload, toProfileUser, toQuestion,
+  toCategories, toChallenge, toChallengePayload, toPost, toPostPayload, toPostUpdatePayload, toProfileUser,
+  toQuestion,
   toReviewPayload, toStories, toStory, toStoryPayload, toSuggestion,
 } from './api/mappers';
 import Header from './components/Header';
@@ -65,6 +66,7 @@ export default function App() {
   const [reviewModalPost, setReviewModalPost] = useState(null);
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState(null); // a post open in the editor
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -217,6 +219,119 @@ export default function App() {
     setViewingPosts(replace);
     setSelectedCaseStudy((cs) => (cs && cs.id === updated.id ? updated : cs));
     setReviewsVersion((v) => v + 1);
+  };
+
+  // ---------- Edit & delete your own content ----------
+  // Mutations that the server assigns data to throw, so the form that sent them can show the error.
+  // Deletes report problems in a toast.
+
+  const replacePost = (updated) => {
+    const replace = (ps) => mapById(ps, updated.id, () => updated);
+    setPosts(replace);
+    setFeedPosts(replace);
+    setViewingPosts(replace);
+    setSelectedCaseStudy((cs) => (cs && cs.id === updated.id ? updated : cs));
+  };
+
+  const handleUpdatePost = async (postId, draft) => {
+    replacePost(toPost(await api.updatePost(postId, toPostUpdatePayload(draft))));
+  };
+
+  const handleDeletePost = async (postId) => {
+    try {
+      await api.deletePost(postId);
+    } catch (err) {
+      showToast(`Couldn't delete the post: ${err.message}`);
+      return;
+    }
+    const drop = (ps) => ps.filter((p) => p.id !== postId);
+    setPosts(drop);
+    setFeedPosts(drop);
+    setViewingPosts(drop);
+    setSelectedCaseStudy((cs) => (cs && cs.id === postId ? null : cs));
+    setViewingUser((u) => (u && u.id === currentUser.id ? { ...u, postsCount: Math.max(0, (u.postsCount || 1) - 1) } : u));
+    showToast('Post deleted');
+  };
+
+  const handleDeleteStory = async (storyId) => {
+    try {
+      await api.deleteStory(storyId);
+    } catch (err) {
+      showToast(`Couldn't delete the story: ${err.message}`);
+      return;
+    }
+    setStories((ss) => ss.filter((s) => s.id !== storyId));
+    setActiveStoryIdx(null);
+    showToast('Story deleted');
+  };
+
+  const handleUpdateChallenge = async (challengeId, draft) => {
+    const updated = toChallenge(
+      await api.updateChallenge(challengeId, {
+        title: draft.title.trim(),
+        scenario_description: draft.scenarioDescription.trim(),
+        profession_category: draft.category,
+      })
+    );
+    setChallenges((cs) => mapById(cs, challengeId, () => updated));
+  };
+
+  const handleDeleteChallenge = async (challengeId) => {
+    try {
+      await api.deleteChallenge(challengeId);
+    } catch (err) {
+      showToast(`Couldn't delete the challenge: ${err.message}`);
+      return;
+    }
+    setChallenges((cs) => cs.filter((c) => c.id !== challengeId));
+    showToast('Challenge deleted');
+  };
+
+  const handleUpdateSuggestion = async (challengeId, suggestionId, draft) => {
+    const updated = toSuggestion(
+      await api.updateSuggestion(suggestionId, {
+        suggestion_text: draft.suggestionText.trim(),
+        suggested_tool_or_reference: draft.suggestedTool?.trim() || null,
+      })
+    );
+    setChallenges((cs) => mapById(cs, challengeId, (c) => ({
+      ...c, suggestions: mapById(c.suggestions, suggestionId, () => updated),
+    })));
+  };
+
+  const handleDeleteSuggestion = async (challengeId, suggestion) => {
+    try {
+      await api.deleteSuggestion(suggestion.id);
+    } catch (err) {
+      showToast(`Couldn't delete the idea: ${err.message}`);
+      return;
+    }
+    setChallenges((cs) => mapById(cs, challengeId, (c) => ({
+      ...c,
+      // Removing the accepted idea reopens the challenge, as on the server.
+      isSolved: suggestion.isAccepted ? false : c.isSolved,
+      suggestions: c.suggestions.filter((s) => s.id !== suggestion.id),
+    })));
+  };
+
+  const handleUpdateQuestion = async (qaId, draft) => {
+    const updated = toQuestion(
+      await api.updateQuestion(qaId, { question_text: draft.questionText.trim(), topic_tag: draft.topicTag })
+    );
+    setQaItems((qs) => mapById(qs, qaId, () => updated));
+    return updated;
+  };
+
+  // Returns true when deleted, so callers holding their own copy of the list can drop it too.
+  const handleDeleteQuestion = async (qaId) => {
+    try {
+      await api.deleteQuestion(qaId);
+    } catch (err) {
+      showToast(`Couldn't delete the question: ${err.message}`);
+      return false;
+    }
+    setQaItems((qs) => qs.filter((q) => q.id !== qaId));
+    return true;
   };
 
   const handleAddPost = async (draft) => {
@@ -436,6 +551,8 @@ export default function App() {
             onOpenReviewModal={setReviewModalPost}
             onAskQuestion={handleAskQuestion}
             onSelectHighlight={handleSelectHighlight}
+            onEditPost={setEditingPost}
+            onDeletePost={handleDeletePost}
           />
         ) : (
           /* MAIN FEED & TABS VIEW */
@@ -534,6 +651,9 @@ export default function App() {
                       onOpenCaseStudy={setSelectedCaseStudy}
                       onOpenReviewModal={setReviewModalPost}
                       onOpenUserProfile={handleOpenUserProfile}
+                      isOwn={post.authorId === me.id}
+                      onEdit={setEditingPost}
+                      onDelete={handleDeletePost}
                     />
                   ))
                 )}
@@ -562,6 +682,11 @@ export default function App() {
                 onAddSuggestion={handleAddSuggestion}
                 onUpvoteSuggestion={handleUpvoteSuggestion}
                 onAcceptSuggestion={handleAcceptSuggestion}
+                onUpdateChallenge={handleUpdateChallenge}
+                onDeleteChallenge={handleDeleteChallenge}
+                onUpdateSuggestion={handleUpdateSuggestion}
+                onDeleteSuggestion={handleDeleteSuggestion}
+                categories={categories}
                 currentUserId={me.id}
                 onOpenCreateChallenge={() => setIsCreateOpen(true)}
               />
@@ -575,6 +700,8 @@ export default function App() {
                 currentUserId={me.id}
                 onAskQuestion={handleAskQuestion}
                 onAnswerQuestion={handleAnswerQuestion}
+                onUpdateQuestion={handleUpdateQuestion}
+                onDeleteQuestion={handleDeleteQuestion}
                 onUpvoteQA={handleUpvoteQA}
               />
             )}
@@ -587,6 +714,8 @@ export default function App() {
         <StoryViewerModal
           stories={stories}
           initialIndex={activeStoryIdx}
+          currentUserId={me.id}
+          onDeleteStory={handleDeleteStory}
           onClose={() => setActiveStoryIdx(null)}
         />
       )}
@@ -614,11 +743,14 @@ export default function App() {
       )}
 
       {/* Post/Story/Challenge Creator Studio Modal */}
-      {isCreateOpen && (
+      {(isCreateOpen || editingPost) && (
         <CreatePostModal
+          key={editingPost?.id || 'new'}
           currentUser={me}
           categories={categories}
-          onClose={() => setIsCreateOpen(false)}
+          editPost={editingPost}
+          onUpdatePost={handleUpdatePost}
+          onClose={() => { setIsCreateOpen(false); setEditingPost(null); }}
           onCreatePost={handleAddPost}
           onCreateStory={handleAddStory}
           onCreateChallenge={handleAddChallenge}

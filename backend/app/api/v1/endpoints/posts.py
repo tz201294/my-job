@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import bookmarked_ids_for, liked_ids_for, post_out
 from app.db.session import get_db
-from app.models import Bookmark, Follow, Post, PostLike, TaskDetails, User
-from app.schemas.post import PostCreate, PostResponse, PostType
+from app.models import Bookmark, Follow, Post, PostLike, TaskDetails, TaskReview, User
+from app.schemas.post import PostCreate, PostResponse, PostType, PostUpdate
 
 router = APIRouter()
 
@@ -108,6 +108,66 @@ async def get_post_by_id(
     liked = await liked_ids_for(db, user, [post])
     saved = await bookmarked_ids_for(db, user, [post])
     return post_out(post, liked, saved)
+
+
+async def _own_post(db: AsyncSession, user: User, post_id: str) -> Post:
+    post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.author_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only change your own posts")
+    return post
+
+
+@router.patch("/{post_id}", response_model=PostResponse)
+async def update_post(
+    post_id: str,
+    post_in: PostUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The author edits their post. Only the fields sent are changed."""
+    post = await _own_post(db, user, post_id)
+    changes = post_in.changes()
+
+    for field in ("title", "caption", "tags"):
+        if field in changes:
+            setattr(post, field, changes[field])
+    if "media" in changes:
+        post.media = [m.model_dump() for m in post_in.media]
+    if "task_details" in changes:
+        if post_in.task_details is None:
+            post.task_details = None  # delete-orphan removes the row
+        else:
+            td = post_in.task_details.model_dump(mode="json")
+            if post.task_details is None:
+                post.task_details = TaskDetails(**td)
+            else:
+                for k, v in td.items():
+                    setattr(post.task_details, k, v)
+    await db.commit()
+
+    db.expire_all()
+    post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one()
+    liked = await liked_ids_for(db, user, [post])
+    saved = await bookmarked_ids_for(db, user, [post])
+    return post_out(post, liked, saved)
+
+
+@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_post(
+    post_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The author deletes their post, with its likes, saves and reviews."""
+    post = await _own_post(db, user, post_id)
+    # Removed explicitly so nothing is left behind on databases that don't enforce ON DELETE CASCADE (SQLite).
+    for model in (PostLike, Bookmark, TaskReview):
+        await db.execute(delete(model).where(model.post_id == post_id))
+    await db.delete(post)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{post_id}/like")

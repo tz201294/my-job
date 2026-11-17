@@ -4,6 +4,8 @@ import {
    ArrowRight, CheckCircle2, ChevronRight, Share2, Layers, AlertTriangle, Sparkles
  } from 'lucide-react';
 
+import OwnerActions from './OwnerActions';
+
 const difficultyGradients = {
   expert: 'from-purple-600 via-fuchsia-600 to-pink-600',
   advanced: 'from-amber-500 via-orange-500 to-red-500',
@@ -17,7 +19,10 @@ export default function PostCard({
   onBookmark, 
   onOpenCaseStudy, 
   onOpenReviewModal,
-  onOpenUserProfile
+  onOpenUserProfile,
+  isOwn = false,
+  onEdit,
+  onDelete,
 }) {
   const isCaseStudy = post.postType === 'pro_case_study' || post.postType === 'task_walkthrough';
   const task = post.taskDetails;
@@ -54,8 +59,16 @@ export default function PostCard({
           </div>
         </div>
 
-        {/* Content Type Badge */}
-        <div>
+        {/* Content Type Badge (+ edit/delete on your own posts) */}
+        <div className="flex items-center gap-2">
+          {isOwn && (
+            <OwnerActions
+              label="post"
+              onEdit={() => onEdit(post)}
+              onDelete={() => onDelete(post.id)}
+              confirmText="Delete this post? Its likes, saves and reviews are removed too. This cannot be undone."
+            />
+          )}
           {isCaseStudy ? (
             <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-black shadow-sm shadow-indigo-500/20">
               <Layers className="w-3.5 h-3.5" />

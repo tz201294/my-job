@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-from app.schemas.common import HttpUrlStr
+from app.schemas.common import HttpUrlStr, NonEmptyStr, PartialUpdate
 from app.schemas.task import TaskDetailsBase, TaskDetailsCreate, TaskDetailsResponse
 
 
@@ -33,6 +33,17 @@ class PostBase(BaseModel):
 
 class PostCreate(PostBase):
     media: List[MediaItemCreate] = []
+    task_details: Optional[TaskDetailsCreate] = None
+
+
+class PostUpdate(PartialUpdate):
+    """Fields the author can change. The post type is fixed once published.
+    Sending task_details replaces the whole walkthrough; sending null removes it."""
+    REQUIRED = ("title", "caption", "media", "tags")
+    title: Optional[NonEmptyStr(255)] = None
+    caption: Optional[NonEmptyStr(20000)] = None
+    media: Optional[List[MediaItemCreate]] = None
+    tags: Optional[List[str]] = None
     task_details: Optional[TaskDetailsCreate] = None
 
 

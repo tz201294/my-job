@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Heart, Send, Sparkles, ShieldCheck } from 'lucide-react';
+import OwnerActions from './OwnerActions';
 
-export default function StoryViewerModal({ stories, initialIndex, onClose }) {
+export default function StoryViewerModal({ stories, initialIndex, currentUserId, onDeleteStory, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
   const [progress, setProgress] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
@@ -118,9 +119,19 @@ export default function StoryViewerModal({ stories, initialIndex, onClose }) {
               </p>
             </div>
           </div>
-          <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider">
-            {story.professionTag}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {onDeleteStory && currentUserId && story.userId === currentUserId && (
+              <OwnerActions
+                label="story"
+                tone="dark"
+                onDelete={() => onDeleteStory(story.id)}
+                confirmText="Delete this story now? It won't be shown to anyone anymore."
+              />
+            )}
+            <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider">
+              {story.professionTag}
+            </span>
+          </div>
         </div>
 
         {/* Story Media Background */}

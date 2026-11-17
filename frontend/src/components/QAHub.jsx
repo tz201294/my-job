@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { toQuestion } from '../api/mappers';
+import OwnerActions from './OwnerActions';
 
 const MAX_ANSWER = 5000;
 
@@ -85,14 +86,72 @@ function AnswerForm({ qa, onSubmit, onCancel }) {
   );
 }
 
-function QuestionCard({ qa, isMine, onUpvoteQA, onAnswer }) {
+// The asker rewords their question (only while it is unanswered).
+function QuestionEditForm({ qa, onSubmit, onCancel }) {
+  const [text, setText] = useState(qa.questionText);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setError('');
+    setBusy(true);
+    try {
+      await onSubmit({ questionText: text.trim(), topicTag: qa.topicTag });
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="mb-3 space-y-2">
+      <label htmlFor={`q-edit-${qa.id}`} className="sr-only">Edit your question</label>
+      <textarea
+        id={`q-edit-${qa.id}`}
+        rows={2}
+        maxLength={2000}
+        required
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold resize-y"
+      />
+      <div className="flex items-center justify-between gap-2">
+        <span role="alert" className="text-[11px] font-bold text-rose-600">{error}</span>
+        <div className="flex gap-2">
+          <button type="button" onClick={onCancel} disabled={busy}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">
+            Cancel
+          </button>
+          <button type="submit" disabled={busy || !text.trim()}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(false);
   const answered = !!qa.answerText;
 
   const submitAnswer = async (draft) => {
     await onAnswer(qa.id, draft);
     setEditing(false);
   };
+
+  const submitQuestion = async (draft) => {
+    await onUpdate(qa.id, draft);
+    setEditingQuestion(false);
+  };
+
+  // The asker can reword until it's answered and delete any time; the professional asked can delete it.
+  const canEditQuestion = isAsker && !answered && !editingQuestion;
+  const canDelete = isAsker || isMine;
 
   return (
     <div className="border border-indigo-100 rounded-3xl p-4 sm:p-5 bg-white hover:border-indigo-200 transition-all shadow-2xs">
@@ -108,6 +167,17 @@ function QuestionCard({ qa, isMine, onUpvoteQA, onAnswer }) {
           </span>
         </div>
 
+        <div className="flex items-center gap-1.5">
+        {canDelete && (
+          <OwnerActions
+            label="question"
+            onEdit={canEditQuestion ? () => setEditingQuestion(true) : undefined}
+            onDelete={() => onDelete(qa.id)}
+            confirmText={answered
+              ? 'Delete this question and its answer? This cannot be undone.'
+              : 'Delete this question? This cannot be undone.'}
+          />
+        )}
         <button
           onClick={() => onUpvoteQA(qa.id)}
           aria-pressed={qa.upvotedByMe}
@@ -121,12 +191,17 @@ function QuestionCard({ qa, isMine, onUpvoteQA, onAnswer }) {
           <ArrowUp className="w-3.5 h-3.5" />
           <span>{qa.upvotes}</span>
         </button>
+        </div>
       </div>
 
       {/* Question Text */}
-      <h4 className="font-extrabold text-sm sm:text-base text-slate-900 mb-3 leading-snug">
-        "{qa.questionText}"
-      </h4>
+      {editingQuestion ? (
+        <QuestionEditForm qa={qa} onSubmit={submitQuestion} onCancel={() => setEditingQuestion(false)} />
+      ) : (
+        <h4 className="font-extrabold text-sm sm:text-base text-slate-900 mb-3 leading-snug">
+          "{qa.questionText}"
+        </h4>
+      )}
 
       {/* Worker Response Box */}
       {isMine && (!answered || editing) ? (
@@ -188,7 +263,8 @@ function QuestionCard({ qa, isMine, onUpvoteQA, onAnswer }) {
 }
 
 export default function QAHub({
-  qaItems, professionals = [], currentUserId, onAskQuestion, onAnswerQuestion, onUpvoteQA,
+  qaItems, professionals = [], currentUserId, onAskQuestion, onAnswerQuestion, onUpdateQuestion, onDeleteQuestion,
+  onUpvoteQA,
 }) {
   const [questionText, setQuestionText] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('Daily Routine & Worklife');
@@ -236,6 +312,15 @@ export default function QAHub({
   const handleAnswer = async (qaId, draft) => {
     await onAnswerQuestion(qaId, draft);
     setInbox((list) => (list ? list.filter((q) => q.id !== qaId) : list));
+  };
+
+  const handleUpdate = async (qaId, draft) => {
+    const updated = await onUpdateQuestion(qaId, draft);
+    setInbox((list) => list && list.map((q) => (q.id === qaId ? updated : q)));
+  };
+
+  const handleDelete = async (qaId) => {
+    if (await onDeleteQuestion(qaId)) setInbox((list) => list && list.filter((q) => q.id !== qaId));
   };
 
   // Keep upvotes on inbox cards in step with the main list.
@@ -366,8 +451,11 @@ export default function QAHub({
             key={qa.id}
             qa={qa}
             isMine={!!currentUserId && qa.workerId === currentUserId}
+            isAsker={!!currentUserId && qa.askerId === currentUserId}
             onUpvoteQA={handleUpvote}
             onAnswer={handleAnswer}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
           />
         ))}
       </div>

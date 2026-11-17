@@ -3,7 +3,7 @@ from typing import Annotated, Optional, List
 from datetime import datetime
 from enum import Enum
 
-from app.schemas.common import OptionalHttpUrlStr
+from app.schemas.common import NonEmptyStr, OptionalHttpUrlStr, OptionalStr, PartialUpdate
 
 
 class ReviewRating(int, Enum):
@@ -40,8 +40,15 @@ class TaskReviewResponse(BaseModel):
 
 # Q&A Segment Schemas
 class QAQuestionCreate(BaseModel):
-    question_text: str
-    topic_tag: Optional[str] = None  # e.g., "Career Advice", "Tool Choice", "Salary & Routine"
+    question_text: NonEmptyStr(2000)
+    topic_tag: OptionalStr(64) = None  # e.g., "Career Advice", "Tool Choice", "Salary & Routine"
+
+
+class QAQuestionUpdate(PartialUpdate):
+    """The asker can reword a question until it is answered."""
+    REQUIRED = ("question_text",)
+    question_text: Optional[NonEmptyStr(2000)] = None
+    topic_tag: OptionalStr(64) = None
 
 
 class QAAnswerCreate(BaseModel):
@@ -84,8 +91,14 @@ class QASessionResponse(BaseModel):
 
 # Crowdsourced Problem & Brainstorming Challenge Schemas
 class ChallengeSuggestionCreate(BaseModel):
-    suggestion_text: str
-    suggested_tool_or_reference: Optional[str] = None
+    suggestion_text: NonEmptyStr(2000)
+    suggested_tool_or_reference: OptionalStr(255) = None
+
+
+class ChallengeSuggestionUpdate(PartialUpdate):
+    REQUIRED = ("suggestion_text",)
+    suggestion_text: Optional[NonEmptyStr(2000)] = None
+    suggested_tool_or_reference: OptionalStr(255) = None
 
 
 class ChallengeSuggestionResponse(BaseModel):
@@ -105,11 +118,20 @@ class ChallengeSuggestionResponse(BaseModel):
 
 
 class WorkChallengeCreate(BaseModel):
-    title: str
-    scenario_description: str
-    profession_category: str
+    title: NonEmptyStr(255)
+    scenario_description: NonEmptyStr(5000)
+    profession_category: NonEmptyStr(128)
     media_url: OptionalHttpUrlStr = None
-    urgency_level: str = "medium"  # "low" | "medium" | "urgent" | "brainstorming"
+    urgency_level: NonEmptyStr(64) = "medium"  # "low" | "medium" | "urgent" | "brainstorming"
+
+
+class WorkChallengeUpdate(PartialUpdate):
+    REQUIRED = ("title", "scenario_description", "profession_category", "urgency_level")
+    title: Optional[NonEmptyStr(255)] = None
+    scenario_description: Optional[NonEmptyStr(5000)] = None
+    profession_category: Optional[NonEmptyStr(128)] = None
+    media_url: OptionalHttpUrlStr = None
+    urgency_level: Optional[NonEmptyStr(64)] = None
 
 
 class WorkChallengeResponse(BaseModel):

@@ -67,6 +67,7 @@ export function toPost(p) {
           category: td.category,
           difficulty: capitalize(td.difficulty),
           estimatedDuration: formatDuration(td.estimated_time_mins),
+          estimatedMins: td.estimated_time_mins || null,
           toolsUsed: td.tools_used || [],
           safetyWarnings: td.safety_warnings,
           steps: (td.steps || []).map((s) => ({
@@ -143,6 +144,7 @@ export function toQuestion(q) {
     workerFullName: q.worker_full_name || q.worker_username,
     workerProfessionTitle: q.worker_profession_title || 'Professional',
     workerAvatarUrl: q.worker_avatar_url || DEFAULT_AVATAR,
+    askerId: q.asker_id,
     askerUsername: q.asker_username,
     askerAvatarUrl: q.asker_avatar_url || DEFAULT_AVATAR,
     questionText: q.question_text,
@@ -229,6 +231,12 @@ export function toPostPayload(d) {
         }
       : null,
   };
+}
+
+// Same fields as a new post, minus the type, which can't change after publishing.
+export function toPostUpdatePayload(d) {
+  const { post_type, ...rest } = toPostPayload(d); // eslint-disable-line no-unused-vars
+  return rest;
 }
 
 export const toStoryPayload = (d) => ({

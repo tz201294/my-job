@@ -2,34 +2,55 @@ import React, { useState } from 'react';
 import {
   X, Plus, Trash2, Upload
 } from 'lucide-react';
+import { PLACEHOLDER_IMAGE } from '../api/mappers';
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'];
 
+const EMPTY_STEP = { stepNumber: 1, title: '', description: '', imageUrl: '', tip: '' };
+
 // onCreatePost / onCreateStory / onCreateChallenge receive a plain draft and return a promise
 // that rejects with a readable error if the server refused it.
-export default function CreatePostModal({ currentUser, categories = [], onClose, onCreatePost, onCreateStory, onCreateChallenge }) {
-  const [contentType, setContentType] = useState('pro_case_study'); // 'pro_case_study' | 'general_post' | 'story' | 'challenge'
+// With `editPost`, the modal edits that post instead (its type is fixed) and saves via onUpdatePost(id, draft).
+export default function CreatePostModal({
+  currentUser, categories = [], editPost = null, onClose, onCreatePost, onUpdatePost, onCreateStory, onCreateChallenge,
+}) {
+  const td = editPost?.taskDetails;
+  const isEditing = !!editPost;
+  const [contentType, setContentType] = useState(
+    isEditing ? (td ? 'pro_case_study' : 'general_post') : 'pro_case_study'
+  ); // 'pro_case_study' | 'general_post' | 'story' | 'challenge'
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const categoryNames = categories.filter((c) => c.slug !== 'all').map((c) => c.name);
+  // Keep an edited post's category selectable even if it isn't in today's list.
+  if (td?.category && !categoryNames.includes(td.category)) categoryNames.unshift(td.category);
 
   // General & Case Study Fields
-  const [title, setTitle] = useState('');
-  const [caption, setCaption] = useState('');
-  const [mediaUrl, setMediaUrl] = useState('');
-  const [tags, setTags] = useState('');
+  const [title, setTitle] = useState(editPost?.title || '');
+  const [caption, setCaption] = useState(editPost?.caption || '');
+  const [mediaUrl, setMediaUrl] = useState(
+    editPost?.mediaUrl && editPost.mediaUrl !== PLACEHOLDER_IMAGE ? editPost.mediaUrl : ''
+  );
+  const [tags, setTags] = useState((editPost?.tags || []).join(', '));
 
   // Case Study Specific Fields
   const [category, setCategory] = useState(
-    categoryNames.includes(currentUser.industry) ? currentUser.industry : categoryNames[0] || ''
+    td?.category || (categoryNames.includes(currentUser.industry) ? currentUser.industry : categoryNames[0] || '')
   );
-  const [difficulty, setDifficulty] = useState('intermediate');
-  const [minutes, setMinutes] = useState('');
-  const [problemStatement, setProblemStatement] = useState('');
-  const [toolsString, setToolsString] = useState('');
-  const [safetyWarnings, setSafetyWarnings] = useState('');
-  const [steps, setSteps] = useState([{ stepNumber: 1, title: '', description: '', imageUrl: '', tip: '' }]);
+  const [difficulty, setDifficulty] = useState(td?.difficulty ? td.difficulty.toLowerCase() : 'intermediate');
+  const [minutes, setMinutes] = useState(td?.estimatedMins ? String(td.estimatedMins) : '');
+  const [problemStatement, setProblemStatement] = useState(td?.problemStatement || '');
+  const [toolsString, setToolsString] = useState((td?.toolsUsed || []).join(', '));
+  const [safetyWarnings, setSafetyWarnings] = useState(td?.safetyWarnings || '');
+  const [steps, setSteps] = useState(
+    td?.steps?.length
+      ? td.steps.map((s, i) => ({
+          stepNumber: i + 1, title: s.title || '', description: s.description || '',
+          imageUrl: s.imageUrl || '', tip: s.tip || '',
+        }))
+      : [EMPTY_STEP]
+  );
 
   // Story Fields
   const [storyCaption, setStoryCaption] = useState('');
@@ -74,7 +95,7 @@ export default function CreatePostModal({ currentUser, categories = [], onClose,
       } else if (contentType === 'challenge') {
         await onCreateChallenge({ title: challengeTitle, scenarioDescription: challengeDesc, category });
       } else {
-        await onCreatePost({
+        await (isEditing ? (draft) => onUpdatePost(editPost.id, draft) : onCreatePost)({
           postType: contentType,
           title,
           caption,
@@ -104,16 +125,18 @@ export default function CreatePostModal({ currentUser, categories = [], onClose,
         {/* Modal Header */}
         <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
           <div>
-            <h3 className="font-extrabold text-base sm:text-lg">Publishing Studio</h3>
-            <p className="text-xs text-slate-400">Upload media or document step-by-step profession techniques</p>
+            <h3 className="font-extrabold text-base sm:text-lg">{isEditing ? 'Edit post' : 'Publishing Studio'}</h3>
+            <p className="text-xs text-slate-400">
+              {isEditing ? 'Change the text, photo, tags or steps of your post' : 'Upload media or document step-by-step profession techniques'}
+            </p>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-full">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content Type Selector */}
-        <div className="p-3 bg-slate-100 border-b border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-bold">
+        {/* Content Type Selector (fixed when editing) */}
+        <div className={`p-3 bg-slate-100 border-b border-slate-200 ${isEditing ? 'hidden' : 'grid'} grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-bold`}>
           <button
             type="button"
             onClick={() => setContentType('pro_case_study')}
@@ -494,7 +517,7 @@ export default function CreatePostModal({ currentUser, categories = [], onClose,
               disabled={busy}
               className="px-6 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white shadow-sm transition-all"
             >
-              {busy ? 'Publishing…' : 'Publish to MyJob'}
+              {isEditing ? (busy ? 'Saving…' : 'Save changes') : (busy ? 'Publishing…' : 'Publish to MyJob')}
             </button>
           </div>
         </form>

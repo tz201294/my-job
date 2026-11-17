@@ -9,14 +9,17 @@ import {
   INITIAL_STORIES,
   INITIAL_USERS,
 } from '../data/mockData';
-import { DEFAULT_AVATAR, toChallenge, toPost, toQuestion, toStory, toSuggestion } from './mappers';
+import {
+  DEFAULT_AVATAR, PLACEHOLDER_IMAGE, toChallenge, toPost, toQuestion, toStory, toSuggestion,
+} from './mappers';
 
 export const DEMO_PASSWORD = 'demo1234';
 export const DEMO_TOKEN = 'demo_token';
 
 // Bump the version when the sample data changes so returning visitors get the new data.
 const STORE_KEY = 'myjob_demo_store_v3';
-const clone = (x) => JSON.parse(JSON.stringify(x));
+// undefined (a 204 No Content reply) becomes null, like an empty response body.
+const clone = (x) => (x === undefined ? null : JSON.parse(JSON.stringify(x)));
 
 const SIGNUP_OPTIONS = {
   industries: [
@@ -385,6 +388,7 @@ function askQuestion(workerId, body) {
     worker_full_name: worker.full_name,
     worker_profession_title: worker.profession?.title || null,
     worker_avatar_url: worker.avatar_url,
+    asker_id: u.id,
     asker_username: u.username,
     asker_avatar_url: u.avatar_url,
     answer_text: null,
@@ -428,6 +432,149 @@ function submitReview(body) {
   return review;
 }
 
+// ---------- edit & delete (same rules as the server) ----------
+
+const isHttpUrl = (v) => /^https?:\/\/[^/\s]+/i.test(String(v || '').trim());
+
+function requiredText(body, field, max) {
+  if (!(field in body)) return undefined;
+  const v = String(body[field] ?? '').trim();
+  if (!v) fail(422, `${field}: can't be empty`);
+  if (v.length > max) fail(422, `${field}: String should have at most ${max} characters`);
+  return v;
+}
+
+function optionalText(body, field, max) {
+  const v = String(body[field] ?? '').trim();
+  if (v.length > max) fail(422, `${field}: String should have at most ${max} characters`);
+  return v || null;
+}
+
+function updatePost(postId, body) {
+  const u = me();
+  const p = byId(load().posts, postId) || fail(404, 'Post not found');
+  if (p.authorUsername !== u.username) fail(403, 'You can only change your own posts');
+  const title = requiredText(body, 'title', 255);
+  const caption = requiredText(body, 'caption', 20000);
+  if ('media' in body && (body.media || []).some((m) => !isHttpUrl(m.url))) {
+    fail(422, 'media: must be a link starting with http:// or https://');
+  }
+  const steps = body.task_details?.steps || [];
+  if (steps.some((s) => s.image_url && !isHttpUrl(s.image_url))) {
+    fail(422, 'image_url: must be a link starting with http:// or https://');
+  }
+  if (title !== undefined) p.title = title;
+  if (caption !== undefined) p.caption = caption;
+  if ('tags' in body) p.tags = body.tags || [];
+  if ('media' in body) p.mediaUrl = body.media?.[0]?.url?.trim() || PLACEHOLDER_IMAGE;
+  if ('task_details' in body) {
+    p.taskDetails = body.task_details ? toPost({ task_details: body.task_details }).taskDetails : undefined;
+  }
+  save();
+  return p;
+}
+
+function deletePost(postId) {
+  const s = load();
+  const u = me();
+  const p = byId(s.posts, postId) || fail(404, 'Post not found');
+  if (p.authorUsername !== u.username) fail(403, 'You can only change your own posts');
+  s.posts = s.posts.filter((x) => x.id !== postId);
+  s.reviews = s.reviews.filter((r) => r.post_id !== postId);
+  save();
+}
+
+function deleteStory(storyId) {
+  const s = load();
+  const u = me();
+  const story = byId(s.stories, storyId) || fail(404, 'Story not found');
+  if (story.userId !== u.id) fail(403, 'You can only delete your own stories');
+  s.stories = s.stories.filter((x) => x.id !== storyId);
+  save();
+}
+
+function updateQuestion(questionId, body) {
+  const u = me();
+  const q = byId(load().questions, questionId) || fail(404, 'Question not found');
+  if (q.askerId !== u.id) fail(403, 'You can only edit your own questions');
+  if (q.answerText) fail(409, "This question has been answered, so it can't be edited");
+  const text = requiredText(body, 'question_text', 2000);
+  if (text !== undefined) q.questionText = text;
+  if ('topic_tag' in body) q.topicTag = optionalText(body, 'topic_tag', 64) || 'General Inquiry';
+  save();
+  return q;
+}
+
+function deleteQuestion(questionId) {
+  const s = load();
+  const u = me();
+  const q = byId(s.questions, questionId) || fail(404, 'Question not found');
+  if (u.id !== q.askerId && u.id !== q.workerId) {
+    fail(403, 'Only the asker or the professional asked can delete this question');
+  }
+  s.questions = s.questions.filter((x) => x.id !== questionId);
+  save();
+}
+
+function ownChallenge(challengeId) {
+  const u = me();
+  const c = byId(load().challenges, challengeId) || fail(404, 'Challenge not found');
+  if (c.workerId !== u.id) fail(403, 'You can only change your own challenges');
+  return c;
+}
+
+function updateChallenge(challengeId, body) {
+  const c = ownChallenge(challengeId);
+  const title = requiredText(body, 'title', 255);
+  const description = requiredText(body, 'scenario_description', 5000);
+  const category = requiredText(body, 'profession_category', 128);
+  if (title !== undefined) c.title = title;
+  if (description !== undefined) c.scenarioDescription = description;
+  if (category !== undefined) c.category = category;
+  save();
+  return c;
+}
+
+function deleteChallenge(challengeId) {
+  ownChallenge(challengeId);
+  const s = load();
+  s.challenges = s.challenges.filter((x) => x.id !== challengeId);
+  save();
+}
+
+function findSuggestion(suggestionId) {
+  for (const c of load().challenges) {
+    const sug = c.suggestions.find((x) => x.id === suggestionId);
+    if (sug) return [c, sug];
+  }
+  return fail(404, 'Suggestion not found');
+}
+
+function updateSuggestion(suggestionId, body) {
+  const u = me();
+  const [, sug] = findSuggestion(suggestionId);
+  if (sug.suggesterId !== u.id) fail(403, 'You can only edit your own ideas');
+  if (sug.isAccepted) fail(409, "This idea was accepted as the solution, so it can't be edited");
+  const text = requiredText(body, 'suggestion_text', 2000);
+  if (text !== undefined) sug.suggestionText = text;
+  if ('suggested_tool_or_reference' in body) {
+    sug.suggestedTool = optionalText(body, 'suggested_tool_or_reference', 255) || undefined;
+  }
+  save();
+  return sug;
+}
+
+function deleteSuggestion(suggestionId) {
+  const u = me();
+  const [chal, sug] = findSuggestion(suggestionId);
+  if (u.id !== sug.suggesterId && u.id !== chal.workerId) {
+    fail(403, 'Only the author or the challenge owner can delete this idea');
+  }
+  if (sug.isAccepted) chal.isSolved = false;
+  chal.suggestions = chal.suggestions.filter((x) => x.id !== suggestionId);
+  save();
+}
+
 // ---------- router ----------
 
 // Returns a copy, like a network response would, so callers never share objects with the store.
@@ -468,6 +615,7 @@ function handle(endpoint, options) {
   // Stories
   if (route === 'GET /stories/feed') return s.stories;
   if (route === 'POST /stories') return createStory(body);
+  if (parts[0] === 'stories' && parts[1] && !parts[2] && method === 'DELETE') return deleteStory(parts[1]);
 
   // Posts
   if (route === 'GET /posts/feed') return feed(url.searchParams);
@@ -477,6 +625,8 @@ function handle(endpoint, options) {
     if (parts[2] === 'like' && method === 'POST') return toggleLike(parts[1]);
     if (parts[2] === 'bookmark' && method === 'POST') return toggleBookmark(parts[1]);
     if (!parts[2] && method === 'GET') return byId(s.posts, parts[1]) || fail(404, 'Post not found');
+    if (!parts[2] && method === 'PATCH') return updatePost(parts[1], body || {});
+    if (!parts[2] && method === 'DELETE') return deletePost(parts[1]);
   }
 
   // Discovery
@@ -486,6 +636,16 @@ function handle(endpoint, options) {
   if (route === 'GET /community/challenges') return s.challenges;
   if (route === 'POST /community/challenges') return createChallenge(body);
   if (parts[0] === 'community') {
+    if (parts[1] === 'challenges' && parts[2] && !parts[3] && method === 'PATCH') return updateChallenge(parts[2], body || {});
+    if (parts[1] === 'challenges' && parts[2] && !parts[3] && method === 'DELETE') return deleteChallenge(parts[2]);
+    if (parts[1] === 'suggestions' && parts[2] && !parts[3] && method === 'PATCH') return updateSuggestion(parts[2], body || {});
+    if (parts[1] === 'suggestions' && parts[2] && !parts[3] && method === 'DELETE') return deleteSuggestion(parts[2]);
+    if (parts[1] === 'qa' && parts[2] === 'questions' && parts[3] && !parts[4] && method === 'PATCH') {
+      return updateQuestion(parts[3], body || {});
+    }
+    if (parts[1] === 'qa' && parts[2] === 'questions' && parts[3] && !parts[4] && method === 'DELETE') {
+      return deleteQuestion(parts[3]);
+    }
     if (parts[1] === 'challenges' && parts[3] === 'suggest' && method === 'POST') return suggest(parts[2], body);
     if (parts[1] === 'suggestions' && parts[3] === 'accept' && method === 'POST') return setAccepted(parts[2], true);
     if (parts[1] === 'suggestions' && parts[3] === 'accept' && method === 'DELETE') return setAccepted(parts[2], false);
