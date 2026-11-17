@@ -189,6 +189,7 @@ function publicUser(u) {
   const posts = s.posts.filter((p) => p.authorUsername === u.username).length;
   return {
     ...u,
+    email_verified: !!u.email, // the demo sends no emails, so addresses count as confirmed
     is_following: s.following.includes(u.username),
     posts_count: Math.max(u.posts_count || 0, posts),
   };
@@ -196,7 +197,7 @@ function publicUser(u) {
 
 // What anyone may see about another user (no email, survey or interests), like the server's public profile.
 function publicProfile(u) {
-  const { email: _e, survey: _s, interests: _i, ...rest } = publicUser(u);
+  const { email: _e, email_verified: _v, survey: _s, interests: _i, ...rest } = publicUser(u);
   return rest;
 }
 
@@ -996,6 +997,13 @@ function handle(endpoint, options) {
   if (route === 'PATCH /auth/me') return updateMe(body || {});
   if (route === 'POST /auth/me/password') return changePassword(body);
   if (route === 'POST /auth/me/delete') return deleteMe(body);
+  if (route === 'POST /auth/password/forgot') {
+    return { detail: `The demo doesn't send emails. All demo accounts use the password ${DEMO_PASSWORD}.` };
+  }
+  if (route === 'POST /auth/password/reset' || route === 'POST /auth/email/verify') {
+    fail(400, "Links from emails don't work in the demo.");
+  }
+  if (route === 'POST /auth/email/resend') fail(400, "The demo doesn't send emails.");
   if (route === 'GET /auth/professionals') {
     return Object.values(s.users).filter((u) => u.profession).map(publicProfile);
   }

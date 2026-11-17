@@ -79,6 +79,9 @@ after logging in you land on the page the link pointed to.
 **Putting it online (free):** see [docs/DEPLOY.md](docs/DEPLOY.md) — Render (API, `render.yaml`) + Neon
 (Postgres) + GitHub Pages (website, using the `VITE_API_URL` repository variable). `DATABASE_URL` may be given in
 the form hosts hand out (`postgresql://...?sslmode=require`); the app converts it for asyncpg.
+Email (confirmation and password-reset links) goes through Brevo's API when `BREVO_API_KEY` and `EMAIL_FROM` are
+set; without them, emails are written to the API's log instead, so locally you can copy the link from there.
+Links point to `FRONTEND_URL`. Setup: docs/DEPLOY.md step 5.
 Error reporting (Sentry) is off unless `SENTRY_DSN` (API) / `VITE_SENTRY_DSN` (website) is set; `/health` is a
 database-free liveness check, `/health/db` also checks the database.
 

@@ -24,6 +24,59 @@ function Card({ icon: Icon, title, action, children, tone = 'default' }) {
   );
 }
 
+// The email row: the address, whether it's confirmed, and a way to get a new confirmation link.
+function EmailField({ account }) {
+  const [state, setState] = useState({ busy: false, message: '', error: false });
+
+  const resend = async () => {
+    setState({ busy: true, message: '', error: false });
+    try {
+      setState({ busy: false, message: (await api.resendVerification()).detail, error: false });
+    } catch (err) {
+      setState({ busy: false, message: err.message, error: true });
+    }
+  };
+
+  return (
+    <div className="py-2 border-b border-slate-100 last:border-0">
+      <div className="flex items-baseline justify-between gap-4">
+        <dt className="text-xs font-semibold text-slate-500">Email</dt>
+        <dd className="text-sm font-semibold text-slate-800 text-right break-words min-w-0">
+          {account.email || '—'}
+          {account.email && (account.email_verified ? (
+            <span className="ml-2 inline-flex items-center gap-0.5 align-middle px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+              <Check className="w-3 h-3" /> Confirmed
+            </span>
+          ) : (
+            <span className="ml-2 align-middle px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold">
+              Not confirmed
+            </span>
+          ))}
+        </dd>
+      </div>
+      {!account.email && (
+        <p className="mt-1 text-[11px] text-slate-500">Add one (Edit) so you can reset your password if you forget it.</p>
+      )}
+      {account.email && !account.email_verified && (
+        <div className="mt-1.5 text-[11px] text-slate-600">
+          <p>
+            Confirm it with the link we emailed you, so you can reset your password if you forget it.{' '}
+            <button type="button" onClick={resend} disabled={state.busy}
+              className="font-bold text-teal-700 hover:underline disabled:opacity-60">
+              {state.busy ? 'Sending…' : 'Send a new link'}
+            </button>
+          </p>
+          {state.message && (
+            <p role={state.error ? 'alert' : 'status'} className={`mt-1 font-bold ${state.error ? 'text-rose-600' : 'text-emerald-700'}`}>
+              {state.message}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Field({ label, value }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
@@ -144,6 +197,7 @@ function ProfileForm({ account, options, onSave, onDone }) {
       <div>
         <label className={labelCls} htmlFor="set-email">Email (optional, private)</label>
         <input id="set-email" type="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} />
+        <p className="text-[11px] text-slate-500 mt-1">Used to reset your password. A new address has to be confirmed again.</p>
       </div>
 
       <fieldset className="space-y-3">
@@ -355,7 +409,7 @@ export default function SettingsPage({
             <Field label="Name" value={me.fullName} />
             <Field label="Username" value={`@${me.username}`} />
             {account.bio && <Field label="Bio" value={account.bio} />}
-            <Field label="Email" value={account.email} />
+            <EmailField account={account} />
             <Field label="Work" value={account.profession ? `${me.professionTitle} · ${me.industry}` : "Not working right now"} />
             {interests.length > 0 && <Field label="Interests" value={interests.join(', ')} />}
           </dl>

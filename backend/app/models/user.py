@@ -19,6 +19,9 @@ class User(Base):
     created_at = Column(DateTime, default=utcnow)
     # Login tokens issued before this moment are rejected (set when the password changes).
     password_changed_at = Column(DateTime, nullable=True)
+    # When the email address was confirmed through the link sent to it; null = not confirmed. Reset to null when
+    # the address changes. Password-reset links are only sent to confirmed addresses.
+    email_verified_at = Column(DateTime, nullable=True)
 
     # Relationships
     profession = relationship(

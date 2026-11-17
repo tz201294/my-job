@@ -61,6 +61,7 @@ async def user_me_out(db: AsyncSession, user: User) -> dict:
         await db.execute(select(UserInterest.interest).where(UserInterest.user_id == user.id))
     ).scalars().all()
     data["email"] = user.email
+    data["email_verified"] = bool(user.email and user.email_verified_at)
     data["survey"] = SurveyResponse.model_validate(survey) if survey else None
     data["interests"] = sorted(interests)
     return data

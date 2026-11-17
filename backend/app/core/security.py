@@ -1,4 +1,5 @@
 import calendar
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -52,3 +53,32 @@ def token_predates_password_change(claims: dict, password_changed_at: Optional[d
         return False
     iat = claims.get("iat")
     return not isinstance(iat, int) or iat < _epoch(password_changed_at)
+
+
+# ---------- one-time links sent by email (password reset, email confirmation) ----------
+#
+# Signed tokens with an audience ("aud") naming their purpose: a reset token can't be used as a login token or
+# as an email-confirmation token, and vice versa (login tokens have no audience, so they fail here too).
+
+PASSWORD_RESET = "password-reset"
+EMAIL_VERIFY = "email-verify"
+
+
+def password_fingerprint(hashed_password: str) -> str:
+    """Changes whenever the password does, so a reset link stops working once it has been used."""
+    return hashlib.sha256(hashed_password.encode("utf-8")).hexdigest()[:16]
+
+
+def create_link_token(purpose: str, user_id: str, minutes: int, **claims) -> str:
+    now = utcnow()
+    payload = {"sub": user_id, "aud": purpose, "iat": _epoch(now), "exp": now + timedelta(minutes=minutes), **claims}
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def decode_link_token(token: str, purpose: str) -> Optional[dict]:
+    """The claims of a valid, unexpired `purpose` token, or None."""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM], audience=purpose)
+    except jwt.PyJWTError:
+        return None
+    return payload if payload.get("sub") else None

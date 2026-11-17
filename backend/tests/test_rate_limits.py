@@ -97,6 +97,8 @@ UNLIMITED_WRITES = {
     "change_password",  # failed-password limit
     "delete_me",
     "mark_read",  # notifications
+    "reset_password",  # needs a signed link from an email, which can't be guessed
+    "verify_email",  # same
 }
 
 
@@ -124,7 +126,7 @@ def test_every_write_route_has_a_spam_limit():
             continue
         checked += 1
         names = {getattr(c, "__qualname__", "") for c in _dependency_calls(route.dependant)}
-        if not any(n.startswith("limit.") or n == "limit_signups" for n in names):
+        if not any(n.startswith(("limit.", "limit_ip.")) for n in names):
             missing.append(f"{route.endpoint.__name__} ({route.path})")
     assert checked >= 20, f"only {checked} write routes found: is the route walk still working?"
     assert missing == [], f"write routes without a spam limit: {missing}"

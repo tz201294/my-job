@@ -24,6 +24,8 @@ What is done, what is next, and decisions still open. Update this file when a st
   uptime-alert guide (UptimeRobot). Setup: docs/DEPLOY.md step 4.
 - Spam limits on sign-ups (per IP) and on posting, commenting, asking, reacting, following and editing (per
   account); only successful actions count. A test makes sure every new write endpoint picks a limit.
+- "Forgot password" and email confirmation (Brevo API; one-time signed links; reset only to confirmed
+  addresses). Setup: docs/DEPLOY.md step 5.
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.
@@ -46,7 +48,6 @@ demo site. **Decision needed:** where files are stored once hosted.
 The frontend itself is ready; these depend on the backend steps above or are polish:
 - Point the build at the deployed API (`VITE_API_URL`) once step 1 is done (the demo stays at /demo/).
 - Photo/video upload UI (step 2).
-- "Forgot password" and email verification (need email sending on the server).
 - Basic analytics, if wanted.
 - An accessibility pass with a screen reader, and loading skeletons.
 

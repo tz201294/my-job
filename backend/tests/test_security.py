@@ -6,6 +6,7 @@ from app.core.rate_limit import FailureLimiter
 
 API = "/api/v1"
 STRONG_KEY = "x" * 48
+SITE = "https://example.github.io/prologue"
 
 
 # ---------- production configuration ----------
@@ -13,7 +14,8 @@ STRONG_KEY = "x" * 48
 @pytest.fixture(autouse=True)
 def isolated_env(monkeypatch):
     """Settings read the process environment; the test suite itself sets SECRET_KEY there."""
-    for name in ("ENVIRONMENT", "SECRET_KEY", "SEED_DEMO_DATA", "BACKEND_CORS_ORIGINS"):
+    for name in ("ENVIRONMENT", "SECRET_KEY", "SEED_DEMO_DATA", "BACKEND_CORS_ORIGINS", "FRONTEND_URL", "BREVO_API_KEY",
+                 "EMAIL_FROM"):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -23,8 +25,9 @@ def make_settings(**overrides):
 
 
 def test_production_accepts_a_safe_configuration():
-    s = make_settings(ENVIRONMENT="production", SECRET_KEY=STRONG_KEY)
+    s = make_settings(ENVIRONMENT="production", SECRET_KEY=STRONG_KEY, FRONTEND_URL=SITE + "/")
     assert s.is_production and "*" not in s.BACKEND_CORS_ORIGINS
+    assert s.FRONTEND_URL == SITE  # trailing slash dropped
 
 
 @pytest.mark.parametrize(
@@ -34,11 +37,13 @@ def test_production_accepts_a_safe_configuration():
         ({"SECRET_KEY": "too-short"}, "SECRET_KEY"),
         ({"SECRET_KEY": STRONG_KEY, "SEED_DEMO_DATA": True}, "SEED_DEMO_DATA"),
         ({"SECRET_KEY": STRONG_KEY, "BACKEND_CORS_ORIGINS": ["*"]}, "BACKEND_CORS_ORIGINS"),
+        ({"SECRET_KEY": STRONG_KEY, "FRONTEND_URL": "http://localhost:3000"}, "FRONTEND_URL"),
+        ({"SECRET_KEY": STRONG_KEY, "BREVO_API_KEY": "xkeysib-123"}, "EMAIL_FROM"),
     ],
 )
 def test_production_refuses_unsafe_settings(overrides, message):
     with pytest.raises(ValueError, match=message):
-        make_settings(ENVIRONMENT="production", **overrides)
+        make_settings(ENVIRONMENT="production", **{"FRONTEND_URL": SITE, **overrides})
 
 
 def test_development_allows_local_defaults():

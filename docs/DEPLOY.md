@@ -39,8 +39,10 @@ You don't need to create any tables: the API creates them itself on its first st
 2. Click **New** → **Blueprint**.
 3. Choose the **my-job** repository. Render finds `render.yaml` and shows one service, **prologue-api** (free plan,
    Frankfurt).
-4. Render asks for the one value it can't know: **DATABASE_URL**. Paste the Neon connection string from step 1
-   exactly as Neon gave it. The app converts it to the format it needs.
+4. Render asks for the values it can't know:
+   - **DATABASE_URL:** paste the Neon connection string from step 1 exactly as Neon gave it. The app converts it to
+     the format it needs.
+   - **BREVO_API_KEY**, **EMAIL_FROM** and **SENTRY_DSN:** leave these empty for now. Steps 4 and 5 fill them in.
 5. Click **Apply** / **Deploy Blueprint**. The first build takes about 5–10 minutes.
 6. When it says **Live**, copy the service address at the top of the page, for example
    `https://prologue-api.onrender.com`. If that name was taken, Render adds a suffix; use whatever it shows.
@@ -119,6 +121,46 @@ UptimeRobot checks the API every few minutes and emails you when it stops answer
 
 Side effect of the 5-minute check: Render's free service never goes to sleep, so visitors don't wait for it to wake
 up. Render's free plan includes 750 hours a month, enough for one service running all month.
+
+## 5. Send emails: password reset and email confirmation (free, about 15 minutes)
+
+Without this the app works, but no emails go out. That means nobody can confirm their email address, and so
+nobody can reset a forgotten password. The API refuses nothing; it just writes the emails to its log.
+
+Prologue sends through **Brevo**: its free plan allows 300 emails a day, and it can send from an address you
+already have (such as a Gmail address) without owning a domain. It's used through Brevo's web API, because
+Render's free plan blocks the usual email ports.
+
+1. Go to **brevo.com** and sign up (free plan). If Brevo asks you to complete your profile or activate your
+   account before sending, do that first.
+2. **Senders, domains & dedicated IPs** → **Senders** → **Add a sender**:
+   - **From name:** `Prologue`
+   - **From email:** the address emails should come from (for example your Gmail address)
+
+   Brevo emails that address a code to prove it's yours; enter it.
+3. **SMTP & API** → **API Keys** → **Generate a new API key**, name `prologue-api`. Copy the key (it starts with
+   `xkeysib-`). Brevo shows it only once.
+4. Render → **prologue-api** → **Environment**:
+   - **BREVO_API_KEY:** the key from step 3
+   - **EMAIL_FROM:** the sender address from step 2
+
+   Then **Save**. Render redeploys by itself.
+5. Try it: on the site, go to **Settings** → **Edit**, add your own email and save. The email should arrive
+   within a minute (check the spam folder too). Click **Confirm my email**, and Settings shows **Confirmed**. Then
+   log out, choose **Forgot password?**, and you should get a reset link.
+
+If no email arrives: Render → **prologue-api** → **Logs** shows what Brevo answered (for example "sender not
+valid"). Brevo's dashboard also lists every email it sent under **Transactional** → **Logs**.
+
+**Good to know:**
+- Emails sent from a Gmail address through another service sometimes land in spam. A domain of your own fixes
+  that later: add it in Brevo (**Senders, domains** → **Domains**), add the DNS records Brevo shows, then change
+  **EMAIL_FROM** to an address at that domain.
+- Links in the emails point to `FRONTEND_URL` (set in `render.yaml` to `https://tz201294.github.io/my-job`). If
+  the website moves to its own domain, change it there.
+- How it works: a reset link works for 60 minutes and only once. A confirmation link works for 7 days.
+  Reset links are only sent to confirmed addresses, so a typo in someone's email can't hand their account to a
+  stranger. "Forgot password" answers the same whether or not an account exists.
 
 ---
 

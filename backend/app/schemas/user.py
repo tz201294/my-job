@@ -153,6 +153,7 @@ class SurveyResponse(BaseModel):
 class UserMeResponse(UserResponse):
     """The signed-in user's own account, including private onboarding answers."""
     email: Optional[str] = None
+    email_verified: bool = False  # confirmed through the link sent to it
     survey: Optional[SurveyResponse] = None
     interests: List[str] = []
 
@@ -233,3 +234,21 @@ class PasswordChange(BaseModel):
 
 class AccountDelete(BaseModel):
     password: str
+
+
+class ForgotPassword(BaseModel):
+    username_or_email: str = Field(min_length=1, max_length=255)
+
+
+class PasswordReset(BaseModel):
+    token: str = Field(min_length=1, max_length=2000)
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_rules(cls, v: str) -> str:
+        return _check_password(v)
+
+
+class EmailVerify(BaseModel):
+    token: str = Field(min_length=1, max_length=2000)

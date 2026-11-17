@@ -5,6 +5,7 @@
 //   /qa                   Q&A                      /qa/inbox            questions waiting for my answer
 //   /reels  /activity  /notifications  /settings
 //   /u/<username>         a profile                /p/<postId>          a single post with its comments
+//   /reset-password#token=…  /verify-email#token=…   links from emails (work logged in or out)
 
 const enc = encodeURIComponent;
 
@@ -22,7 +23,12 @@ export const paths = {
   settings: '/settings',
   profile: (username) => `/u/${enc(username)}`,
   post: (id) => `/p/${enc(id)}`,
+  resetPassword: '/reset-password',
+  verifyEmail: '/verify-email',
 };
+
+// Pages opened from links in emails. They work whether or not someone is logged in.
+export const EMAIL_LINK_PAGES = ['resetPassword', 'verifyEmail'];
 
 // The menus' item keys -> addresses ('profile' needs the signed-in username).
 export function pathForMenuKey(key, myUsername) {
@@ -67,6 +73,8 @@ export function parseRoute(pathname) {
   }
   if (a === 'qa' && (!b || b === 'inbox')) return { page: 'qa', qaView: b ? 'inbox' : 'all' };
   if (!b && ['reels', 'activity', 'notifications', 'settings'].includes(a)) return { page: a };
+  if (!b && a === 'reset-password') return { page: 'resetPassword' };
+  if (!b && a === 'verify-email') return { page: 'verifyEmail' };
   if ((a === 'u' || a === 'p') && b) {
     const v = dec(b);
     if (!v) return { page: 'notFound' };
@@ -89,6 +97,7 @@ export function titleForRoute(route, extra) {
   const names = {
     challenges: 'Live Work', qa: route.qaView === 'inbox' ? 'Waiting for my answer' : 'Q&A', reels: 'Reels',
     activity: 'My activity', notifications: 'Notifications', settings: 'Settings', notFound: 'Page not found',
+    resetPassword: 'Choose a new password', verifyEmail: 'Confirm your email',
   };
   if (route.page === 'feed') {
     return route.feedView === 'all' ? `${base} — A story behind every profession`

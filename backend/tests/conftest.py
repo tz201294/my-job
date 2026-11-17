@@ -3,6 +3,8 @@ import os
 # Must be set before the app is imported so the engine binds to a throwaway database.
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-at-least-32-bytes-long"
+os.environ["FRONTEND_URL"] = "https://prologue.test"
+os.environ["BREVO_API_KEY"] = ""  # never send real email from tests
 
 import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402

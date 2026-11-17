@@ -1,25 +1,29 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.rate_limits import limit, limit_signups
+from app.api.rate_limits import allow_silently, limit, limit_ip
 from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import user_me_out, user_public_out
 from app.core.config import settings
 from app.core.rate_limit import FailureLimiter
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import (
+    EMAIL_VERIFY, PASSWORD_RESET, create_access_token, create_link_token, decode_link_token, hash_password,
+    password_fingerprint, verify_password,
+)
 from app.core.time import utcnow
 from app.services.account import delete_account
+from app.services.email import password_reset_email, send_email, verification_email
 from app.services.notifications import notify
 from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
 from app.db.session import get_db
 from app.models import Follow, Post, ProfessionProfile, User, UserInterest, UserSurvey
 from app.schemas.user import (
-    AccountDelete, EducationLevel, Gender, NonWorkingStatus, PasswordChange, ProfileUpdate, Token, UserCreate,
-    UserLogin, UserMeResponse, UserResponse,
+    AccountDelete, EducationLevel, EmailVerify, ForgotPassword, Gender, NonWorkingStatus, PasswordChange,
+    PasswordReset, ProfileUpdate, Token, UserCreate, UserLogin, UserMeResponse, UserResponse,
 )
 
 router = APIRouter()
@@ -39,6 +43,25 @@ def _too_many_attempts(retry_after: int) -> HTTPException:
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail=f"Too many failed login attempts. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
         headers={"Retry-After": str(retry_after)},
+    )
+
+
+# ---------- links sent by email ----------
+
+def _email_link(page: str, token: str) -> str:
+    # The token goes after "#": browsers never send that part to any server, so it stays out of logs.
+    return f"{settings.FRONTEND_URL}/{page}#token={token}"
+
+
+def _send_verification(background: BackgroundTasks, user: User) -> None:
+    """Emails `user` a link confirming their (unconfirmed) address. Sent after the response."""
+    if not user.email or user.email_verified_at:
+        return
+    token = create_link_token(
+        EMAIL_VERIFY, user.id, minutes=settings.EMAIL_VERIFY_LINK_DAYS * 24 * 60, email=user.email.lower()
+    )
+    background.add_task(
+        send_email, verification_email(user.email, user.full_name, _email_link("verify-email", token))
     )
 
 
@@ -75,9 +98,9 @@ async def list_professionals(
 
 @router.post(
     "/register", response_model=Token, status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(limit_signups)],
+    dependencies=[Depends(limit_ip("signup"))],
 )
-async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(user_in: UserCreate, background: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """Creates an account, stores the onboarding survey, and signs the user in."""
     email = user_in.email.lower() if user_in.email else None
 
@@ -127,6 +150,7 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 
     # Re-load so relationships are populated for the response.
     user = (await db.execute(select(User).where(User.id == user.id))).scalar_one()
+    _send_verification(background, user)
     return Token(access_token=create_access_token(user.id), user=await user_me_out(db, user))
 
 
@@ -166,6 +190,7 @@ async def read_me(current_user: User = Depends(get_current_user), db: AsyncSessi
 @router.patch("/me", dependencies=[Depends(limit("edit"))], response_model=UserMeResponse)
 async def update_me(
     changes_in: ProfileUpdate,
+    background: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -186,6 +211,8 @@ async def update_me(
             ).first()
             if taken:
                 raise HTTPException(status_code=409, detail="Email already registered")
+        if email != (user.email or "").lower():
+            user.email_verified_at = None  # a new address has to be confirmed again
         user.email = email
 
     if "interests" in changes:
@@ -228,6 +255,8 @@ async def update_me(
 
     db.expire_all()
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one()
+    if "email" in changes:
+        _send_verification(background, user)  # only if the address is new (unconfirmed)
     return await user_me_out(db, user)
 
 
@@ -253,6 +282,84 @@ async def change_password(
     await db.commit()
     username_limiter.reset(key)
     return Token(access_token=create_access_token(current_user.id), user=await user_me_out(db, current_user))
+
+
+FORGOT_PASSWORD_REPLY = (
+    "If that account has a confirmed email address, we've sent it a link to choose a new password. "
+    "Check your inbox (and the spam folder)."
+)
+INVALID_RESET_LINK = "This reset link is invalid, has expired or was already used. Ask for a new one."
+INVALID_VERIFY_LINK = "This confirmation link is invalid or has expired. Send a new one from Settings."
+
+
+@router.post("/password/forgot", status_code=status.HTTP_202_ACCEPTED, dependencies=[Depends(limit_ip("forgot"))])
+async def forgot_password(body: ForgotPassword, background: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+    """Emails a password-reset link to the account's confirmed address. The reply is the same whether or not the
+    account exists, so it can't be used to find out who has an account."""
+    ident = body.username_or_email.strip().lower()
+    user = (
+        await db.execute(select(User).where(or_(User.username == ident, func.lower(User.email) == ident)))
+    ).scalars().first()
+    if (
+        user and user.is_active and user.email and user.email_verified_at
+        and allow_silently("reset_email", user.id)
+    ):
+        token = create_link_token(
+            PASSWORD_RESET, user.id, minutes=settings.PASSWORD_RESET_LINK_MINUTES,
+            pw=password_fingerprint(user.hashed_password),
+        )
+        background.add_task(send_email, password_reset_email(
+            user.email, user.full_name, user.username, _email_link("reset-password", token)
+        ))
+    return {"detail": FORGOT_PASSWORD_REPLY}
+
+
+@router.post("/password/reset", response_model=Token)
+async def reset_password(body: PasswordReset, db: AsyncSession = Depends(get_db)):
+    """Sets a new password with the link from the email, signs out every session and signs this one in.
+    A link works once: it is tied to the password it was issued for."""
+    claims = decode_link_token(body.token, PASSWORD_RESET)
+    user = None
+    if claims:
+        user = (await db.execute(select(User).where(User.id == claims["sub"]))).scalar_one_or_none()
+    if not user or not user.is_active or claims.get("pw") != password_fingerprint(user.hashed_password):
+        raise HTTPException(status_code=400, detail=INVALID_RESET_LINK)
+
+    user.hashed_password = hash_password(body.new_password)
+    user.password_changed_at = utcnow()
+    await db.commit()
+    # A forgotten password usually comes after a few wrong guesses: lift any login lockout.
+    username_limiter.reset(user.username)
+    if user.email:
+        username_limiter.reset(user.email.lower())
+    return Token(access_token=create_access_token(user.id), user=await user_me_out(db, user))
+
+
+@router.post("/email/verify")
+async def verify_email(body: EmailVerify, db: AsyncSession = Depends(get_db)):
+    """Confirms an email address with the link sent to it. Works without being logged in (the link may be opened
+    on another device). Only for the address the link was sent to: changing it makes old links useless."""
+    claims = decode_link_token(body.token, EMAIL_VERIFY)
+    user = None
+    if claims:
+        user = (await db.execute(select(User).where(User.id == claims["sub"]))).scalar_one_or_none()
+    if not user or not user.email or user.email.lower() != claims.get("email"):
+        raise HTTPException(status_code=400, detail=INVALID_VERIFY_LINK)
+    if not user.email_verified_at:
+        user.email_verified_at = utcnow()
+        await db.commit()
+    return {"email": user.email, "email_verified": True}
+
+
+@router.post("/email/resend", status_code=status.HTTP_202_ACCEPTED, dependencies=[Depends(limit("email"))])
+async def resend_verification(background: BackgroundTasks, current_user: User = Depends(get_current_user)):
+    """Sends a new confirmation link to your email address."""
+    if not current_user.email:
+        raise HTTPException(status_code=400, detail="Add an email address in Settings first.")
+    if current_user.email_verified_at:
+        raise HTTPException(status_code=400, detail="Your email address is already confirmed.")
+    _send_verification(background, current_user)
+    return {"detail": f"We've sent a new confirmation link to {current_user.email}."}
 
 
 @router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT)

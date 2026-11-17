@@ -66,6 +66,17 @@ class Settings(BaseSettings):
     LOGIN_MAX_FAILURES_PER_IP: int = 20
     LOGIN_FAILURE_WINDOW_SECONDS: int = 15 * 60
 
+    # Where the website lives, for links in emails (no trailing slash), e.g. https://tz201294.github.io/my-job
+    FRONTEND_URL: str = "http://localhost:3000"
+
+    # Sending email through Brevo's API (docs/DEPLOY.md step 5). Without BREVO_API_KEY nothing is sent: emails are
+    # written to the log instead, which is what you want locally.
+    BREVO_API_KEY: str = ""
+    EMAIL_FROM: str = ""  # a sender address verified in Brevo
+    EMAIL_FROM_NAME: str = "Prologue"
+    PASSWORD_RESET_LINK_MINUTES: int = 60
+    EMAIL_VERIFY_LINK_DAYS: int = 7
+
     # Spam limits on sign-ups, posts, comments, reactions etc. (see app/api/rate_limits.py).
     RATE_LIMITS_ENABLED: bool = True
 
@@ -84,6 +95,11 @@ class Settings(BaseSettings):
     # Error reporting (see app/core/monitoring.py). Empty = off. The DSN comes from the Sentry project's settings.
     SENTRY_DSN: str = ""
     SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+
+    @field_validator("FRONTEND_URL")
+    @classmethod
+    def _no_trailing_slash(cls, v: str) -> str:
+        return v.rstrip("/")
 
     @field_validator("DATABASE_URL")
     @classmethod
@@ -106,6 +122,10 @@ class Settings(BaseSettings):
             )
         if self.SEED_DEMO_DATA:
             problems.append("SEED_DEMO_DATA must be false (demo accounts share a public password)")
+        if not self.FRONTEND_URL.startswith("https://"):
+            problems.append("FRONTEND_URL must be the website's https:// address (used in links in emails)")
+        if self.BREVO_API_KEY and not self.EMAIL_FROM:
+            problems.append("EMAIL_FROM must be set when BREVO_API_KEY is (the sender address verified in Brevo)")
         if "*" in self.BACKEND_CORS_ORIGINS:
             problems.append('BACKEND_CORS_ORIGINS must list real origins, not "*"')
         if problems:

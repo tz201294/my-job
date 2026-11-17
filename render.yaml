@@ -23,6 +23,12 @@ services:
         value: '["https://tz201294.github.io"]'
       - key: SEED_DEMO_DATA
         value: "false"
+      - key: FRONTEND_URL             # the website, for links in emails
+        value: https://tz201294.github.io/my-job
+      - key: BREVO_API_KEY            # sending email (docs/DEPLOY.md step 5); leave empty to skip for now
+        sync: false
+      - key: EMAIL_FROM               # the sender address verified in Brevo
+        sync: false
       - key: SENTRY_DSN               # optional error reporting (docs/DEPLOY.md step 4); leave empty to skip
         sync: false
       - key: FORWARDED_ALLOW_IPS     # Render's proxy is the only way in; lets the login lockout see real IPs

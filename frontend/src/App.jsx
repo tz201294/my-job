@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { menuKeyForRoute, parseRoute, pathForMenuKey, paths, titleForRoute } from './routes';
+import { EMAIL_LINK_PAGES, menuKeyForRoute, parseRoute, pathForMenuKey, paths, titleForRoute } from './routes';
 import AuthScreen from './components/AuthScreen';
 import { api, IS_DEMO, onUnauthorized, tokenStore } from './api/client';
 import {
@@ -27,6 +27,7 @@ import ActivityPage from './components/ActivityPage';
 import SettingsPage from './components/SettingsPage';
 import NotificationsPage from './components/NotificationsPage';
 import NotFoundPage from './components/NotFoundPage';
+import { ResetPasswordPage, VerifyEmailPage } from './components/EmailLinkPages';
 import { Loading } from './components/SlowHint';
 
 import { INITIAL_REELS } from './data/sampleReels';
@@ -577,6 +578,20 @@ export default function App() {
     setCurrentUser(r.user);
   };
 
+  // A password reset from an email link: whoever was logged in on this device is replaced by that account.
+  const handlePasswordReset = (data) => {
+    clearSession();
+    tokenStore.set(data.access_token);
+    setCurrentUser(data.user);
+    go(paths.home, { replace: true });
+    showToast("Your new password is saved, and you're logged in.");
+  };
+
+  // After confirming an email address, refresh the account if this device is logged in.
+  const handleEmailVerified = useCallback(() => {
+    if (tokenStore.get()) api.getMe().then(setCurrentUser).catch(() => {});
+  }, []);
+
   const handleDeleteAccount = async (data) => {
     await api.deleteMe(data);
     clearSession();
@@ -687,6 +702,13 @@ export default function App() {
       return matchesSearch && matchesCategory;
     });
   }, [sourcePosts, searchTerm, selectedCategory, selectedCategoryName]);
+
+  if (EMAIL_LINK_PAGES.includes(route.page)) {
+    const leave = () => go(paths.home, { replace: true });
+    return route.page === 'resetPassword'
+      ? <ResetPasswordPage onReset={handlePasswordReset} onCancel={leave} />
+      : <VerifyEmailPage onVerified={handleEmailVerified} onContinue={leave} />;
+  }
 
   if (currentUser === undefined) {
     return (

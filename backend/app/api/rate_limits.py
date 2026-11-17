@@ -18,6 +18,7 @@ MINUTE, HOUR, DAY = 60, 60 * 60, 24 * 60 * 60
 RULES = {
     # Per IP address: new accounts.
     "signup": ([(5, HOUR), (20, DAY)], "Too many new accounts from this network"),
+    "forgot": ([(10, HOUR), (30, DAY)], "Too many password reset requests from this network"),
     # Per account:
     "post": ([(10, HOUR), (30, DAY)], "You're publishing a lot"),  # posts and live work challenges
     "story": ([(20, HOUR), (50, DAY)], "You've shared a lot of stories"),
@@ -25,9 +26,26 @@ RULES = {
     "question": ([(10, HOUR), (30, DAY)], "You've asked a lot of questions"),  # each lands in someone's inbox
     "reaction": ([(60, MINUTE), (600, HOUR)], "You're doing that very fast"),  # likes, saves, upvotes, follows
     "edit": ([(30, MINUTE), (300, HOUR)], "You're making a lot of changes"),
+    "email": ([(3, HOUR), (10, DAY)], "We've already sent you several emails"),  # resending confirmation links
+}
+
+# Not answered with 429 (that would tell a stranger the account exists): over this, reset emails just stop.
+SILENT_RULES = {
+    "reset_email": [(3, HOUR), (6, DAY)],  # password-reset emails per account
 }
 
 limiters = {name: ActionLimiter(limits) for name, (limits, _) in RULES.items()}
+limiters.update({name: ActionLimiter(limits) for name, limits in SILENT_RULES.items()})
+
+
+def allow_silently(name: str, key: str) -> bool:
+    """For SILENT_RULES: counts one action and says whether it is allowed (no error either way)."""
+    if not settings.RATE_LIMITS_ENABLED:
+        return True
+    if limiters[name].retry_after(key):
+        return False
+    limiters[name].record(key)
+    return True
 
 
 def _wait_text(seconds: int) -> str:
@@ -55,7 +73,7 @@ def check(name: str, key: str) -> None:
 
 def limit(name: str):
     """A route dependency that counts the request against the signed-in user's `name` limit."""
-    assert name in RULES and name != "signup", name
+    assert name in RULES and name not in IP_RULES, name
 
     async def dependency(user: User = Depends(get_current_user)):
         key = str(user.id)
@@ -67,12 +85,21 @@ def limit(name: str):
     return dependency
 
 
-async def limit_signups(request: Request):
-    # Behind Render's proxy uvicorn runs with --proxy-headers, so this is the visitor's real address.
-    key = request.client.host if request.client else "unknown"
-    check("signup", key)
-    yield
-    limiters["signup"].record(key)
+IP_RULES = {"signup", "forgot"}  # counted per IP address, for requests made without logging in
+
+
+def limit_ip(name: str):
+    """A route dependency that counts the request against the visitor's IP address."""
+    assert name in IP_RULES, name
+
+    async def dependency(request: Request):
+        # Behind Render's proxy uvicorn runs with --proxy-headers, so this is the visitor's real address.
+        key = request.client.host if request.client else "unknown"
+        check(name, key)
+        yield
+        limiters[name].record(key)
+
+    return dependency
 
 
 def clear_all() -> None:

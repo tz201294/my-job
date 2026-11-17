@@ -63,7 +63,9 @@ const STEPS = ['Account', 'About your work', 'About you'];
 
 // `notice` is a message from the previous session (e.g. "Your account was deleted.").
 export default function AuthScreen({ onAuthenticated, notice = '' }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot'
+  const [info, setInfo] = useState(''); // e.g. "we've sent a link"
+  const [forgotId, setForgotId] = useState('');
   const [step, setStep] = useState(0);
   const [options, setOptions] = useState(FALLBACK_OPTIONS);
   const [error, setError] = useState('');
@@ -83,7 +85,19 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
     api.getSignupOptions().then(setOptions).catch(() => {});
   }, []);
 
-  const switchMode = (m) => { setMode(m); setStep(0); setError(''); };
+  const switchMode = (m) => { setMode(m); setStep(0); setError(''); setInfo(''); };
+
+  const submitForgot = async (e) => {
+    e.preventDefault();
+    setError(''); setInfo(''); setBusy(true);
+    try {
+      setInfo((await api.forgotPassword(forgotId.trim())).detail);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const finish = (data) => {
     tokenStore.set(data.access_token);
@@ -197,9 +211,9 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
             ))}
           </div>
 
-          {notice && !error && (
+          {(info || notice) && !error && (
             <div role="status" className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
-              {notice}
+              {info || notice}
             </div>
           )}
 
@@ -210,7 +224,25 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
             </div>
           )}
 
-          {mode === 'login' ? (
+          {mode === 'forgot' ? (
+            <form onSubmit={submitForgot} className="space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Enter your username or email. If your account has a confirmed email address, we'll send it a link to
+                choose a new password.
+              </p>
+              <Field id="forgot-id" label="Username or email">
+                <input id="forgot-id" className={inputCls} autoComplete="username" required value={forgotId}
+                  onChange={(e) => setForgotId(e.target.value)} />
+              </Field>
+              <SubmitButton busy={busy}>Send reset link</SubmitButton>
+              <SlowHint active={busy} className="text-center" />
+              <p className="text-center text-xs text-slate-500">
+                <button type="button" onClick={() => switchMode('login')} className="font-bold text-teal-600 hover:underline">
+                  Back to log in
+                </button>
+              </p>
+            </form>
+          ) : mode === 'login' ? (
             <form onSubmit={submitLogin} className="space-y-4">
               {IS_DEMO && (
                 <p className="p-3 bg-teal-50 border border-teal-200 text-teal-800 rounded-xl text-xs">
@@ -232,6 +264,12 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                 <input id="login-pw" type="password" className={inputCls} autoComplete="current-password" required value={login.password}
                   onChange={(e) => setLogin({ ...login, password: e.target.value })} />
               </Field>
+              <div className="-mt-2 text-right">
+                <button type="button" onClick={() => { switchMode('forgot'); setForgotId(login.username_or_email); }}
+                  className="text-xs font-bold text-teal-600 hover:underline">
+                  Forgot password?
+                </button>
+              </div>
               <SubmitButton busy={busy}>Log in</SubmitButton>
               <SlowHint active={busy} className="text-center" />
               <p className="text-center text-xs text-slate-500">
@@ -269,7 +307,8 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                   <Field id="su-name" label="Display name (optional)">
                     <input id="su-name" className={inputCls} autoComplete="name" value={form.full_name} onChange={(e) => set('full_name', e.target.value)} />
                   </Field>
-                  <Field id="su-email" label="Email (optional)" hint="Lets you log in with your email too.">
+                  <Field id="su-email" label="Email (optional, recommended)"
+                    hint="Needed to reset your password if you forget it. We'll send a link to confirm it. Never shown to others.">
                     <input id="su-email" type="email" className={inputCls} autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
                   </Field>
                 </>
