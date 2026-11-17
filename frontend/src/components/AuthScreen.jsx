@@ -59,7 +59,8 @@ function Choice({ checked, onChange, children, type = 'radio', name }) {
 
 const STEPS = ['Account', 'About your work', 'About you'];
 
-export default function AuthScreen({ onAuthenticated }) {
+// `notice` is a message from the previous session (e.g. "Your account was deleted.").
+export default function AuthScreen({ onAuthenticated, notice = '' }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
   const [step, setStep] = useState(0);
   const [options, setOptions] = useState(FALLBACK_OPTIONS);
@@ -199,6 +200,12 @@ export default function AuthScreen({ onAuthenticated }) {
               </button>
             ))}
           </div>
+
+          {notice && !error && (
+            <div role="status" className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
+              {notice}
+            </div>
+          )}
 
           {error && (
             <div role="alert" className="flex items-start gap-2 mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold">

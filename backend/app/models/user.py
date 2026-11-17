@@ -17,6 +17,8 @@ class User(Base):
     avatar_url = Column(String(512), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=utcnow)
+    # Login tokens issued before this moment are rejected (set when the password changes).
+    password_changed_at = Column(DateTime, nullable=True)
 
     # Relationships
     profession = relationship(

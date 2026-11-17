@@ -18,7 +18,7 @@ export const DEMO_PASSWORD = 'demo1234';
 export const DEMO_TOKEN = 'demo_token';
 
 // Bump the version when the sample data changes so returning visitors get the new data.
-const STORE_KEY = 'myjob_demo_store_v4';
+const STORE_KEY = 'myjob_demo_store_v5';
 // undefined (a 204 No Content reply) becomes null, like an empty response body.
 const clone = (x) => (x === undefined ? null : JSON.parse(JSON.stringify(x)));
 
@@ -95,6 +95,10 @@ function uiUserToApi(u) {
     posts_count: u.postsCount ?? 0,
     rating: u.rating ?? null,
     is_following: false,
+    // Private account fields (only returned to the account itself).
+    email: null,
+    interests: SIGNUP_OPTIONS.interests.includes(u.industry) ? [u.industry] : ['Trades & Craftsmanship'],
+    survey: { works: !!u.professionTitle, data_consent: true },
   };
 }
 
@@ -125,6 +129,12 @@ function publicUser(u) {
     is_following: s.following.includes(u.username),
     posts_count: Math.max(u.posts_count || 0, posts),
   };
+}
+
+// What anyone may see about another user (no email, survey or interests), like the server's public profile.
+function publicProfile(u) {
+  const { email, survey, interests, ...rest } = publicUser(u); // eslint-disable-line no-unused-vars
+  return rest;
 }
 
 function authResult(u) {
@@ -174,6 +184,9 @@ function register(body) {
     rating: null,
     is_following: false,
   };
+  u.email = body.email ? String(body.email).toLowerCase() : null;
+  u.interests = body.interests || [];
+  u.survey = { works: !!body.works, data_consent: !!body.data_consent };
   s.users[username] = u;
   s.passwords[username] = body.password;
   return authResult(u);
@@ -653,6 +666,120 @@ function deleteComment(postId, commentId) {
   save();
 }
 
+// ---------- settings: profile, password, account deletion ----------
+
+function updateMe(body) {
+  const s = load();
+  const u = me();
+  const name = requiredText(body, 'full_name', 128);
+  if (name !== undefined) u.full_name = name;
+  if ('bio' in body) u.bio = optionalText(body, 'bio', 1000);
+  if ('avatar_url' in body) {
+    const url = String(body.avatar_url || '').trim();
+    if (url && !isHttpUrl(url)) fail(422, 'avatar_url: must be a link starting with http:// or https://');
+    u.avatar_url = url || null;
+  }
+  if ('email' in body) {
+    const email = String(body.email || '').trim().toLowerCase();
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fail(422, 'email: value is not a valid email address');
+    if (email && Object.values(s.users).some((x) => x.id !== u.id && x.email === email)) {
+      fail(409, 'Email already registered');
+    }
+    u.email = email || null;
+  }
+  if ('interests' in body) {
+    if (!body.interests?.length) fail(422, 'interests: Choose at least one interest');
+    u.interests = [...new Set(body.interests)];
+  }
+  if (body.works === false) {
+    u.profession = null;
+  } else if (body.profession) {
+    const p = body.profession;
+    const title = String(p.title || '').trim();
+    if (title.length < 2) fail(422, 'profession → title: String should have at least 2 characters');
+    const old = u.profession;
+    const changed = !old || old.industry !== p.industry || old.title !== title;
+    u.profession = {
+      title,
+      industry: p.industry,
+      specialization: p.specialization || null,
+      years_of_experience: Number(p.years_of_experience) || 0,
+      company_or_freelance: p.company_or_freelance || null,
+      is_verified_pro: changed ? false : !!old.is_verified_pro,
+      key_tools: old?.key_tools || [],
+    };
+  }
+  if ('data_consent' in body && body.data_consent != null) {
+    u.survey = { ...(u.survey || {}), data_consent: !!body.data_consent };
+  }
+  // Keep author details on stored content in step, like joins on the server would.
+  const title = u.profession?.title || null;
+  s.posts.forEach((p) => {
+    if (p.authorUsername !== u.username) return;
+    Object.assign(p, {
+      authorFullName: u.full_name, authorAvatarUrl: u.avatar_url || DEFAULT_AVATAR,
+      authorProfessionTitle: title || 'Explorer', authorIndustry: u.profession?.industry || null,
+      isAuthorVerified: !!u.profession?.is_verified_pro,
+    });
+  });
+  s.stories.forEach((x) => {
+    if (x.userId === u.id) Object.assign(x, { fullName: u.full_name, avatarUrl: u.avatar_url || DEFAULT_AVATAR, professionTitle: title || 'Explorer' });
+  });
+  s.challenges.forEach((c) => {
+    if (c.workerId === u.id) Object.assign(c, { workerFullName: u.full_name, workerAvatarUrl: u.avatar_url || DEFAULT_AVATAR, workerProfessionTitle: title });
+  });
+  s.questions.forEach((q) => {
+    if (q.workerId === u.id) Object.assign(q, { workerFullName: u.full_name, workerAvatarUrl: u.avatar_url || DEFAULT_AVATAR, workerProfessionTitle: title || 'Professional' });
+  });
+  save();
+  return publicUser(u);
+}
+
+function checkPassword(u, password) {
+  const s = load();
+  return password === (s.passwords[u.username] ?? DEMO_PASSWORD);
+}
+
+function changePassword(body) {
+  const s = load();
+  const u = me();
+  if (!checkPassword(u, body?.current_password)) fail(400, 'Current password is incorrect');
+  const next = String(body?.new_password || '');
+  if (next.length < 8) fail(422, 'new_password: Password must be at least 8 characters');
+  if (next === body.current_password) fail(400, 'Choose a password different from the current one');
+  s.passwords[u.username] = next;
+  save();
+  return { access_token: DEMO_TOKEN, token_type: 'bearer', user: publicUser(u) };
+}
+
+function deleteMe(body) {
+  const s = load();
+  const u = me();
+  if (!checkPassword(u, body?.password)) fail(400, 'Password is incorrect');
+  const mine = (x) => x === u.id || x === u.username;
+  const myPostIds = new Set(s.posts.filter((p) => mine(p.authorUsername)).map((p) => p.id));
+
+  s.posts = s.posts.filter((p) => !myPostIds.has(p.id));
+  s.stories = s.stories.filter((x) => !mine(x.userId));
+  s.reviews = s.reviews.filter((r) => !myPostIds.has(r.post_id) && !mine(r.username));
+  s.comments = s.comments.filter((c) => !myPostIds.has(c.postId) && !mine(c.userId));
+  s.posts.forEach((p) => { p.commentsCount = s.comments.filter((c) => c.postId === p.id).length; });
+  s.questions = s.questions.filter((q) => !mine(q.askerId) && !mine(q.askerUsername) && !mine(q.workerId));
+  s.challenges = s.challenges.filter((c) => !mine(c.workerId));
+  s.challenges.forEach((c) => {
+    if (c.suggestions.some((x) => mine(x.suggesterId) && x.isAccepted)) c.isSolved = false;
+    c.suggestions = c.suggestions.filter((x) => !mine(x.suggesterId));
+  });
+  Object.values(s.users).forEach((x) => {
+    if (s.following.includes(x.username)) x.followers_count = Math.max(0, x.followers_count - 1);
+  });
+  s.following = [];
+  delete s.users[u.username];
+  delete s.passwords[u.username];
+  s.meUsername = null;
+  save();
+}
+
 // ---------- router ----------
 
 // Returns a copy, like a network response would, so callers never share objects with the store.
@@ -677,8 +804,11 @@ function handle(endpoint, options) {
   if (route === 'POST /auth/login') return login(body);
   if (route === 'POST /auth/register') return register(body);
   if (route === 'GET /auth/me') return publicUser(me());
+  if (route === 'PATCH /auth/me') return updateMe(body || {});
+  if (route === 'POST /auth/me/password') return changePassword(body);
+  if (route === 'POST /auth/me/delete') return deleteMe(body);
   if (route === 'GET /auth/professionals') {
-    return Object.values(s.users).filter((u) => u.profession).map(publicUser);
+    return Object.values(s.users).filter((u) => u.profession).map(publicProfile);
   }
   if (parts[0] === 'auth' && parts[1] === 'users' && parts[2]) {
     const username = parts[2].toLowerCase();
@@ -686,7 +816,7 @@ function handle(endpoint, options) {
     if (parts[3] === 'follow' && method === 'DELETE') return setFollow(username, false);
     if (!parts[3] && method === 'GET') {
       const u = s.users[username] || fail(404, 'User not found');
-      return publicUser(u);
+      return publicProfile(u);
     }
   }
 

@@ -5,7 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import decode_access_token
+from app.core.security import decode_access_token, token_predates_password_change
 from app.db.session import get_db
 from app.models import User
 
@@ -17,11 +17,15 @@ async def _user_from_credentials(
 ) -> Optional[User]:
     if creds is None:
         return None
-    user_id = decode_access_token(creds.credentials)
-    if user_id is None:
+    claims = decode_access_token(creds.credentials)
+    if claims is None:
         return None
-    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
-    return user if user and user.is_active else None
+    user = (await db.execute(select(User).where(User.id == claims["sub"]))).scalar_one_or_none()
+    if user is None or not user.is_active:
+        return None
+    if token_predates_password_change(claims, user.password_changed_at):
+        return None  # signed out by a password change
+    return user
 
 
 async def get_optional_user(

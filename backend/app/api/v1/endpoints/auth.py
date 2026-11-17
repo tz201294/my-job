@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,11 +10,14 @@ from app.api.serializers import user_me_out, user_public_out
 from app.core.config import settings
 from app.core.rate_limit import FailureLimiter
 from app.core.security import create_access_token, hash_password, verify_password
+from app.core.time import utcnow
+from app.services.account import delete_account
 from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
 from app.db.session import get_db
 from app.models import Follow, Post, ProfessionProfile, User, UserInterest, UserSurvey
 from app.schemas.user import (
-    EducationLevel, Gender, NonWorkingStatus, Token, UserCreate, UserLogin, UserMeResponse, UserResponse,
+    AccountDelete, EducationLevel, Gender, NonWorkingStatus, PasswordChange, ProfileUpdate, Token, UserCreate,
+    UserLogin, UserMeResponse, UserResponse,
 )
 
 router = APIRouter()
@@ -153,6 +156,119 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
 @router.get("/me", response_model=UserMeResponse)
 async def read_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return await user_me_out(db, current_user)
+
+
+@router.patch("/me", response_model=UserMeResponse)
+async def update_me(
+    changes_in: ProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Edit your profile. Only the fields sent are changed."""
+    changes = changes_in.changes()
+    user = current_user
+    user_id = user.id  # read now: attributes are expired (and can't lazy-load) after expire_all below
+
+    for field in ("full_name", "bio", "avatar_url"):
+        if field in changes:
+            setattr(user, field, changes[field])
+
+    if "email" in changes:
+        email = changes_in.email.lower() if changes_in.email else None
+        if email:
+            taken = (
+                await db.execute(select(User.id).where(func.lower(User.email) == email, User.id != user.id))
+            ).first()
+            if taken:
+                raise HTTPException(status_code=409, detail="Email already registered")
+        user.email = email
+
+    if "interests" in changes:
+        await db.execute(delete(UserInterest).where(UserInterest.user_id == user.id))
+        for interest in changes_in.interests:
+            db.add(UserInterest(user_id=user.id, interest=interest))
+
+    if changes_in.works is False:
+        await db.execute(delete(ProfessionProfile).where(ProfessionProfile.user_id == user.id))
+    elif changes_in.profession is not None:
+        p = changes_in.profession
+        prof = (
+            await db.execute(select(ProfessionProfile).where(ProfessionProfile.user_id == user.id))
+        ).scalar_one_or_none()
+        if prof is None:
+            db.add(ProfessionProfile(
+                user_id=user.id, industry=p.industry, title=p.title, specialization=p.specialization,
+                years_of_experience=p.years_of_experience, company_or_freelance=p.company_or_freelance,
+                is_verified_pro=False, key_tools=[],
+            ))
+        else:
+            # The verified badge was granted for a specific profession; changing it removes the badge.
+            if (prof.industry, prof.title) != (p.industry, p.title):
+                prof.is_verified_pro = False
+            prof.industry, prof.title = p.industry, p.title
+            prof.specialization, prof.years_of_experience = p.specialization, p.years_of_experience
+            prof.company_or_freelance = p.company_or_freelance
+
+    if changes_in.data_consent is not None:
+        survey = (await db.execute(select(UserSurvey).where(UserSurvey.user_id == user.id))).scalar_one_or_none()
+        if survey is None:
+            raise HTTPException(status_code=400, detail="This account has no sign-up survey to update")
+        survey.data_consent = changes_in.data_consent
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Email already registered")
+
+    db.expire_all()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one()
+    return await user_me_out(db, user)
+
+
+@router.post("/me/password", response_model=Token)
+async def change_password(
+    body: PasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change your password. Every other session is signed out; the response carries a new token for this one."""
+    key = current_user.username
+    blocked = username_limiter.retry_after(key)
+    if blocked:
+        raise _too_many_attempts(blocked)
+    if not verify_password(body.current_password, current_user.hashed_password):
+        username_limiter.record_failure(key)
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if body.new_password == body.current_password:
+        raise HTTPException(status_code=400, detail="Choose a password different from the current one")
+
+    current_user.hashed_password = hash_password(body.new_password)
+    current_user.password_changed_at = utcnow()
+    await db.commit()
+    username_limiter.reset(key)
+    return Token(access_token=create_access_token(current_user.id), user=await user_me_out(db, current_user))
+
+
+@router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    body: AccountDelete,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete your account and everything you posted. Requires your password."""
+    key = current_user.username
+    blocked = username_limiter.retry_after(key)
+    if blocked:
+        raise _too_many_attempts(blocked)
+    if not verify_password(body.password, current_user.hashed_password):
+        username_limiter.record_failure(key)
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+    user_id = current_user.id
+    db.expunge(current_user)  # removed with bulk statements below; keep the ORM from touching it again
+    await delete_account(db, user_id)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 async def _get_user_or_404(db: AsyncSession, username: str) -> User:

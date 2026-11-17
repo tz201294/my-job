@@ -3,7 +3,8 @@ import AuthScreen from './components/AuthScreen';
 import { api, IS_DEMO, onUnauthorized, tokenStore } from './api/client';
 import { resetDemoData } from './api/demoBackend';
 import {
-  toCategories, toChallenge, toChallengePayload, toPost, toPostPayload, toPostUpdatePayload, toProfileUser,
+  DEFAULT_AVATAR, toCategories, toChallenge, toChallengePayload, toPost, toPostPayload, toPostUpdatePayload,
+  toProfileUser,
   toQuestion,
   toReviewPayload, toStories, toStory, toStoryPayload, toSuggestion,
 } from './api/mappers';
@@ -95,7 +96,7 @@ export default function App() {
     setActiveTab('feed'); setMenuOpen(false); setFocusChallengeId(null); setQaView('all');
     setSearchTerm(''); setSelectedCategory('all');
     setSelectedCaseStudy(null); setReviewModalPost(null); setEditingPost(null); setIsCreateOpen(false);
-    setActiveStoryIdx(null);
+    setActiveStoryIdx(null); setToast('');
   }, []);
 
   // Any 401 from a token-bearing call means the session expired.
@@ -505,6 +506,51 @@ export default function App() {
     }
   };
 
+  // ---------- Settings ----------
+
+  // After a profile edit, show the new name/photo/profession on everything already loaded.
+  const applyMyProfile = (u) => {
+    const name = u.full_name;
+    const avatar = u.avatar_url || DEFAULT_AVATAR;
+    const title = u.profession?.title || 'Explorer';
+    const fixPost = (p) => (p.authorId === u.id ? {
+      ...p, authorFullName: name, authorAvatarUrl: avatar, authorProfessionTitle: title,
+      authorIndustry: u.profession?.industry || null, isAuthorVerified: !!u.profession?.is_verified_pro,
+    } : p);
+    setPosts((ps) => ps.map(fixPost));
+    setFeedPosts((ps) => ps.map(fixPost));
+    setViewingPosts((ps) => ps.map(fixPost));
+    setStories((ss) => ss.map((s) => (s.userId === u.id ? { ...s, fullName: name, avatarUrl: avatar, professionTitle: title } : s)));
+    setChallenges((cs) => cs.map((c) => (c.workerId === u.id
+      ? { ...c, workerFullName: name, workerAvatarUrl: avatar, workerProfessionTitle: title } : c)));
+    setQaItems((qs) => qs.map((q) => (q.workerId === u.id
+      ? { ...q, workerFullName: name, workerAvatarUrl: avatar, workerProfessionTitle: title } : q)));
+    // You can be asked questions only while you have a profession.
+    setProfessionals((ps) => {
+      const others = ps.filter((p) => p.id !== u.id);
+      return u.profession ? [...others, toProfileUser(u)] : others;
+    });
+  };
+
+  const handleSaveProfile = async (data) => {
+    const updated = await api.updateMe(data);
+    setCurrentUser(updated);
+    applyMyProfile(updated);
+  };
+
+  // Other sessions are signed out by the server; this one continues with the new token.
+  const handleChangePassword = async (data) => {
+    const r = await api.changePassword(data);
+    tokenStore.set(r.access_token);
+    setCurrentUser(r.user);
+  };
+
+  const handleDeleteAccount = async (data) => {
+    await api.deleteMe(data);
+    clearSession();
+    showToast('Your account was deleted.');
+  };
+
   const handleResetDemo = () => {
     if (!window.confirm('Reset the demo? Everything you did in this browser is removed and you are signed out.')) return;
     resetDemoData();
@@ -557,7 +603,7 @@ export default function App() {
   }
 
   if (currentUser === null) {
-    return <AuthScreen onAuthenticated={setCurrentUser} />;
+    return <AuthScreen onAuthenticated={setCurrentUser} notice={toast} />;
   }
 
   const me = toProfileUser(currentUser);
@@ -645,6 +691,9 @@ export default function App() {
             account={currentUser}
             me={me}
             isDemo={IS_DEMO}
+            onSaveProfile={handleSaveProfile}
+            onChangePassword={handleChangePassword}
+            onDeleteAccount={handleDeleteAccount}
             onLogout={handleLogout}
             onResetDemo={handleResetDemo}
           />

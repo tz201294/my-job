@@ -79,6 +79,13 @@ Q&A questions and upvotes, live-work challenges, suggestions and upvotes, real p
 Still sample/local only: **Reels** (labelled in the UI) and story highlights. Media is
 link-only for now (no file uploads).
 
+Your account (Settings): `PATCH /auth/me` edits name, bio, photo link, email, interests, work details
+(`profession`, or `works: false`) and `data_consent`; changing the field or job title removes the verified badge.
+`POST /auth/me/password` (`current_password`, `new_password`) returns a new token and signs out every older session
+(migration `0006` adds `users.password_changed_at`). `POST /auth/me/delete` (`password`) deletes the account and
+everything it owns, and corrects counts on other people's content (likes, upvotes, comments, ratings, follows).
+Wrong passwords on these endpoints count toward the login lockout.
+
 Comments: `GET /posts/{id}/comments?limit=&offset=` (public, oldest first, returns `{total, comments}`),
 `POST /posts/{id}/comments` (`{"body": "..."}`, 1–2000 chars), `PATCH /posts/{id}/comments/{comment_id}` (the
 commenter only) and `DELETE` on the same URL (the commenter or the post's author). A post's `comments_count` is

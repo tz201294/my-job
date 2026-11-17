@@ -10,7 +10,9 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Editing and deleting your own posts, stories, questions, challenges and ideas.
 - Comments on posts.
 - App layout: side menu (sidebar on wide screens, drawer on phones), phone bottom tab bar, My activity,
-  Settings (read-only for now) and Notifications (placeholder) pages, phone search, no fake unread dot.
+  Settings and Notifications (placeholder) pages, phone search, no fake unread dot.
+- Settings: edit profile (name, bio, photo link, email, work, interests), data-sharing consent, password
+  change (signs out other sessions), delete account (removes everything and fixes everyone's counts).
 
 ## Next
 
@@ -40,12 +42,9 @@ for hosting), size and type limits, image resizing, upload UI in every create fo
 demo site. **Decision needed:** where files are stored once hosted.
 
 ### 3. Frontend follow-ups (agreed order)
-1. **Settings with profile editing:** name, bio, photo link, profession, password change, data-sharing
-   consent, delete account. Needs small backend endpoints; the Settings page already shows these as
-   "Coming soon".
-2. **Notifications:** backend table and events (follows, questions/answers, accepted ideas, reviews,
+1. **Notifications:** backend table and events (follows, questions/answers, accepted ideas, reviews,
    comments), unread count on the bell, list on the Notifications page (currently a placeholder).
-3. **Page addresses (routing):** URLs for profiles, posts and pages so the back button and shared links work.
+2. **Page addresses (routing):** URLs for profiles, posts and pages so the back button and shared links work.
 
 ## Ideas for later
 - Search across posts, case studies, tools and people (Postgres full-text search).

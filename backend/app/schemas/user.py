@@ -6,6 +6,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
+from app.schemas.common import NonEmptyStr, OptionalHttpUrlStr, OptionalStr, PartialUpdate
 from app.schemas.profession import ProfessionResponse
 
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{3,30}$")
@@ -160,3 +161,75 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserMeResponse
+
+
+def _check_password(v: str) -> str:
+    if len(v) < 8:
+        raise ValueError("Password must be at least 8 characters")
+    if len(v.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        raise ValueError("Password must be at most 72 bytes")
+    return v
+
+
+class ProfileUpdate(PartialUpdate):
+    """What the signed-in user can change in Settings. Only the fields sent are changed.
+
+    `profession` sets or replaces your work details (you work); `works: false` removes them.
+    Your sign-up survey answers are kept as given, except `data_consent`, which you can change any time.
+    """
+    REQUIRED = ("full_name", "interests")
+
+    full_name: Optional[NonEmptyStr(128)] = None
+    bio: OptionalStr(1000) = None
+    avatar_url: OptionalHttpUrlStr = None
+    email: Optional[EmailStr] = None
+    interests: Optional[List[str]] = None
+    works: Optional[bool] = None
+    profession: Optional[SignupProfession] = None
+    data_consent: Optional[bool] = None
+
+    @field_validator("avatar_url")
+    @classmethod
+    def avatar_fits_column(cls, v):
+        if v is not None and len(v) > 512:
+            raise ValueError("Photo link must be at most 512 characters")
+        return v
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def blank_email_to_none(cls, v):
+        return None if isinstance(v, str) and not v.strip() else v
+
+    @field_validator("interests")
+    @classmethod
+    def interests_known_and_unique(cls, v):
+        if v is None:
+            return v
+        if not v:
+            raise ValueError("Choose at least one interest")
+        unknown = [i for i in v if i not in INTEREST_OPTIONS]
+        if unknown:
+            raise ValueError(f"Unknown interests: {', '.join(unknown)}")
+        return list(dict.fromkeys(v))
+
+    @model_validator(mode="after")
+    def work_fields_consistent(self):
+        if self.works is False and self.profession is not None:
+            raise ValueError("Leave profession empty when you don't work")
+        if self.works is True and "profession" not in self.model_fields_set:
+            raise ValueError("Profession details are required when you work")
+        return self
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_rules(cls, v: str) -> str:
+        return _check_password(v)
+
+
+class AccountDelete(BaseModel):
+    password: str
