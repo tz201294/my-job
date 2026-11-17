@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     LOGIN_MAX_FAILURES_PER_IP: int = 20
     LOGIN_FAILURE_WINDOW_SECONDS: int = 15 * 60
 
+    # Spam limits on sign-ups, posts, comments, reactions etc. (see app/api/rate_limits.py).
+    RATE_LIMITS_ENABLED: bool = True
+
     # Database & Cache Defaults
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/myjob_db"
     REDIS_URL: str = "redis://localhost:6379/0"

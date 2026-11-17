@@ -5,6 +5,7 @@ from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.rate_limits import limit
 from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import bookmarked_ids_for, comment_out, liked_ids_for, post_out, reactions_for
 from app.core.time import utcnow
@@ -78,7 +79,7 @@ async def list_bookmarks(
     return [post_out(p, liked, {p.id for p in posts}) for p in posts]
 
 
-@router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PostResponse, dependencies=[Depends(limit("post"))], status_code=status.HTTP_201_CREATED)
 async def create_post(
     post_in: PostCreate,
     db: AsyncSession = Depends(get_db),
@@ -126,7 +127,7 @@ async def _own_post(db: AsyncSession, user: User, post_id: str) -> Post:
     return post
 
 
-@router.patch("/{post_id}", response_model=PostResponse)
+@router.patch("/{post_id}", dependencies=[Depends(limit("edit"))], response_model=PostResponse)
 async def update_post(
     post_id: str,
     post_in: PostUpdate,
@@ -233,7 +234,7 @@ async def list_comments(
     return {"total": total, "comments": [comment_out(c, counts.get(c.id), mine.get(c.id)) for c in rows]}
 
 
-@router.post("/{post_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{post_id}/comments", dependencies=[Depends(limit("comment"))], response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
 async def add_comment(
     post_id: str,
     c_in: CommentCreate,
@@ -252,7 +253,7 @@ async def add_comment(
     return comment_out(comment)
 
 
-@router.patch("/{post_id}/comments/{comment_id}", response_model=CommentResponse)
+@router.patch("/{post_id}/comments/{comment_id}", dependencies=[Depends(limit("edit"))], response_model=CommentResponse)
 async def edit_comment(
     post_id: str,
     comment_id: str,
@@ -297,7 +298,7 @@ async def _reaction_state(db: AsyncSession, comment_id: str, user: User) -> dict
     return {"comment_id": comment_id, "reactions": counts.get(comment_id, {}), "my_reaction": mine.get(comment_id)}
 
 
-@router.put("/{post_id}/comments/{comment_id}/reaction", response_model=ReactionState)
+@router.put("/{post_id}/comments/{comment_id}/reaction", dependencies=[Depends(limit("reaction"))], response_model=ReactionState)
 async def react_to_comment(
     post_id: str,
     comment_id: str,
@@ -325,7 +326,7 @@ async def react_to_comment(
     return await _reaction_state(db, comment_id, user)
 
 
-@router.delete("/{post_id}/comments/{comment_id}/reaction", response_model=ReactionState)
+@router.delete("/{post_id}/comments/{comment_id}/reaction", dependencies=[Depends(limit("reaction"))], response_model=ReactionState)
 async def remove_reaction(
     post_id: str,
     comment_id: str,
@@ -342,7 +343,7 @@ async def remove_reaction(
     return await _reaction_state(db, comment_id, user)
 
 
-@router.post("/{post_id}/like")
+@router.post("/{post_id}/like", dependencies=[Depends(limit("reaction"))])
 async def toggle_like(
     post_id: str,
     db: AsyncSession = Depends(get_db),
@@ -376,7 +377,7 @@ async def toggle_like(
     return {"post_id": post_id, "is_liked": is_liked, "likes_count": likes_count}
 
 
-@router.post("/{post_id}/bookmark")
+@router.post("/{post_id}/bookmark", dependencies=[Depends(limit("reaction"))])
 async def toggle_bookmark(
     post_id: str,
     db: AsyncSession = Depends(get_db),

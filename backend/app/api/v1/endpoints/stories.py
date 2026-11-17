@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.rate_limits import limit
 from app.api.deps import get_current_user
 from app.api.serializers import story_out
 from app.core.time import utcnow
@@ -39,7 +40,7 @@ async def get_stories_feed(db: AsyncSession = Depends(get_db)):
     return list(groups.values())
 
 
-@router.post("", response_model=StoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=StoryResponse, dependencies=[Depends(limit("story"))], status_code=status.HTTP_201_CREATED)
 async def create_story(
     story_in: StoryCreate,
     db: AsyncSession = Depends(get_db),

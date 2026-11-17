@@ -22,6 +22,8 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Backend tests and migrations run on Postgres 17 in CI; Render deploys only after CI passes.
 - Error reporting (Sentry, API + website, no personal data, off until a DSN is set), `/health/db`, and an
   uptime-alert guide (UptimeRobot). Setup: docs/DEPLOY.md step 4.
+- Spam limits on sign-ups (per IP) and on posting, commenting, asking, reacting, following and editing (per
+  account); only successful actions count. A test makes sure every new write endpoint picks a limit.
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.

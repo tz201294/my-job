@@ -5,6 +5,7 @@ from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.rate_limits import limit, limit_signups
 from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import user_me_out, user_public_out
 from app.core.config import settings
@@ -72,7 +73,10 @@ async def list_professionals(
     return [await user_public_out(db, u, viewer) for u in users]
 
 
-@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=Token, status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(limit_signups)],
+)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     """Creates an account, stores the onboarding survey, and signs the user in."""
     email = user_in.email.lower() if user_in.email else None
@@ -159,7 +163,7 @@ async def read_me(current_user: User = Depends(get_current_user), db: AsyncSessi
     return await user_me_out(db, current_user)
 
 
-@router.patch("/me", response_model=UserMeResponse)
+@router.patch("/me", dependencies=[Depends(limit("edit"))], response_model=UserMeResponse)
 async def update_me(
     changes_in: ProfileUpdate,
     current_user: User = Depends(get_current_user),
@@ -296,7 +300,7 @@ async def _follow_state(db: AsyncSession, target: User, is_following: bool) -> d
     return {"username": target.username, "is_following": is_following, "followers_count": followers}
 
 
-@router.post("/users/{username}/follow")
+@router.post("/users/{username}/follow", dependencies=[Depends(limit("reaction"))])
 async def follow_user(
     username: str,
     db: AsyncSession = Depends(get_db),
@@ -319,7 +323,7 @@ async def follow_user(
     return await _follow_state(db, target, True)
 
 
-@router.delete("/users/{username}/follow")
+@router.delete("/users/{username}/follow", dependencies=[Depends(limit("reaction"))])
 async def unfollow_user(
     username: str,
     db: AsyncSession = Depends(get_db),

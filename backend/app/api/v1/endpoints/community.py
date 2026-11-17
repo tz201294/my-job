@@ -5,6 +5,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.rate_limits import limit
 from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import (
     challenge_out, question_out, review_out, suggestion_out, upvoted_question_ids, upvoted_suggestion_ids,
@@ -35,7 +36,7 @@ async def get_task_reviews(post_id: str, db: AsyncSession = Depends(get_db)):
     return [review_out(r) for r in rows]
 
 
-@router.post("/reviews", response_model=TaskReviewResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/reviews", dependencies=[Depends(limit("comment"))], response_model=TaskReviewResponse, status_code=status.HTTP_201_CREATED)
 async def create_task_review(
     review_in: TaskReviewCreate,
     db: AsyncSession = Depends(get_db),
@@ -135,7 +136,7 @@ async def get_worker_qa(
     }
 
 
-@router.post("/qa/{worker_id}/ask", response_model=QAQuestionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/qa/{worker_id}/ask", dependencies=[Depends(limit("question"))], response_model=QAQuestionResponse, status_code=status.HTTP_201_CREATED)
 async def ask_worker_question(
     worker_id: str,
     q_in: QAQuestionCreate,
@@ -159,7 +160,7 @@ async def ask_worker_question(
     return question_out(q)
 
 
-@router.post("/qa/questions/{question_id}/answer", response_model=QAQuestionResponse)
+@router.post("/qa/questions/{question_id}/answer", dependencies=[Depends(limit("comment"))], response_model=QAQuestionResponse)
 async def answer_question(
     question_id: str,
     a_in: QAAnswerCreate,
@@ -194,7 +195,7 @@ async def _question_or_404(db: AsyncSession, question_id: str) -> QAQuestion:
     return q
 
 
-@router.patch("/qa/questions/{question_id}", response_model=QAQuestionResponse)
+@router.patch("/qa/questions/{question_id}", dependencies=[Depends(limit("edit"))], response_model=QAQuestionResponse)
 async def update_question(
     question_id: str,
     q_in: QAQuestionUpdate,
@@ -234,7 +235,7 @@ async def delete_question(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/qa/questions/{question_id}/upvote")
+@router.post("/qa/questions/{question_id}/upvote", dependencies=[Depends(limit("reaction"))])
 async def toggle_question_upvote(
     question_id: str,
     db: AsyncSession = Depends(get_db),
@@ -260,7 +261,7 @@ async def get_work_challenges(
     return [challenge_out(c, voted) for c in challenges]
 
 
-@router.post("/challenges", response_model=WorkChallengeResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/challenges", dependencies=[Depends(limit("post"))], response_model=WorkChallengeResponse, status_code=status.HTTP_201_CREATED)
 async def create_challenge(
     chal_in: WorkChallengeCreate,
     db: AsyncSession = Depends(get_db),
@@ -289,7 +290,7 @@ async def _own_challenge(db: AsyncSession, user: User, challenge_id: str) -> Wor
     return chal
 
 
-@router.patch("/challenges/{challenge_id}", response_model=WorkChallengeResponse)
+@router.patch("/challenges/{challenge_id}", dependencies=[Depends(limit("edit"))], response_model=WorkChallengeResponse)
 async def update_challenge(
     challenge_id: str,
     chal_in: WorkChallengeUpdate,
@@ -321,6 +322,7 @@ async def delete_challenge(
 
 @router.post(
     "/challenges/{challenge_id}/suggest",
+    dependencies=[Depends(limit("comment"))],
     response_model=ChallengeSuggestionResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -357,7 +359,7 @@ async def _suggestion_or_404(db: AsyncSession, suggestion_id: str) -> ChallengeS
     return sug
 
 
-@router.patch("/suggestions/{suggestion_id}", response_model=ChallengeSuggestionResponse)
+@router.patch("/suggestions/{suggestion_id}", dependencies=[Depends(limit("edit"))], response_model=ChallengeSuggestionResponse)
 async def update_suggestion(
     suggestion_id: str,
     sug_in: ChallengeSuggestionUpdate,
@@ -421,7 +423,7 @@ async def _challenge_response(db: AsyncSession, user: User, challenge_id: str) -
     return challenge_out(chal, voted)
 
 
-@router.post("/suggestions/{suggestion_id}/accept", response_model=WorkChallengeResponse)
+@router.post("/suggestions/{suggestion_id}/accept", dependencies=[Depends(limit("edit"))], response_model=WorkChallengeResponse)
 async def accept_suggestion(
     suggestion_id: str,
     db: AsyncSession = Depends(get_db),
@@ -451,7 +453,7 @@ async def accept_suggestion(
     return await _challenge_response(db, user, challenge_id)
 
 
-@router.delete("/suggestions/{suggestion_id}/accept", response_model=WorkChallengeResponse)
+@router.delete("/suggestions/{suggestion_id}/accept", dependencies=[Depends(limit("edit"))], response_model=WorkChallengeResponse)
 async def unaccept_suggestion(
     suggestion_id: str,
     db: AsyncSession = Depends(get_db),
@@ -471,7 +473,7 @@ async def unaccept_suggestion(
     return await _challenge_response(db, user, challenge_id)
 
 
-@router.post("/suggestions/{suggestion_id}/upvote")
+@router.post("/suggestions/{suggestion_id}/upvote", dependencies=[Depends(limit("reaction"))])
 async def toggle_suggestion_upvote(
     suggestion_id: str,
     db: AsyncSession = Depends(get_db),

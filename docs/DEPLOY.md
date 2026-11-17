@@ -142,7 +142,7 @@ Nothing in the code or the addresses changes.
   **Starter**. Then also change `plan: free` to `plan: starter` in `render.yaml`, so the blueprint matches.
 - **More database space or features:** upgrade the plan in the Neon console. The connection string stays the
   same.
-- **Background tasks or more than one API instance:** move the login rate limit to Redis first (see
+- **Background tasks or more than one API instance:** move the login and spam limits to Redis first (see
   ROADMAP.md).
 
 ## Going back to the demo

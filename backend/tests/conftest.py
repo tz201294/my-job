@@ -93,8 +93,12 @@ def reset_login_limits():
     """Failed-login counters live in process memory; start every test with a clean slate."""
     from app.api.v1.endpoints.auth import ip_limiter, username_limiter
 
+    from app.api import rate_limits
+
     username_limiter.clear()
     ip_limiter.clear()
+    rate_limits.clear_all()
     yield
     username_limiter.clear()
     ip_limiter.clear()
+    rate_limits.clear_all()

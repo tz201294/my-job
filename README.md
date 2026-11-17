@@ -50,6 +50,12 @@ the API answers `429` with a `Retry-After` header (`LOGIN_*` settings). Counts a
 process, so use a shared store such as Redis before running several workers. Behind a reverse proxy, set
 uvicorn's `FORWARDED_ALLOW_IPS` to the proxy address so client IPs are read correctly.
 
+Spam limits: each account may only post, comment, ask, react, follow and edit so often (e.g. 10 comments a minute,
+10 posts an hour), and one IP address may create 5 accounts an hour. Only successful actions count. Over a limit the
+API answers `429` with a `Retry-After` header and a message the app shows as is. The numbers are in
+`app/api/rate_limits.py`; `RATE_LIMITS_ENABLED=false` switches them off. Like the login limit, counts live in the
+API process's memory.
+
 Media links (post media, step images, stories, challenges) must be `http://` or `https://` URLs.
 
 ### Frontend

@@ -57,3 +57,25 @@ class FailureLimiter:
 
     def clear(self) -> None:
         self._failures.clear()
+
+
+class ActionLimiter:
+    """Caps how often a key (a user, or an IP for sign-ups) may do something, over one or more windows at once,
+    e.g. "10 a minute and 100 an hour". Counted in this process's memory, like FailureLimiter."""
+
+    def __init__(self, limits, clock=time.monotonic):
+        # limits: [(max_actions, window_seconds), ...]
+        self._windows = [FailureLimiter(n, seconds, clock) for n, seconds in limits]
+
+    def retry_after(self, key: str) -> Optional[int]:
+        """Seconds until `key` may act again, or None if it is under every limit."""
+        waits = [w for w in (window.retry_after(key) for window in self._windows) if w]
+        return max(waits) if waits else None
+
+    def record(self, key: str) -> None:
+        for window in self._windows:
+            window.record_failure(key)
+
+    def clear(self) -> None:
+        for window in self._windows:
+            window.clear()
