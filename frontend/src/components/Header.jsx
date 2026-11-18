@@ -81,7 +81,7 @@ export default function Header({
           <button
             type="button"
             onClick={onOpenCreate}
-            className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-teal-600 via-cyan-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 text-white rounded-full text-xs font-extrabold shadow-md shadow-teal-500/25 transition-all active:scale-95"
+            className="hidden sm:inline-flex btn btn-primary"
           >
             <PlusSquare className="w-4 h-4 stroke-[2.5]" />
             <span>{t('header.post')}</span>

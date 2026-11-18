@@ -61,11 +61,11 @@ function FollowRequests({ onChanged }) {
               <span className="block text-xs text-slate-500 truncate">@{r.username}{r.profession_title ? ` · ${r.profession_title}` : ''}</span>
             </span>
             <button type="button" disabled={busy === r.username} onClick={() => answer(r.username, true)}
-              className="px-3 py-1.5 rounded-xl text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60">
+              className="btn btn-sm btn-primary">
               {t('notif.accept')}
             </button>
             <button type="button" disabled={busy === r.username} onClick={() => answer(r.username, false)}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-60">
+              className="btn btn-sm btn-quiet">
               {t('notif.decline')}
             </button>
           </li>

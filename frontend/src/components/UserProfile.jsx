@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import {
   ShieldCheck, Star, Wrench, Layers, Image as ImageIcon, HelpCircle, ArrowLeft, UserPlus, Check, MessageSquare, Send, Heart,
-  Ban, Lock, Clock,
+  Ban, Lock, Clock, Flag,
 } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 import OwnerActions from './OwnerActions';
 import { paths } from '../routes';
 import { topicName } from '../api/mappers';
-import ReportButton from './ReportButton';
+import MoreMenu from './MoreMenu';
+import { ReportDialog } from './ReportButton';
 import { useI18n } from '../i18n';
 
 export default function UserProfile({
@@ -44,6 +45,7 @@ export default function UserProfile({
   const [questionText, setQuestionText] = useState('');
   const [sentNotice, setSentNotice] = useState(false);
   const [askError, setAskError] = useState('');
+  const [reporting, setReporting] = useState(false);
 
   // Filter posts created by this user
   const userCaseStudies = posts.filter(
@@ -78,14 +80,11 @@ export default function UserProfile({
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-slate-100 border border-teal-200 text-xs font-black text-teal-950 transition-all shadow-sm"
+          className="btn btn-secondary"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>{t('common.back')}</span>
         </button>
-        <span className="text-xs font-black text-teal-500 uppercase tracking-wider">
-          @{user.username}
-        </span>
       </div>
 
       {/* Main Profile Card Header with Radiant Backdrop */}
@@ -118,9 +117,7 @@ export default function UserProfile({
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                     {user.fullName}
                   </h2>
-                  <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200/60">
-                    @{user.username}
-                  </span>
+                  <span className="text-xs font-semibold text-slate-400">@{user.username}</span>
                 </div>
                 <p className="text-xs sm:text-sm font-extrabold text-teal-700 flex items-center gap-1.5 mt-0.5">
                   {user.professionSlug ? (
@@ -129,7 +126,7 @@ export default function UserProfile({
                     <span>{user.professionTitle}</span>
                   )}
                   <span className="text-slate-300">•</span>
-                  <span className="text-slate-500 font-medium">{user.yearsExp} yrs experience</span>
+                  <span className="text-slate-500 font-medium">{t('profile.experience', { count: user.yearsExp || 0 })}</span>
                 </p>
               </div>
 
@@ -139,11 +136,7 @@ export default function UserProfile({
                   <button
                     onClick={() => onToggleFollow(user.username)}
                     aria-pressed={isFollowing || user.followRequested}
-                    className={`flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-black transition-all shadow-md active:scale-95 ${
-                      isFollowing || user.followRequested
-                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300'
-                        : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-teal-500/25'
-                    }`}
+                    className={`btn ${isFollowing || user.followRequested ? 'btn-quiet' : 'btn-primary'}`}
                   >
                     {isFollowing ? (
                       <>
@@ -167,22 +160,24 @@ export default function UserProfile({
                 {!user.isBlocked && (
                 <button
                   onClick={() => setProfileTab('qa')}
-                  className="px-4 py-2.5 rounded-full bg-gradient-to-r from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 text-teal-900 border border-teal-200 text-xs font-black transition-all shadow-2xs"
+                  className="btn btn-secondary"
                 >
                   {t('profile.askAma')}
                 </button>
                 )}
 
-                {!isOwnProfile && onToggleBlock && (
-                  <>
-                    <button type="button" onClick={() => onToggleBlock(user.username)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold ${
-                        user.isBlocked ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700'}`}>
-                      <Ban className="w-3.5 h-3.5" /> {user.isBlocked ? t('profile.unblock') : t('profile.block')}
-                    </button>
-                    {!user.isBlocked && <ReportButton targetType="user" targetId={user.id} label="account" withText />}
-                  </>
-                )}
+                {/* Block and Report are one tap away in "⋯"; Unblock stays in sight while blocked. */}
+                {!isOwnProfile && onToggleBlock && (user.isBlocked ? (
+                  <button type="button" onClick={() => onToggleBlock(user.username)} className="btn btn-danger">
+                    <Ban className="w-3.5 h-3.5" /> {t('profile.unblock')}
+                  </button>
+                ) : (
+                  <MoreMenu items={[
+                    { key: 'block', label: t('profile.block'), icon: Ban, danger: true, onSelect: () => onToggleBlock(user.username) },
+                    { key: 'report', label: t('report.button', { item: t('item.account') }), icon: Flag, onSelect: () => setReporting(true) },
+                  ]} />
+                ))}
+                {reporting && <ReportDialog targetType="user" targetId={user.id} label="account" onClose={() => setReporting(false)} />}
               </div>
             </div>
 
@@ -200,11 +195,11 @@ export default function UserProfile({
             {/* Key Tools Chips */}
             {user.keyTools && (
               <div className="pt-2 flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-black text-teal-400 uppercase tracking-wider flex items-center gap-1">
-                  <Wrench className="w-3.5 h-3.5" /> Tools:
+                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1 mr-0.5">
+                  <Wrench className="w-3.5 h-3.5" aria-hidden="true" /> {t('profile.tools')}
                 </span>
                 {user.keyTools.map((tool, idx) => (
-                  <span key={idx} className="px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-900 text-[11px] font-bold border border-teal-200/80 shadow-2xs">
+                  <span key={idx} className="tag tag-brand">
                     {tool}
                   </span>
                 ))}
@@ -276,40 +271,34 @@ export default function UserProfile({
       </div>
 
       {/* Profile Tabs Navigation */}
-      <div className="flex items-center gap-1.5 p-1.5 bg-slate-200/70 rounded-2xl text-xs font-black border border-slate-300/60 shadow-2xs">
+      <div className="tabs" role="tablist">
         <button
+          role="tab"
+          aria-selected={profileTab === 'case_studies'}
           onClick={() => setProfileTab('case_studies')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all ${
-            profileTab === 'case_studies'
-              ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md font-black'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`tab ${profileTab === 'case_studies' ? 'tab-on' : ''}`}
         >
-          <Layers className="w-3.5 h-3.5" />
+          <Layers className="hidden sm:block w-3.5 h-3.5" />
           <span>{t('profile.tabCases', { n: userCaseStudies.length })}</span>
         </button>
 
         <button
+          role="tab"
+          aria-selected={profileTab === 'posts'}
           onClick={() => setProfileTab('posts')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all ${
-            profileTab === 'posts'
-              ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md font-black'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`tab ${profileTab === 'posts' ? 'tab-on' : ''}`}
         >
-          <ImageIcon className="w-3.5 h-3.5" />
+          <ImageIcon className="hidden sm:block w-3.5 h-3.5" />
           <span>{t('profile.tabPosts', { n: userGeneralPosts.length })}</span>
         </button>
 
         <button
+          role="tab"
+          aria-selected={profileTab === 'qa'}
           onClick={() => setProfileTab('qa')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all ${
-            profileTab === 'qa'
-              ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md font-black'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`tab ${profileTab === 'qa' ? 'tab-on' : ''}`}
         >
-          <HelpCircle className="w-3.5 h-3.5" />
+          <HelpCircle className="hidden sm:block w-3.5 h-3.5" />
           <span>{t('profile.tabQa', { n: userQAs.length })}</span>
         </button>
       </div>

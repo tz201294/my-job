@@ -616,4 +616,9 @@ export default {
   "catalog.doYou": "Do you do this job?",
   "catalog.addToProfile": "Add it to your profile",
   "catalog.showAll": "Show all {n}",
+  "profile.experience_one": "{count} year of experience",
+  "profile.experience_other": "{count} years of experience",
+  "profile.tools": "Tools",
+  "qa.waitingFor": "Waiting for {name} to answer",
+  "live.recommended": "Recommended: {tool}",
 };

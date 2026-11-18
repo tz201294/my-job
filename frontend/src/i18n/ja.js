@@ -598,4 +598,8 @@ export default {
   "catalog.doYou": "この仕事をしていますか？",
   "catalog.addToProfile": "プロフィールに追加",
   "catalog.showAll": "{n}件すべて表示",
+  "profile.experience_other": "経験{count}年",
+  "profile.tools": "ツール",
+  "qa.waitingFor": "{name}さんの回答待ち",
+  "live.recommended": "おすすめ：{tool}",
 };

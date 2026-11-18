@@ -167,9 +167,6 @@ export default function ChallengesHub({
               <Zap className="w-5 h-5 fill-cyan-200 text-cyan-100" />
             </span>
             <h3 className="font-black text-lg sm:text-xl tracking-tight">{t('live.hub')}</h3>
-            <span className="flex items-center gap-1 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-white text-teal-700 shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> Live Shifts
-            </span>
           </div>
           <p className="text-xs text-cyan-50/90 font-medium max-w-lg">
             {t('live.subtitle')}
@@ -178,7 +175,7 @@ export default function ChallengesHub({
 
         <button
           onClick={onOpenCreateChallenge}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-cyan-50 text-teal-700 text-xs font-black transition-all shadow-md active:scale-95 flex-shrink-0"
+          className="btn bg-white hover:bg-cyan-50 text-teal-700 shadow-sm flex-shrink-0"
         >
           <PlusCircle className="w-4 h-4 stroke-[2.5]" />
           <span>{t('live.post')}</span>
@@ -208,11 +205,11 @@ export default function ChallengesHub({
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-2xs">
+                    <span className="tag tag-brand">
                       {chal.category}
                     </span>
                     {chal.isSolved && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span className="tag tag-success">
                         <CheckCircle2 className="w-3 h-3" />
                         {t('activity.solved')}
                       </span>
@@ -225,7 +222,7 @@ export default function ChallengesHub({
                 </h4>
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-slate-600 font-medium">By {chal.workerFullName}</span>
-                  <span className="font-extrabold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200/60">
+                  <span className="tag tag-brand">
                     💡 {chal.suggestions?.length || 0} {chal.suggestions?.length === 1 ? 'idea' : 'ideas'}
                   </span>
                 </div>
@@ -269,12 +266,12 @@ export default function ChallengesHub({
                 <ReportButton targetType="challenge" targetId={activeChallenge.id} label="challenge" />
               )}
               {activeChallenge.isSolved ? (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black border border-emerald-200">
+                <span className="tag tag-success">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   {t('activity.solved')}
                 </span>
               ) : (
-                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-teal-100 to-cyan-100 text-cyan-900 text-xs font-black border border-cyan-200">
+                <span className="tag tag-brand">
                   🔴 {activeChallenge.urgencyLevel}
                 </span>
               )}
@@ -330,14 +327,14 @@ export default function ChallengesHub({
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-1.5">
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="font-extrabold text-xs text-slate-900">{sug.suggesterUsername}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 font-bold">
+                          <span className="tag tag-brand">
                             {sug.suggesterProfession}
                           </span>
                           {sug.isAccepted && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-full">
+                            <span className="tag tag-success">
                               <CheckCircle2 className="w-3 h-3 text-emerald-700" />
                               {t('live.acceptedSolution')}
                             </span>
@@ -345,7 +342,7 @@ export default function ChallengesHub({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 shrink-0">
                       {/* The author can edit (until accepted) and delete; the challenge owner can delete. */}
                       {currentUserId && (sug.suggesterId === currentUserId || isOwner) && editingSuggestionId !== sug.id && (
                         <OwnerActions
@@ -365,11 +362,7 @@ export default function ChallengesHub({
                       <button
                         onClick={() => onUpvoteSuggestion(activeChallenge.id, sug.id)}
                         aria-pressed={sug.upvotedByMe}
-                        className={`flex items-center gap-1 px-3 py-1 rounded-xl border text-xs font-extrabold transition-all active:scale-95 shadow-2xs ${
-                          sug.upvotedByMe
-                            ? 'bg-cyan-600 border-cyan-600 text-white'
-                            : 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-800'
-                        }`}
+                        className={`btn btn-sm ${sug.upvotedByMe ? 'btn-primary' : 'btn-secondary'}`}
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
                         <span>{sug.upvotes}</span>
@@ -391,21 +384,17 @@ export default function ChallengesHub({
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       {sug.suggestedTool ? (
-                        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-900 bg-cyan-100/70 border border-cyan-200 px-2.5 py-1 rounded-lg">
-                          <Wrench className="w-3 h-3 text-cyan-600" />
-                          <span>Recommended: {sug.suggestedTool}</span>
-                        </div>
+                        <span className="tag tag-brand">
+                          <Wrench className="w-3 h-3" aria-hidden="true" />
+                          <span>{t('live.recommended', { tool: sug.suggestedTool })}</span>
+                        </span>
                       ) : <span />}
 
                       {isOwner && (
                         <button
                           onClick={() => handleAccept(sug)}
                           disabled={acceptingId !== null}
-                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-extrabold border transition-all disabled:opacity-60 ${
-                            sug.isAccepted
-                              ? 'bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50'
-                              : 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700'
-                          }`}
+                          className={`btn btn-sm ${sug.isAccepted ? 'btn-secondary' : 'btn-primary'}`}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           {acceptingId === sug.id ? t('common.saving') : sug.isAccepted ? t('live.undoAccept') : t('live.accept')}
@@ -440,7 +429,7 @@ export default function ChallengesHub({
                   <button
                     type="submit"
                     disabled={busy}
-                    className="px-5 py-2 bg-gradient-to-r from-cyan-600 to-cyan-600 hover:from-cyan-700 hover:to-cyan-700 disabled:opacity-60 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all active:scale-95"
+                    className="btn btn-primary px-5"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>{t('live.submit')}</span>

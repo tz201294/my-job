@@ -615,4 +615,9 @@ export default {
   "catalog.doYou": "Vous faites ce métier ?",
   "catalog.addToProfile": "Ajoutez-le à votre profil",
   "catalog.showAll": "Tout voir ({n})",
+  "profile.experience_one": "{count} an d'expérience",
+  "profile.experience_other": "{count} ans d'expérience",
+  "profile.tools": "Outils",
+  "qa.waitingFor": "En attente de la réponse de {name}",
+  "live.recommended": "Recommandé : {tool}",
 };

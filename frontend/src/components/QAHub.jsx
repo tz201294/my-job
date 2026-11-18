@@ -74,7 +74,7 @@ function AnswerForm({ qa, onSubmit, onCancel }) {
           <button
             type="submit"
             disabled={busy || !answerText.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:opacity-60 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5"
+            className="btn btn-primary"
           >
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             <span>{editing ? t('qa.saveAnswer') : t('qa.postAnswer')}</span>
@@ -163,7 +163,7 @@ function QuestionCard({ qa, isMine, isAsker, canReport, onUpvoteQA, onAnswer, on
       {/* Question Header */}
       <div className="flex items-start justify-between gap-3 mb-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] px-3 py-0.5 rounded-full bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-800 border border-teal-200 font-extrabold shadow-2xs">
+          <span className="tag tag-brand">
             {topicName(qa.topicTag)}
           </span>
           <span className="text-xs text-slate-400 font-medium">
@@ -188,11 +188,7 @@ function QuestionCard({ qa, isMine, isAsker, canReport, onUpvoteQA, onAnswer, on
           onClick={() => onUpvoteQA(qa.id)}
           aria-pressed={qa.upvotedByMe}
           aria-label={t('qa.upvote', { n: qa.upvotes })}
-          className={`flex items-center gap-1 px-3 py-1 rounded-xl border text-xs font-black transition-colors ${
-            qa.upvotedByMe
-              ? 'bg-teal-600 border-teal-600 text-white'
-              : 'bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-800'
-          }`}
+          className={`btn btn-sm ${qa.upvotedByMe ? 'btn-primary' : 'btn-secondary'}`}
         >
           <ArrowUp className="w-3.5 h-3.5" />
           <span>{qa.upvotes}</span>
@@ -261,7 +257,7 @@ function QuestionCard({ qa, isMine, isAsker, canReport, onUpvoteQA, onAnswer, on
       ) : (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs text-amber-900 font-bold flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-          <span>Waiting for {qa.workerFullName} to answer</span>
+          <span>{t('qa.waitingFor', { name: qa.workerFullName })}</span>
         </div>
       )}
     </div>
@@ -344,9 +340,7 @@ export default function QAHub({
 
   const inboxCount = inbox?.length || 0;
   const shown = view === 'inbox' ? inbox || [] : qaItems;
-  const tabCls = (v) => `flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-colors ${
-    view === v ? 'bg-teal-600 text-white shadow-sm' : 'text-teal-800 hover:bg-teal-50'
-  }`;
+  const tabCls = (v) => `tab ${view === v ? 'tab-on' : ''}`;
 
   return (
     <div className="bg-white/95 border border-teal-100 rounded-3xl p-5 sm:p-6 shadow-sm mb-6 backdrop-blur-sm card-glow">
@@ -411,7 +405,7 @@ export default function QAHub({
           <button
             type="submit"
             disabled={busy || !workerId}
-            className="px-5 py-2.5 bg-gradient-to-r from-teal-600 via-cyan-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:opacity-60 text-white rounded-2xl text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-teal-500/20 transition-all active:scale-95"
+            className="btn btn-primary px-5 py-2.5"
           >
             <Send className="w-3.5 h-3.5" />
             <span>{t('qa.askPro')}</span>
@@ -421,7 +415,7 @@ export default function QAHub({
       </form>
 
       {/* All questions / my inbox */}
-      <div className="flex items-center gap-2 mb-4" role="tablist" aria-label={t('qa.questions')}>
+      <div className="tabs mb-4" role="tablist" aria-label={t('qa.questions')}>
         <button role="tab" aria-selected={view === 'all'} onClick={() => setView('all')} className={tabCls('all')}>
           {t('qa.all')}
         </button>
@@ -434,7 +428,7 @@ export default function QAHub({
           <Inbox className="w-3.5 h-3.5" />
           {t('qa.inboxTitle')}
           {inboxCount > 0 && (
-            <span className={`ml-0.5 px-1.5 rounded-full text-[10px] ${view === 'inbox' ? 'bg-white text-teal-700' : 'bg-rose-500 text-white'}`}>
+            <span className="ml-0.5 px-1.5 rounded-full text-[10px] bg-rose-500 text-white">
               {inboxCount}
             </span>
           )}

@@ -111,12 +111,12 @@ export default function PostCard({
 
         <div className="flex items-center gap-1 shrink-0">
           {isCaseStudy ? (
-            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 text-[11px] font-bold">
+            <span className="hidden sm:inline-flex tag tag-brand">
               <Layers className="w-3 h-3" aria-hidden="true" />
               {t('post.caseStudy')}
             </span>
           ) : (
-            <span className="hidden sm:inline px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold">
+            <span className="hidden sm:inline-flex tag">
               {t('post.milestone')}
             </span>
           )}

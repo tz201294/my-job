@@ -63,7 +63,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm sm:text-base">{post.authorFullName}</span>
                 <ShieldCheck className="w-4 h-4 text-sky-400" />
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-brand-500/30 text-sky-300 font-semibold border border-brand-400/30">
+                <span className="tag tag-dark">
                   {task.category}
                 </span>
               </div>
@@ -74,7 +74,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
           <div className="flex items-center gap-2">
             <button
               onClick={() => onOpenReviewModal(post)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/30 text-xs font-bold transition-all"
+              className="hidden sm:inline-flex btn btn-sm bg-amber-500/20 hover:bg-amber-500/30 text-amber-300"
             >
               <Star className="w-3.5 h-3.5 fill-amber-300" />
               <span>{t('case.rate')}</span>
@@ -93,15 +93,15 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
           {/* Title & Metadata */}
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+              <span className="tag tag-success">
                 {t('case.difficulty', { level: task.difficulty ? t(`difficulty.${task.difficulty.toLowerCase()}`) : '' })}
               </span>
               {task.estimatedDuration && (
-                <span className="px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 text-xs font-bold">
+                <span className="tag tag-brand">
                   {t('case.duration', { time: task.estimatedDuration })}
                 </span>
               )}
-              <span className="px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 text-xs font-bold">
+              <span className="tag tag-brand">
                 {post.rating != null ? `⭐ ${post.rating} / 5.0 (${t('case.reviews', { count: post.reviewsCount })})` : t('case.notReviewed')}
               </span>
             </div>
@@ -131,7 +131,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {task.toolsUsed?.map((tool, idx) => (
-                  <span key={idx} className="px-2.5 py-1 bg-white border border-brand-200 text-slate-800 rounded-lg text-xs font-semibold shadow-2xs">
+                  <span key={idx} className="tag text-xs px-2.5 py-1">
                     {tool}
                   </span>
                 ))}
@@ -159,7 +159,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
                   {t('case.steps')}
                 </span>
-                <span className="text-xs font-bold text-brand-700 bg-brand-100 px-2 py-0.5 rounded-full">
+                <span className="tag tag-brand">
                   {t('case.stepOf', { n: activeStepIdx + 1, total: steps.length })}
                 </span>
               </div>
@@ -253,7 +253,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
               </div>
               <button
                 onClick={() => onOpenReviewModal(post)}
-                className="px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
+                className="btn btn-sm btn-quiet"
               >
                 + Write Review
               </button>
@@ -272,7 +272,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-xs text-slate-900">{rv.username}</span>
                       {rv.reviewer_profession && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-semibold">
+                        <span className="tag">
                           {rv.reviewer_profession}
                         </span>
                       )}

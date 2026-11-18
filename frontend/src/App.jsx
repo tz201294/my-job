@@ -962,18 +962,14 @@ export default function App() {
             {/* FEED TAB CONTENT */}
             {activeTab === 'feed' && (
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-xs font-bold" role="tablist" aria-label={t('feed.filter')}>
+                <div className="tabs" role="tablist" aria-label={t('feed.filter')}>
                   {[['all', t('feed.forYou')], ['following', t('feed.following')], ['saved', t('feed.saved')]].map(([view, label]) => (
                     <button
                       key={view}
                       role="tab"
                       aria-selected={feedView === view}
                       onClick={() => go(view === 'all' ? paths.home : view === 'following' ? paths.following : paths.saved)}
-                      className={`px-4 py-1.5 rounded-full border transition-colors ${
-                        feedView === view
-                          ? 'bg-slate-900 text-white border-slate-900'
-                          : 'bg-white text-slate-600 border-slate-300 hover:border-slate-500'
-                      }`}
+                      className={`tab ${feedView === view ? 'tab-on' : ''}`}
                     >
                       {label}
                     </button>

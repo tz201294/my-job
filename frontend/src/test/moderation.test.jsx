@@ -30,7 +30,8 @@ describe('blocking', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderApp('/u/alex_driver');
     await loginAndWaitForFeed('sarah_plumber').catch(() => {});
-    await click(await screen.findByRole('button', { name: 'Block' }));
+    await click((await screen.findAllByRole('button', { name: 'More options' }))[0]);
+    await click(screen.getByRole('menuitem', { name: 'Block' }));
     expect((await screen.findByText(/You blocked @alex_driver/))).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Unblock' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Follow/ })).toBeNull();

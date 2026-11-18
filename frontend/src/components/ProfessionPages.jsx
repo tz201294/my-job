@@ -63,7 +63,7 @@ export function ProfessionsPage() {
                   <span className="flex items-center justify-between gap-2">
                     <span className="font-extrabold text-slate-900">{p.name}</span>
                     {counts[p.slug] > 0 && (
-                      <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                      <span className="shrink-0 tag tag-brand">
                         {t('catalog.peopleCount', { count: counts[p.slug] })}
                       </span>
                     )}
@@ -145,7 +145,7 @@ function AskForm({ profession, askable, chosen, onChoose, onAskQuestion, textRef
       {error && <p role="alert" className="text-xs font-bold text-rose-600">{error}</p>}
       {sent && <p role="status" className="text-xs font-bold text-teal-700">{t('catalog.askSent')}</p>}
       <button type="submit" disabled={busy || !text.trim()}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold disabled:opacity-50">
+        className="btn btn-primary">
         <Send className="w-3.5 h-3.5" aria-hidden="true" /> {t('catalog.askSend')}
       </button>
     </form>
@@ -226,7 +226,7 @@ export function ProfessionPage({ slug, meId, mySlug, onAskQuestion }) {
             )}
             {askable.length > 0 && (
               <button type="button" onClick={() => askSomeone()}
-                className="sm:ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-teal-800 hover:bg-teal-50 text-xs font-extrabold shadow-sm">
+                className="sm:ml-auto btn bg-white text-teal-800 hover:bg-teal-50 shadow-sm">
                 <MessageCircleQuestion className="w-4 h-4" aria-hidden="true" /> {t('catalog.askTitle')}
               </button>
             )}
@@ -282,7 +282,7 @@ export function ProfessionPage({ slug, meId, mySlug, onAskQuestion }) {
         <Section icon={Wrench} title={t('catalog.tools')}>
           <ul className="flex flex-wrap gap-1.5">
             {profession.tools.map((tool) => (
-              <li key={tool} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">{tool}</li>
+              <li key={tool} className="tag text-xs px-2.5 py-1">{tool}</li>
             ))}
           </ul>
         </Section>
@@ -310,7 +310,7 @@ export function ProfessionPage({ slug, meId, mySlug, onAskQuestion }) {
                 </Link>
                 {askable.some((a) => a.id === u.id) && (
                   <button type="button" onClick={() => askSomeone(u.id)} aria-label={t('catalog.askPerson', { name: u.fullName })}
-                    className="shrink-0 px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-extrabold">
+                    className="btn btn-sm btn-quiet shrink-0">
                     {t('catalog.ask')}
                   </button>
                 )}

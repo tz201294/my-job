@@ -45,11 +45,7 @@ export default function ProfessionDiscovery({
               key={cat.id}
               onClick={() => onSelectCategory(cat.slug)}
               aria-pressed={isSelected}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex-shrink-0 border ${
-                isSelected
-                  ? 'bg-teal-600 text-white border-teal-600'
-                  : 'bg-white hover:bg-teal-50 text-slate-700 border-slate-200 hover:border-teal-200'
-              }`}
+              className={`chip flex-shrink-0 ${isSelected ? 'chip-on' : ''}`}
             >
               <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-teal-600'}`} aria-hidden="true" />
               <span>{cat.slug === 'all' ? t('discover.allProfessions') : fieldName(cat.name)}</span>
@@ -70,7 +66,7 @@ export default function ProfessionDiscovery({
               key={p.slug}
               type="button"
               onClick={() => onOpenProfession(p.slug)}
-              className="px-3 py-1 rounded-xl bg-gradient-to-r from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 text-teal-800 border border-teal-200/80 text-xs font-bold transition-all shadow-2xs hover:scale-105"
+              className="chip"
             >
               {p.name}
             </button>
@@ -80,7 +76,7 @@ export default function ProfessionDiscovery({
               <button
                 key={idx}
                 onClick={() => onSelectRole(role)}
-                className="px-3 py-1 rounded-xl bg-gradient-to-r from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 text-teal-800 border border-teal-200/80 text-xs font-bold transition-all shadow-2xs hover:scale-105"
+                className="chip"
               >
                 {role}
               </button>

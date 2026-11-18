@@ -88,9 +88,7 @@ function PeopleToFollow({ people, meId, onToggleFollow, onOpenProfile }) {
                 disabled={busy === p.username}
                 aria-pressed={on}
                 aria-label={`${on ? t(p.isFollowing ? 'profile.following' : 'profile.requested') : t('profile.follow')}: ${p.fullName}`}
-                className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-extrabold transition-colors disabled:opacity-60 ${
-                  on ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-teal-600 text-white hover:bg-teal-700'
-                }`}
+                className={`btn btn-sm shrink-0 ${on ? 'btn-quiet' : 'btn-primary'}`}
               >
                 {p.isFollowing ? <Check className="w-3 h-3" /> : p.followRequested ? <Clock className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />}
                 {t(p.isFollowing ? 'profile.following' : p.followRequested ? 'profile.requested' : 'profile.follow')}
