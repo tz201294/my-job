@@ -27,7 +27,7 @@ describe('settings', () => {
 
     // Her posts in the feed show the new name
     await click(within(sidebar()).getByRole('button', { name: 'Home' }));
-    await waitFor(() => expect(screen.getAllByText('Sarah J. Jenkins').length).toBeGreaterThan(1));
+    await waitFor(() => expect(screen.getAllByText('Sarah J. Jenkins').length).toBeGreaterThan(0));
     await click(within(sidebar()).getByRole('button', { name: 'Settings' }));
     await screen.findByRole('heading', { name: 'Settings' });
 

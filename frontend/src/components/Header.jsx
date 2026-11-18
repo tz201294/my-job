@@ -49,7 +49,7 @@ export default function Header({
             type="button"
             onClick={onOpenMenu}
             aria-label={t('nav.openMenu')}
-            className="lg:hidden p-2 -ml-1 text-slate-700 hover:bg-slate-100 rounded-full"
+            className="p-2 -ml-1 text-slate-700 hover:bg-slate-100 rounded-full"
           >
             <Menu className="w-6 h-6" />
           </button>

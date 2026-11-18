@@ -109,18 +109,7 @@ function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0, isA
   );
 }
 
-// Fixed left column on wide screens.
-export function Sidebar(props) {
-  return (
-    <aside className="hidden lg:block w-64 shrink-0">
-      <div className="sticky top-20 py-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
-        <MenuContent {...props} />
-      </div>
-    </aside>
-  );
-}
-
-// Slide-in menu on phones and tablets, opened from the header's menu button.
+// The menu: slides in from the left when the header's menu button (top left) is pressed, on every screen size.
 export function MenuDrawer({ open, onClose, ...props }) {
   const { t } = useI18n();
   const panelRef = useRef(null);
@@ -140,7 +129,7 @@ export function MenuDrawer({ open, onClose, ...props }) {
 
   if (!open) return null;
   return (
-    <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={t('nav.menu')}>
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={t('nav.menu')}>
       <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[2px]" onClick={onClose} />
       <div
         ref={panelRef}

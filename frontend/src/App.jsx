@@ -22,7 +22,7 @@ import QAHub from './components/QAHub';
 import ReelsHub from './components/ReelsHub';
 import CreatePostModal from './components/CreatePostModal';
 import UserProfile from './components/UserProfile';
-import { MenuDrawer, Sidebar } from './components/SideMenu';
+import { MenuDrawer } from './components/SideMenu';
 import BottomNav from './components/BottomNav';
 import ActivityPage from './components/ActivityPage';
 import SettingsPage from './components/SettingsPage';
@@ -809,8 +809,7 @@ export default function App() {
 
       {/* Sidebar (wide screens) + page */}
       <div className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-4 flex gap-8">
-      <Sidebar {...menuProps} />
-      <main className="flex-1 min-w-0 max-w-2xl mx-auto lg:mx-0 py-4 sm:py-6 pb-24 lg:pb-8">
+      <main className="flex-1 min-w-0 max-w-2xl mx-auto py-4 sm:py-6 pb-24 lg:pb-8">
         {loadState === 'loading' || loadState === 'idle' ? (
           <Loading />
         ) : loadState === 'error' ? (

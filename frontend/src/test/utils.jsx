@@ -27,8 +27,14 @@ export const currentPath = () => screen.getByTestId('where').textContent;
 export const click = async (el) => { await act(async () => { fireEvent.click(el); }); };
 export const type = async (el, value) => { await act(async () => { fireEvent.change(el, { target: { value } }); }); };
 
-// jsdom applies no CSS, so the sidebar (wide screens) and the bottom bar (phones) are both present.
-export const sidebar = () => screen.getAllByRole('navigation', { name: 'Main menu' })[0];
+// jsdom applies no CSS, so the bottom bar (phones) is always present; the menu opens from the header button.
+// The menu opens from the header's menu button; this opens it if it isn't open yet.
+export const sidebar = () => {
+  if (!screen.queryAllByRole('navigation', { name: 'Main menu' }).length) {
+    fireEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: 'Open menu' }));
+  }
+  return screen.getAllByRole('navigation', { name: 'Main menu' })[0];
+};
 export const bottomBar = () => screen.getByRole('navigation', { name: 'Sections' });
 export const header = () => screen.getByRole('banner');
 export const bell = () => within(header()).getByRole('button', { name: /^Notifications/ });
