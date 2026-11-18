@@ -929,7 +929,8 @@ export default function App() {
         ) : route.page === 'professions' ? (
           <ProfessionsPage />
         ) : route.page === 'profession' ? (
-          <ProfessionPage slug={route.slug} />
+          <ProfessionPage slug={route.slug} meId={me.id} mySlug={currentUser.profession?.catalog_slug}
+            onAskQuestion={handleAskQuestion} />
         ) : activeTab === 'moderation' ? (
           currentUser.is_admin
             ? <ModerationPage onOpen={(path) => go(path)} onChanged={() => loadAll({ quiet: true })} />

@@ -64,7 +64,16 @@ describe('profession pages', () => {
     expect(screen.getByText('Find and fix leaks and blockages')).toBeTruthy();
     expect(screen.getByText('Pipe wrench')).toBeTruthy();
     expect(await screen.findByRole('link', { name: /^Sarah Jenkins/ })).toBeTruthy();
-    await click(screen.getByRole('link', { name: 'Electrician' }));
+    expect(screen.getByText('1 person here')).toBeTruthy();
+
+    // Ask her a question without leaving the page
+    await click(screen.getByRole('button', { name: 'Ask Sarah Jenkins' }));
+    await type(screen.getByLabelText('Your question'), 'How long did your apprenticeship take?');
+    await click(screen.getByRole('button', { name: 'Send question' }));
+    expect((await screen.findByRole('status')).textContent).toMatch(/notification when they answer/);
+    expect(screen.getByLabelText('Your question').value).toBe('');
+
+    await click(screen.getByRole('link', { name: /^Electrician/ }));
     expect(await screen.findByRole('heading', { name: 'Electrician', level: 2 })).toBeTruthy();
     expect(await screen.findByText(/No one on Prologue has picked this profession yet/)).toBeTruthy();
   });
