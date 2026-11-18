@@ -877,6 +877,7 @@ export default function App() {
                 key={pagePost.id}
                 post={pagePost}
                 initialShowComments
+                full
                 onLike={handleLikePost}
                 onBookmark={handleBookmarkPost}
                 onOpenCaseStudy={setSelectedCaseStudy}
@@ -967,8 +968,6 @@ export default function App() {
                   ))}
                 </div>
 
-                {feedView === 'all' && !searchTerm && selectedCategory === 'all' && <ProfessionOfTheDay />}
-
                 {feedView !== 'all' && feedState === 'loading' ? (
                   <div className="flex justify-center py-10" role="status" aria-label={t('common.loading')}>
                     <Loader2 className="w-5 h-5 text-teal-600 animate-spin" />
@@ -994,9 +993,9 @@ export default function App() {
                     )}
                   </div>
                 ) : (
-                  filteredPosts.map((post) => (
+                  filteredPosts.map((post, i) => (
+                    <React.Fragment key={post.id}>
                     <PostCard
-                      key={post.id}
                       post={post}
                       onLike={handleLikePost}
                       onBookmark={handleBookmarkPost}
@@ -1009,6 +1008,11 @@ export default function App() {
                       onEdit={setEditingPost}
                       onDelete={handleDeletePost}
                     />
+                    {/* Profession of the day: after the second post, so the feed opens on posts */}
+                    {i === Math.min(1, filteredPosts.length - 1) && feedView === 'all' && !searchTerm && selectedCategory === 'all' && (
+                      <ProfessionOfTheDay />
+                    )}
+                    </React.Fragment>
                   ))
                 )}
               </div>

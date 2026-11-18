@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
-import { click, currentPath, loginAndWaitForFeed, renderApp, sidebar, type } from './utils';
+import { click, currentPath, loginAndWaitForFeed, postAction, postsWith, renderApp, sidebar, type } from './utils';
 import { api } from '../api/client';
 import { parseRoute } from '../routes';
 
@@ -10,10 +10,8 @@ describe('reporting', () => {
   it("offers Report on other people's posts (not your own) and sends it", async () => {
     renderApp('/');
     await loginAndWaitForFeed('sarah_plumber');
-    const buttons = screen.getAllByRole('button', { name: 'Report post' });
-    expect(buttons.length).toBeGreaterThan(0);
-
-    await click(buttons[0]);
+    expect(await postsWith('Report post')).toBeGreaterThan(0);
+    await postAction('Report post');
     const dialog = screen.getByRole('dialog', { name: 'Report post' });
     await click(within(dialog).getByRole('button', { name: 'Send report' }));
     expect(within(dialog).getByRole('alert').textContent).toMatch('choose a reason');

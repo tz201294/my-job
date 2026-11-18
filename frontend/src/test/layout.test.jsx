@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import {
-  bell, bottomBar, click, currentPath, header, login, loginAndWaitForFeed, renderApp, sidebar, type,
+  bell, bottomBar, click, currentPath, header, login, loginAndWaitForFeed, postAction, renderApp, sidebar, type,
 } from './utils';
 
 describe('layout and navigation', () => {
@@ -71,7 +71,7 @@ describe('layout and navigation', () => {
     // Reset demo data: delete a post, reset, log back in, the post is back
     await click(within(bottomBar()).getByRole('button', { name: 'Home' }));
     const before = screen.getAllByRole('button', { name: /^Comments \(/ }).length;
-    await click(screen.getAllByRole('button', { name: 'Delete post' })[0]);
+    await postAction('Delete post');
     await waitFor(() => expect(screen.getAllByRole('button', { name: /^Comments \(/ }).length).toBe(before - 1));
     await click(within(sidebar()).getByRole('button', { name: 'Settings' }));
     await click(await screen.findByRole('button', { name: 'Reset demo data' }));

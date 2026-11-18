@@ -46,6 +46,33 @@ export async function login(username, password = 'demo1234') {
   await click(screen.getAllByRole('button', { name: /^log in$/i }).at(-1));
 }
 
+// Post actions live in each card's "More options" menu. postsWith(name) counts the posts whose menu offers `name`;
+// postAction(name, nth) opens the menus in order and picks `name` in the nth one that has it.
+const postMenus = () => screen.queryAllByRole('button', { name: 'More options' });
+async function eachPostMenu(fn) {
+  for (const btn of postMenus()) {
+    await click(btn);
+    const menu = screen.getByRole('menu');
+    if (await fn(menu)) return true;
+    await click(btn); // close it again
+  }
+  return false;
+}
+export async function postsWith(name) {
+  let n = 0;
+  await eachPostMenu(async (menu) => { if (within(menu).queryByRole('menuitem', { name })) n += 1; return false; });
+  return n;
+}
+export async function postAction(name, nth = 0) {
+  let seen = 0;
+  const found = await eachPostMenu(async (menu) => {
+    const item = within(menu).queryByRole('menuitem', { name });
+    if (item && seen++ === nth) { await click(item); return true; }
+    return false;
+  });
+  if (!found) throw new Error(`no post menu offers "${name}"`);
+}
+
 export async function loginAndWaitForFeed(username, password) {
   await login(username, password);
   await screen.findAllByRole('button', { name: /^Comments \(/ });

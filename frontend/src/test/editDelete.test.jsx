@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
-import { click, login, loginAndWaitForFeed, renderApp, sidebar, type } from './utils';
+import { click, login, loginAndWaitForFeed, postAction, postsWith, renderApp, sidebar, type } from './utils';
 
 describe('editing and deleting your own content', () => {
   it('posts: only your own, edited in the publishing form, deleted with confirmation', async () => {
     renderApp('/');
     await loginAndWaitForFeed('sarah_plumber');
-    const edits = screen.getAllByRole('button', { name: 'Edit post' });
-    expect(edits.length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('button', { name: 'Delete post' }).length).toBe(edits.length);
+    const edits = await postsWith('Edit post');
+    expect(edits).toBeGreaterThan(0);
+    expect(await postsWith('Delete post')).toBe(edits);
+    // Other people's posts offer Report instead; no menu offers both.
+    expect(edits + await postsWith('Report post')).toBe(screen.getAllByRole('button', { name: 'More options' }).length);
 
-    await click(edits[0]);
+    await postAction('Edit post');
     expect(screen.getByRole('heading', { name: 'Edit post' })).toBeTruthy();
     const titleInput = screen.getAllByRole('textbox').find((i) => i.value && i.value.length > 10);
     const oldTitle = titleInput.value;
@@ -20,9 +22,10 @@ describe('editing and deleting your own content', () => {
     expect(screen.getAllByText('Edited by the test').length).toBeGreaterThan(0);
     expect(screen.queryByText(oldTitle)).toBeNull();
 
-    const before = screen.getAllByRole('button', { name: 'Delete post' }).length;
-    await click(screen.getAllByRole('button', { name: 'Delete post' })[0]);
-    await waitFor(() => expect(screen.queryAllByRole('button', { name: 'Delete post' }).length).toBe(before - 1));
+    const before = await postsWith('Delete post');
+    await postAction('Delete post');
+    await waitFor(() => expect(screen.queryByText('Post deleted')).toBeTruthy());
+    expect(await postsWith('Delete post')).toBe(before - 1);
     expect(screen.queryByText('Edited by the test')).toBeNull();
     expect(screen.getByText('Post deleted')).toBeTruthy();
   });
@@ -85,7 +88,7 @@ describe('post tags', () => {
     const { fireEvent, act } = await import('@testing-library/react');
     renderApp('/');
     await loginAndWaitForFeed('sarah_plumber');
-    await click(screen.getAllByRole('button', { name: 'Edit post' })[0]);
+    await postAction('Edit post');
     const box = screen.getByLabelText('Tags (optional)');
     // Existing tags are shown as chips
     const existing = screen.getAllByRole('button', { name: /^Remove tag / });
@@ -108,8 +111,10 @@ describe('post tags', () => {
     await type(box, 'pending-one');
     await click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Edit post' })).toBeNull());
-    expect(screen.getAllByText('#night-shift').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('#pending-one').length).toBeGreaterThan(0);
-    expect(screen.queryAllByText(`#${removed}`).length).toBe(0);
+    // Saved: the form shows them again (the feed card shows only the first few tags)
+    await postAction('Edit post');
+    expect(screen.getByRole('button', { name: 'Remove tag night-shift' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Remove tag pending-one' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: `Remove tag ${removed}` })).toBeNull();
   });
 });

@@ -40,7 +40,7 @@ export default function ReportButton({ targetType, targetId, label = targetType,
   );
 }
 
-function ReportDialog({ targetType, targetId, label, onClose }) {
+export function ReportDialog({ targetType, targetId, label, onClose }) {
   const { t } = useI18n();
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');

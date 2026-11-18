@@ -1,28 +1,11 @@
 import React from 'react';
-import {
-  Plus, Sparkles,
-} from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 export default function StoryTray({ stories, myAvatarUrl, onSelectStory, onOpenAddStory }) {
   const { t } = useI18n();
   return (
-    <div className="bg-white/95 border border-teal-100 rounded-3xl p-4 sm:p-5 shadow-sm mb-5 backdrop-blur-sm">
-      <div className="flex items-center justify-between mb-3.5 px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-black uppercase tracking-wider bg-gradient-to-r from-slate-900 to-teal-700 bg-clip-text text-transparent">
-            {t('stories.title')}
-          </span>
-          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-white bg-gradient-to-r from-emerald-500 to-teal-600 px-2.5 py-0.5 rounded-full shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span> {t('stories.liveShifts')}
-          </span>
-        </div>
-        <span className="text-xs text-teal-500 font-bold flex items-center gap-1">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
-          <span>{t('stories.realtime')}</span>
-        </span>
-      </div>
-
+    <section aria-label={t('stories.title')} className="bg-white border border-teal-100 rounded-3xl px-3 py-3 sm:px-4 shadow-sm mb-3">
       <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-1 pt-1">
         {/* "Your Story (+)" Action (Instagram pattern) */}
         <div 
@@ -72,6 +55,6 @@ export default function StoryTray({ stories, myAvatarUrl, onSelectStory, onOpenA
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

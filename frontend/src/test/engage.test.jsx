@@ -14,14 +14,24 @@ describe('profession of the day', () => {
     }
   });
 
-  it('sits at the top of the home feed and steps aside while searching', async () => {
+  it('sits after the second post, steps aside while searching, and hides until tomorrow', async () => {
     renderApp('/');
     await loginAndWaitForFeed('sarah_plumber');
     const card = screen.getByText('Profession of the day', { exact: false }).closest('a');
     expect(card.getAttribute('href')).toMatch(/^\/professions\/[a-z-]+$/);
+    // Two posts come before it, so the feed opens on posts.
+    const cards = [...document.querySelectorAll('.card-glow')];
+    expect(cards.filter((c) => c.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).length).toBe(2);
 
     await type(within(header()).getAllByRole('searchbox')[0], 'valve');
     await waitFor(() => expect(screen.queryByText('Profession of the day', { exact: false })).toBeNull());
+    await type(within(header()).getAllByRole('searchbox')[0], '');
+    await screen.findByText('Profession of the day', { exact: false });
+
+    // The × hides it for the rest of the day, on this device.
+    await click(screen.getByRole('button', { name: 'Hide until tomorrow' }));
+    expect(screen.queryByText('Profession of the day', { exact: false })).toBeNull();
+    expect(localStorage.getItem('myjob_pod_hidden')).toBeTruthy();
   });
 });
 
