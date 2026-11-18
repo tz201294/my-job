@@ -225,6 +225,7 @@ function register(body) {
   const username = String(body?.username || '').trim().toLowerCase();
   if (!username) fail(422, 'username: Field required');
   if (s.users[username]) fail(409, 'Username already taken');
+  if (!body?.accept_terms) fail(422, 'Please accept the Terms of Service and Privacy Policy to create an account');
   const p = body.profession;
   const u = {
     id: newId('usr'),
@@ -1035,6 +1036,19 @@ function handle(endpoint, options) {
     fail(400, "Links from emails don't work in the demo.");
   }
   if (route === 'POST /auth/email/resend') fail(400, "The demo doesn't send emails.");
+  if (route === 'GET /auth/me/export') {
+    const u = me();
+    const mine = (x) => [x.authorUsername, x.author_username, x.username].includes(u.username);
+    return {
+      exported_at: nowIso(),
+      about: 'Demo data, stored only in this browser.',
+      account: publicUser(u),
+      posts: s.posts.filter(mine),
+      stories: s.stories.filter(mine),
+      following: s.following,
+      blocked: blockedNames(),
+    };
+  }
   if (route === 'GET /auth/me/blocked') {
     me();
     return blockedNames().map((n) => s.users[n]).filter(Boolean)

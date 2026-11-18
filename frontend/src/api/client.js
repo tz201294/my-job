@@ -108,6 +108,7 @@ export const api = {
   blockUser: (username) => post(`/auth/users/${encodeURIComponent(username)}/block`),
   unblockUser: (username) => del(`/auth/users/${encodeURIComponent(username)}/block`),
   getBlocked: () => request('/auth/me/blocked'),
+  exportMyData: () => request('/auth/me/export'),
   getReports: (status = 'open') => request(`/moderation/reports?status=${encodeURIComponent(status)}`),
   resolveReports: (targetType, targetId, action) =>
     post('/moderation/reports/resolve', { target_type: targetType, target_id: targetId, action }),

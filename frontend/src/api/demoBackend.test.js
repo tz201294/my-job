@@ -230,7 +230,7 @@ describe('demo backend', () => {
 
     // Register, persistence, sign-out
     await rejects(req('/auth/register', 'POST', { username: 'sarah_plumber', password: 'x' }), 409);
-    await req('/auth/register', 'POST', { username: 'newbie', password: 'secret12', full_name: 'New Bie', profession: null });
+    await req('/auth/register', 'POST', { username: 'newbie', password: 'secret12', full_name: 'New Bie', profession: null, accept_terms: true });
     assert.equal((await req('/auth/me')).username, 'newbie');
     demoSignOut();
     await rejects(req('/auth/me'), 401);

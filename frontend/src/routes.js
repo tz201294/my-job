@@ -6,6 +6,7 @@
 //   /reels  /activity  /notifications  /settings  /moderation (moderators only)
 //   /u/<username>         a profile                /p/<postId>          a single post with its comments
 //   /reset-password#token=…  /verify-email#token=…   links from emails (work logged in or out)
+//   /privacy  /terms         the Privacy Policy and Terms of Service (work logged in or out)
 
 const enc = encodeURIComponent;
 
@@ -26,10 +27,12 @@ export const paths = {
   post: (id) => `/p/${enc(id)}`,
   resetPassword: '/reset-password',
   verifyEmail: '/verify-email',
+  privacy: '/privacy',
+  terms: '/terms',
 };
 
-// Pages opened from links in emails. They work whether or not someone is logged in.
-export const EMAIL_LINK_PAGES = ['resetPassword', 'verifyEmail'];
+// Pages shown on their own, whether or not someone is logged in: links from emails, and the legal pages.
+export const STANDALONE_PAGES = ['resetPassword', 'verifyEmail', 'privacy', 'terms'];
 
 // The menus' item keys -> addresses ('profile' needs the signed-in username).
 export function pathForMenuKey(key, myUsername) {
@@ -77,6 +80,7 @@ export function parseRoute(pathname) {
   if (!b && ['reels', 'activity', 'notifications', 'settings', 'moderation'].includes(a)) return { page: a };
   if (!b && a === 'reset-password') return { page: 'resetPassword' };
   if (!b && a === 'verify-email') return { page: 'verifyEmail' };
+  if (!b && (a === 'privacy' || a === 'terms')) return { page: a };
   if ((a === 'u' || a === 'p') && b) {
     const v = dec(b);
     if (!v) return { page: 'notFound' };
@@ -100,6 +104,7 @@ export function titleForRoute(route, extra) {
     challenges: 'Live Work', qa: route.qaView === 'inbox' ? 'Waiting for my answer' : 'Q&A', reels: 'Reels',
     activity: 'My activity', notifications: 'Notifications', settings: 'Settings', notFound: 'Page not found',
     resetPassword: 'Choose a new password', verifyEmail: 'Confirm your email', moderation: 'Moderation',
+    privacy: 'Privacy Policy', terms: 'Terms of Service',
   };
   if (route.page === 'feed') {
     return route.feedView === 'all' ? `${base} — A story behind every profession`

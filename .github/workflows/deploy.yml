@@ -56,6 +56,7 @@ jobs:
           VITE_DEMO_PATH: demo/
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
           VITE_SENTRY_RELEASE: ${{ github.sha }}
+          VITE_CONTACT_EMAIL: ${{ vars.VITE_CONTACT_EMAIL }}
         run: |
           cd frontend
           npm run build
@@ -69,6 +70,7 @@ jobs:
           VITE_REAL_APP_URL: ${{ vars.VITE_API_URL && '/my-job/' || '' }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
           VITE_SENTRY_RELEASE: ${{ github.sha }}
+          VITE_CONTACT_EMAIL: ${{ vars.VITE_CONTACT_EMAIL }}
         run: |
           cd frontend
           npx vite build --outDir dist/demo --emptyOutDir

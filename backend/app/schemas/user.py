@@ -73,6 +73,15 @@ class UserCreate(BaseModel):
     country: Optional[str] = Field(default=None, max_length=64)
     education_level: Optional[EducationLevel] = None
     data_consent: bool = False
+    # Agreeing to the Terms of Service and having read the Privacy Policy (the sign-up checkbox).
+    accept_terms: bool = Field(default=False, validate_default=True)
+
+    @field_validator("accept_terms")
+    @classmethod
+    def terms_accepted(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("Please accept the Terms of Service and Privacy Policy to create an account")
+        return v
 
     @field_validator("username")
     @classmethod

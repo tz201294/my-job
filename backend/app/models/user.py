@@ -22,6 +22,9 @@ class User(Base):
     # When the email address was confirmed through the link sent to it; null = not confirmed. Reset to null when
     # the address changes. Password-reset links are only sent to confirmed addresses.
     email_verified_at = Column(DateTime, nullable=True)
+    # When this person agreed to the Terms and Privacy Policy, and which version (app/core/legal.py).
+    terms_accepted_at = Column(DateTime, nullable=True)
+    terms_version = Column(String(32), nullable=True)
 
     # Relationships
     profession = relationship(

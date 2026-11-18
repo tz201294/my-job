@@ -82,6 +82,10 @@ the form hosts hand out (`postgresql://...?sslmode=require`); the app converts i
 Email (confirmation and password-reset links) goes through Brevo's API when `BREVO_API_KEY` and `EMAIL_FROM` are
 set; without them, emails are written to the API's log instead, so locally you can copy the link from there.
 Links point to `FRONTEND_URL`. Setup: docs/DEPLOY.md step 5.
+Privacy and terms: `/privacy` and `/terms` (text in `frontend/src/components/LegalPages.jsx`, contact address from
+`VITE_CONTACT_EMAIL`); sign-up requires accepting them and records the version (`backend/app/core/legal.py`).
+Settings → Download my data exports everything stored about the account as JSON. The font is served from the site
+itself, not Google Fonts.
 Moderation: anyone can report content or accounts and block accounts; the usernames in `ADMIN_USERNAMES` get a
 Moderation page (remove content, suspend or reinstate accounts). Suspended accounts can't log in and their content is
 hidden; blocking hides content both ways and stops follows, comments, questions and notifications between the two.

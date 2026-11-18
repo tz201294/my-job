@@ -95,6 +95,12 @@ function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0, isA
         <LogOut className="w-5 h-5" />
         <span>Log out</span>
       </button>
+
+      <p className="px-3.5 text-[11px] text-slate-400">
+        <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:underline">Privacy</a>
+        {' · '}
+        <a href={`${import.meta.env.BASE_URL}terms`} className="hover:underline">Terms</a>
+      </p>
     </nav>
   );
 }

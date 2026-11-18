@@ -6,6 +6,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { fallbackRedirect, restoredPath } from './spaFallback';
 import { startErrorReporting } from './monitoring';
 import { IS_DEMO } from './api/client';
+// The font is served from this site (not Google Fonts), so visitors' addresses aren't sent to Google.
+import '@fontsource-variable/plus-jakarta-sans';
 import './index.css';
 
 // Vite's base ('/' normally, '/my-job/' or '/my-job/demo/' on GitHub Pages) is where the app lives; routes are

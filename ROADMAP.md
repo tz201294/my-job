@@ -28,7 +28,10 @@ What is done, what is next, and decisions still open. Update this file when a st
   addresses). Setup: docs/DEPLOY.md step 5.
 - Reports, blocking and moderation: report any post, comment, question, challenge, idea or account; block from a
   profile (hidden both ways, no contact); a Moderation page for ADMIN_USERNAMES to remove content and suspend or
-  reinstate accounts. Setup: docs/DEPLOY.md step 6.
+  reinstate accounts. Setup: docs/DEPLOY.md step 7.
+- Privacy Policy and Terms of Service pages, accepted at sign-up (version recorded), Download my data (JSON), and
+  the font served from the site instead of Google Fonts. Before launch: set VITE_CONTACT_EMAIL and have the text
+  checked by someone who knows the law (docs/DEPLOY.md step 6).
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.

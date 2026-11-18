@@ -14,8 +14,8 @@ function contentSecurityPolicy(apiUrl) {
   const policy = [
     "default-src 'self'",
     "script-src 'self'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:", // data: for the smallest font files, which Vite inlines
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
     `connect-src 'self' https: http://localhost:8000 http://127.0.0.1:8000${apiOrigin ? ` ${apiOrigin}` : ''}`,

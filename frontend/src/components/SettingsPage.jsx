@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Settings, User, Lock, Shield, Info, LogOut, RotateCcw, Pencil, AlertTriangle, Check, Loader2, Ban,
+  Settings, User, Lock, Shield, Info, LogOut, RotateCcw, Pencil, AlertTriangle, Check, Loader2, Ban, Download,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { DEFAULT_AVATAR } from '../api/mappers';
@@ -73,6 +73,45 @@ function EmailField({ account }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Everything Prologue stores about you, saved as a JSON file.
+function DownloadMyData({ username }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const download = async () => {
+    setBusy(true); setError('');
+    try {
+      const data = await api.exportMyData();
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `prologue-data-${username}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p className="text-sm font-semibold text-slate-800">Download my data</p>
+        <p className="text-[11px] text-slate-500">Everything Prologue stores about you, in one file (JSON).</p>
+        {error && <p role="alert" className="text-xs font-bold text-rose-600 mt-1">{error}</p>}
+      </div>
+      <button type="button" onClick={download} disabled={busy}
+        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-60">
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Download
+      </button>
     </div>
   );
 }
@@ -463,6 +502,7 @@ export default function SettingsPage({
         ) : (
           <p className="text-xs text-slate-600">This account has no sign-up survey, so there is nothing to share.</p>
         )}
+        <DownloadMyData username={me.username} />
       </Card>
 
       <Card icon={Ban} title="Blocked accounts">
@@ -486,6 +526,11 @@ export default function SettingsPage({
         <p className="text-xs text-slate-600">
           <strong className="text-slate-800">Prologue</strong> — a story behind every profession. See how every profession really
           works, from the people doing it.
+        </p>
+        <p className="text-xs text-slate-600 mt-2">
+          <a href={`${import.meta.env.BASE_URL}privacy`} className="font-bold text-teal-700 hover:underline">Privacy Policy</a>
+          {' · '}
+          <a href={`${import.meta.env.BASE_URL}terms`} className="font-bold text-teal-700 hover:underline">Terms of Service</a>
         </p>
       </Card>
 

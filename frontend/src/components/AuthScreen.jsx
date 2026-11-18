@@ -77,7 +77,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
     works: null, non_working_status: '',
     industry: '', title: '', specialization: '', years_of_experience: '', company_or_freelance: '',
     interests: [],
-    gender: '', age: '', country: '', education_level: '', data_consent: false,
+    gender: '', age: '', country: '', education_level: '', data_consent: false, accept_terms: false,
   });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -132,6 +132,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
       const age = Number(form.age);
       if (!form.gender) return 'Please choose a gender option.';
       if (!Number.isInteger(age) || age < 13 || age > 120) return 'Please enter an age between 13 and 120.';
+      if (!form.accept_terms) return 'Please accept the Terms of Service and Privacy Policy to create your account.';
     }
     return '';
   };
@@ -170,6 +171,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
       country: form.country.trim() || null,
       education_level: form.education_level || null,
       data_consent: form.data_consent,
+      accept_terms: form.accept_terms,
     };
     try {
       finish(await api.register(payload));
@@ -402,6 +404,17 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                       Your name, email and password are never included.
                     </span>
                   </label>
+                  <label className="flex items-start gap-2.5 text-xs text-slate-700 leading-relaxed cursor-pointer">
+                    <input type="checkbox" className="mt-0.5 w-4 h-4 accent-teal-600" checked={form.accept_terms}
+                      onChange={(e) => set('accept_terms', e.target.checked)} />
+                    <span>
+                      I agree to the{' '}
+                      <a href={`${import.meta.env.BASE_URL}terms`} target="_blank" rel="noreferrer" className="font-bold text-teal-700 underline">Terms of Service</a>
+                      {' '}and have read the{' '}
+                      <a href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noreferrer" className="font-bold text-teal-700 underline">Privacy Policy</a>.
+                      {' '}<span className="text-slate-500">(Required)</span>
+                    </span>
+                  </label>
                 </>
               )}
 
@@ -418,6 +431,11 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
             </form>
           )}
         </div>
+        <p className="text-center text-xs text-slate-500 mt-4">
+          <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:underline">Privacy</a>
+          {' · '}
+          <a href={`${import.meta.env.BASE_URL}terms`} className="hover:underline">Terms</a>
+        </p>
       </div>
     </div>
   );

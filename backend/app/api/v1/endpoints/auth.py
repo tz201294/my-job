@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,8 @@ from app.core.security import (
 )
 from app.core.time import utcnow
 from app.services.account import delete_account
+from app.core.legal import TERMS_VERSION
+from app.services.data_export import export_user_data
 from app.services.email import password_reset_email, send_email, verification_email
 from app.services.moderation import ensure_can_interact, hidden_user_ids, is_admin
 from app.services.notifications import notify
@@ -121,6 +124,8 @@ async def register(user_in: UserCreate, background: BackgroundTasks, db: AsyncSe
         email=email,
         hashed_password=hash_password(user_in.password),
         full_name=user_in.full_name or user_in.username,
+        terms_accepted_at=utcnow(),
+        terms_version=TERMS_VERSION,
     )
     user.survey = UserSurvey(
         works=user_in.works,
@@ -449,6 +454,16 @@ async def unblock_user(username: str, db: AsyncSession = Depends(get_db), me: Us
     await db.execute(delete(Block).where(Block.blocker_id == me.id, Block.blocked_id == target.id))
     await db.commit()
     return {"username": target.username, "is_blocked": False}
+
+
+@router.get("/me/export", dependencies=[Depends(limit("export"))])
+async def export_my_data(db: AsyncSession = Depends(get_db), me: User = Depends(get_current_user)):
+    """Everything Prologue stores about you, as a JSON file to download."""
+    data = await export_user_data(db, me)
+    return JSONResponse(data, headers={
+        "Content-Disposition": f'attachment; filename="prologue-data-{me.username}.json"',
+        "Cache-Control": "no-store",
+    })
 
 
 @router.get("/me/blocked")

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { EMAIL_LINK_PAGES, menuKeyForRoute, parseRoute, pathForMenuKey, paths, titleForRoute } from './routes';
+import { STANDALONE_PAGES, menuKeyForRoute, parseRoute, pathForMenuKey, paths, titleForRoute } from './routes';
 import AuthScreen from './components/AuthScreen';
 import { api, IS_DEMO, onUnauthorized, tokenStore } from './api/client';
 import {
@@ -29,6 +29,7 @@ import ModerationPage from './components/ModerationPage';
 import NotificationsPage from './components/NotificationsPage';
 import NotFoundPage from './components/NotFoundPage';
 import { ResetPasswordPage, VerifyEmailPage } from './components/EmailLinkPages';
+import { PrivacyPage, TermsPage } from './components/LegalPages';
 import { Loading } from './components/SlowHint';
 
 import { INITIAL_REELS } from './data/sampleReels';
@@ -729,8 +730,10 @@ export default function App() {
     });
   }, [sourcePosts, searchTerm, selectedCategory, selectedCategoryName]);
 
-  if (EMAIL_LINK_PAGES.includes(route.page)) {
+  if (STANDALONE_PAGES.includes(route.page)) {
     const leave = () => go(paths.home, { replace: true });
+    if (route.page === 'privacy') return <PrivacyPage />;
+    if (route.page === 'terms') return <TermsPage />;
     return route.page === 'resetPassword'
       ? <ResetPasswordPage onReset={handlePasswordReset} onCancel={leave} />
       : <VerifyEmailPage onVerified={handleEmailVerified} onContinue={leave} />;

@@ -75,6 +75,7 @@ SIGNUP = {
     "country": "Israel",
     "education_level": "bachelors",
     "data_consent": True,
+    "accept_terms": True,
 }
 
 

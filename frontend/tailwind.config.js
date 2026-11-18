@@ -1,3 +1,5 @@
+import defaultTheme from 'tailwindcss/defaultTheme';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -6,6 +8,10 @@ export default {
   ],
   theme: {
     extend: {
+      // The brand font, served from this site (src/main.jsx). <body> uses `font-sans`, so this is what the whole app shows.
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans Variable"', ...defaultTheme.fontFamily.sans],
+      },
       colors: {
         // Prologue theme: teal is the main color, cyan the accent (Tailwind's teal/cyan scales).
         brand: {
