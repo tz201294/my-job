@@ -33,6 +33,9 @@ async def notify(
     about the same thing is refreshed instead of adding another (e.g. follow/unfollow/follow)."""
     if user_id == actor_id:
         return
+    from app.services.moderation import blocked_between  # here, to keep the import graph simple
+    if await blocked_between(db, user_id, actor_id):
+        return
     unknown = set(targets) - set(TARGETS)
     if unknown:
         raise ValueError(f"unknown notification targets: {unknown}")

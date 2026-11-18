@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response, status
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,16 +17,19 @@ from app.core.security import (
 from app.core.time import utcnow
 from app.services.account import delete_account
 from app.services.email import password_reset_email, send_email, verification_email
+from app.services.moderation import ensure_can_interact, hidden_user_ids, is_admin
 from app.services.notifications import notify
 from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
 from app.db.session import get_db
-from app.models import Follow, Post, ProfessionProfile, User, UserInterest, UserSurvey
+from app.models import Block, Follow, Notification, ProfessionProfile, User, UserInterest, UserSurvey
 from app.schemas.user import (
     AccountDelete, EducationLevel, EmailVerify, ForgotPassword, Gender, NonWorkingStatus, PasswordChange,
     PasswordReset, ProfileUpdate, Token, UserCreate, UserLogin, UserMeResponse, UserResponse,
 )
 
 router = APIRouter()
+
+SUSPENDED_MESSAGE = "This account has been suspended for breaking the community rules."
 
 # Hash of a throwaway password, verified when the account doesn't exist so that
 # response time does not reveal whether a username is registered.
@@ -88,7 +91,7 @@ async def list_professionals(
         await db.execute(
             select(User)
             .join(ProfessionProfile, ProfessionProfile.user_id == User.id)
-            .where(User.is_active.is_(True))
+            .where(User.is_active.is_(True), User.id.not_in(hidden_user_ids(viewer)))
             .order_by(ProfessionProfile.is_verified_pro.desc(), User.created_at)
             .limit(limit)
         )
@@ -172,11 +175,13 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
         verify_password(credentials.password, _DUMMY_HASH)
         ok = False
     else:
-        ok = verify_password(credentials.password, user.hashed_password) and user.is_active
+        ok = verify_password(credentials.password, user.hashed_password)
     if not ok:
         username_limiter.record_failure(ident)
         ip_limiter.record_failure(ip)
         raise HTTPException(status_code=401, detail="Invalid username or password")
+    if not user.is_active:  # only said to someone who knows the password
+        raise HTTPException(status_code=403, detail=SUSPENDED_MESSAGE)
 
     username_limiter.reset(ident)
     return Token(access_token=create_access_token(user.id), user=await user_me_out(db, user))
@@ -397,7 +402,65 @@ async def get_user_profile(
     viewer: Optional[User] = Depends(get_optional_user),
 ):
     user = await _get_user_or_404(db, username)
+    # Suspended accounts are gone for everyone but moderators; someone who blocked you is gone for you. Someone
+    # you blocked stays visible (with is_blocked), so you can unblock them.
+    if (not user.is_active and not is_admin(viewer)) or (
+        viewer is not None and await _has_blocked(db, user.id, viewer.id)
+    ):
+        raise HTTPException(status_code=404, detail="User not found")
     return await user_public_out(db, user, viewer)
+
+
+async def _has_blocked(db: AsyncSession, blocker_id: str, blocked_id: str) -> bool:
+    row = (
+        await db.execute(select(Block.blocker_id).where(Block.blocker_id == blocker_id, Block.blocked_id == blocked_id))
+    ).first()
+    return row is not None
+
+
+@router.post("/users/{username}/block", dependencies=[Depends(limit("edit"))])
+async def block_user(username: str, db: AsyncSession = Depends(get_db), me: User = Depends(get_current_user)):
+    """Block someone: neither of you sees the other's content any more, follows between you are removed, and
+    neither can follow, comment on, react to, ask or notify the other. They aren't told."""
+    target = await _get_user_or_404(db, username)
+    if target.id == me.id:
+        raise HTTPException(status_code=400, detail="You can't block yourself")
+    if not await _has_blocked(db, me.id, target.id):
+        db.add(Block(blocker_id=me.id, blocked_id=target.id))
+        await db.execute(delete(Follow).where(
+            or_(and_(Follow.follower_id == me.id, Follow.followee_id == target.id),
+                and_(Follow.follower_id == target.id, Follow.followee_id == me.id))
+        ))
+        await db.execute(delete(Notification).where(
+            or_(and_(Notification.user_id == me.id, Notification.actor_id == target.id),
+                and_(Notification.user_id == target.id, Notification.actor_id == me.id))
+        ))
+        try:
+            await db.commit()
+        except IntegrityError:  # double click
+            await db.rollback()
+    return {"username": target.username, "is_blocked": True}
+
+
+@router.delete("/users/{username}/block", dependencies=[Depends(limit("edit"))])
+async def unblock_user(username: str, db: AsyncSession = Depends(get_db), me: User = Depends(get_current_user)):
+    """Unblock someone. Follows removed by the block don't come back."""
+    target = await _get_user_or_404(db, username)
+    await db.execute(delete(Block).where(Block.blocker_id == me.id, Block.blocked_id == target.id))
+    await db.commit()
+    return {"username": target.username, "is_blocked": False}
+
+
+@router.get("/me/blocked")
+async def list_blocked(db: AsyncSession = Depends(get_db), me: User = Depends(get_current_user)):
+    """The accounts you blocked, most recent first."""
+    rows = (
+        await db.execute(
+            select(User).join(Block, Block.blocked_id == User.id)
+            .where(Block.blocker_id == me.id).order_by(Block.created_at.desc())
+        )
+    ).scalars().all()
+    return [{"username": u.username, "full_name": u.full_name, "avatar_url": u.avatar_url} for u in rows]
 
 
 async def _follow_state(db: AsyncSession, target: User, is_following: bool) -> dict:
@@ -417,6 +480,7 @@ async def follow_user(
     target = await _get_user_or_404(db, username)
     if target.id == me.id:
         raise HTTPException(status_code=400, detail="You can't follow yourself")
+    await ensure_can_interact(db, me, target.id)
     exists = (
         await db.execute(select(Follow).where(Follow.follower_id == me.id, Follow.followee_id == target.id))
     ).scalar_one_or_none()

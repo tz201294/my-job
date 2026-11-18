@@ -1,26 +1,28 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.rate_limits import limit
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import story_out
 from app.core.time import utcnow
 from app.db.session import get_db
 from app.models import Story, User
 from app.schemas.story import StoryCreate, StoryResponse, UserStoryGroup
+from app.services.moderation import hidden_user_ids
 
 router = APIRouter()
 
 
 @router.get("/feed", response_model=List[UserStoryGroup])
-async def get_stories_feed(db: AsyncSession = Depends(get_db)):
+async def get_stories_feed(db: AsyncSession = Depends(get_db), user: Optional[User] = Depends(get_optional_user)):
     """Returns active 24-hour stories grouped by user for the top story tray."""
     stories = (
         await db.execute(
-            select(Story).where(Story.expires_at > utcnow()).order_by(Story.created_at.desc())
+            select(Story).where(Story.expires_at > utcnow(), Story.user_id.not_in(hidden_user_ids(user)))
+            .order_by(Story.created_at.desc())
         )
     ).scalars().all()
 

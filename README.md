@@ -82,6 +82,9 @@ the form hosts hand out (`postgresql://...?sslmode=require`); the app converts i
 Email (confirmation and password-reset links) goes through Brevo's API when `BREVO_API_KEY` and `EMAIL_FROM` are
 set; without them, emails are written to the API's log instead, so locally you can copy the link from there.
 Links point to `FRONTEND_URL`. Setup: docs/DEPLOY.md step 5.
+Moderation: anyone can report content or accounts and block accounts; the usernames in `ADMIN_USERNAMES` get a
+Moderation page (remove content, suspend or reinstate accounts). Suspended accounts can't log in and their content is
+hidden; blocking hides content both ways and stops follows, comments, questions and notifications between the two.
 Error reporting (Sentry) is off unless `SENTRY_DSN` (API) / `VITE_SENTRY_DSN` (website) is set; `/health` is a
 database-free liveness check, `/health/db` also checks the database.
 

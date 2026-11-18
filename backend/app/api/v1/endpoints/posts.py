@@ -11,12 +11,14 @@ from app.api.serializers import bookmarked_ids_for, comment_out, liked_ids_for, 
 from app.core.time import utcnow
 from app.db.session import get_db
 from app.models import (
-    Bookmark, CommentReaction, Follow, Post, PostComment, PostLike, TaskDetails, TaskReview, User,
+    Bookmark, CommentReaction, Follow, Post, PostComment, PostLike, TaskDetails, User,
 )
 from app.schemas.comment import (
     CommentCreate, CommentPage, CommentResponse, CommentUpdate, ReactionIn, ReactionState,
 )
-from app.services.notifications import forget, notify, withdraw
+from app.services.content import remove_comment, remove_post, sync_comments_count
+from app.services.notifications import notify, withdraw
+from app.services.moderation import ensure_can_interact, hidden_user_ids, is_hidden_from
 from app.schemas.post import PostCreate, PostResponse, PostType, PostUpdate
 
 router = APIRouter()
@@ -39,7 +41,10 @@ async def get_feed(
     """
     if following and user is None:
         raise HTTPException(status_code=401, detail="Sign in to see your following feed")
-    stmt = select(Post).order_by(Post.created_at.desc()).limit(limit).offset(offset)
+    stmt = (
+        select(Post).where(Post.author_id.not_in(hidden_user_ids(user)))
+        .order_by(Post.created_at.desc()).limit(limit).offset(offset)
+    )
     if following:
         followed = select(Follow.followee_id).where(Follow.follower_id == user.id)
         stmt = stmt.where(or_(Post.author_id.in_(followed), Post.author_id == user.id))
@@ -69,7 +74,7 @@ async def list_bookmarks(
         await db.execute(
             select(Post)
             .join(Bookmark, Bookmark.post_id == Post.id)
-            .where(Bookmark.user_id == user.id)
+            .where(Bookmark.user_id == user.id, Post.author_id.not_in(hidden_user_ids(user)))
             .order_by(Bookmark.created_at.desc())
             .limit(limit)
             .offset(offset)
@@ -111,7 +116,7 @@ async def get_post_by_id(
     user: Optional[User] = Depends(get_optional_user),
 ):
     post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
-    if not post:
+    if not post or await is_hidden_from(db, user, post.author_id):
         raise HTTPException(status_code=404, detail="Post not found")
     liked = await liked_ids_for(db, user, [post])
     saved = await bookmarked_ids_for(db, user, [post])
@@ -170,13 +175,7 @@ async def delete_post(
 ):
     """The author deletes their post, with its likes, saves and reviews."""
     post = await _own_post(db, user, post_id)
-    # Removed explicitly so nothing is left behind on databases that don't enforce ON DELETE CASCADE (SQLite).
-    post_comments = select(PostComment.id).where(PostComment.post_id == post_id)
-    await db.execute(delete(CommentReaction).where(CommentReaction.comment_id.in_(post_comments)))
-    await forget(db, post_id=post_id)
-    for model in (PostLike, Bookmark, TaskReview, PostComment):
-        await db.execute(delete(model).where(model.post_id == post_id))
-    await db.delete(post)
+    await remove_post(db, post)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -199,15 +198,6 @@ async def _comment_or_404(db: AsyncSession, post_id: str, comment_id: str) -> Po
     return c
 
 
-async def _sync_comments_count(db: AsyncSession, post_id: str) -> int:
-    """Recount instead of incrementing, so the stored number can't drift from the real rows."""
-    count = (
-        await db.execute(select(func.count()).select_from(PostComment).where(PostComment.post_id == post_id))
-    ).scalar_one()
-    await db.execute(update(Post).where(Post.id == post_id).values(comments_count=count))
-    return count
-
-
 @router.get("/{post_id}/comments", response_model=CommentPage)
 async def list_comments(
     post_id: str,
@@ -216,15 +206,19 @@ async def list_comments(
     db: AsyncSession = Depends(get_db),
     user: Optional[User] = Depends(get_optional_user),
 ):
-    """Comments on a post, oldest first, with emoji reactions. Public."""
-    await _post_or_404(db, post_id)
+    """Comments on a post, oldest first, with emoji reactions. Public. Comments by people you blocked (or who
+    blocked you) and by suspended accounts are left out."""
+    post = await _post_or_404(db, post_id)
+    if await is_hidden_from(db, user, post.author_id):
+        raise HTTPException(status_code=404, detail="Post not found")
+    visible = (PostComment.post_id == post_id, PostComment.user_id.not_in(hidden_user_ids(user)))
     total = (
-        await db.execute(select(func.count()).select_from(PostComment).where(PostComment.post_id == post_id))
+        await db.execute(select(func.count()).select_from(PostComment).where(*visible))
     ).scalar_one()
     rows = (
         await db.execute(
             select(PostComment)
-            .where(PostComment.post_id == post_id)
+            .where(*visible)
             .order_by(PostComment.created_at, PostComment.id)
             .limit(limit)
             .offset(offset)
@@ -242,10 +236,11 @@ async def add_comment(
     user: User = Depends(get_current_user),
 ):
     post = await _post_or_404(db, post_id)
+    await ensure_can_interact(db, user, post.author_id)
     comment = PostComment(post_id=post_id, user_id=user.id, body=c_in.body)
     db.add(comment)
     await db.flush()
-    await _sync_comments_count(db, post_id)
+    await sync_comments_count(db, post_id)
     await notify(db, user_id=post.author_id, actor_id=user.id, type="comment", post_id=post_id,
                  comment_id=comment.id, snippet=c_in.body)
     await db.commit()
@@ -284,11 +279,7 @@ async def delete_comment(
     post = await _post_or_404(db, post_id)
     if user.id not in (comment.user_id, post.author_id):
         raise HTTPException(status_code=403, detail="Only the commenter or the post's author can delete this comment")
-    await db.execute(delete(CommentReaction).where(CommentReaction.comment_id == comment_id))
-    await forget(db, comment_id=comment_id)
-    await db.delete(comment)
-    await db.flush()
-    await _sync_comments_count(db, post_id)
+    await remove_comment(db, comment)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -308,6 +299,7 @@ async def react_to_comment(
 ):
     """Sets your emoji reaction on a comment, replacing any earlier one (one reaction per person)."""
     comment = await _comment_or_404(db, post_id, comment_id)
+    await ensure_can_interact(db, user, comment.user_id)
     existing = (
         await db.execute(
             select(CommentReaction).where(CommentReaction.comment_id == comment_id, CommentReaction.user_id == user.id)
@@ -352,6 +344,7 @@ async def toggle_like(
     post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
+    await ensure_can_interact(db, user, post.author_id)
 
     existing = (
         await db.execute(select(PostLike).where(PostLike.user_id == user.id, PostLike.post_id == post_id))

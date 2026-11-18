@@ -5,9 +5,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Bookmark, ChallengeSuggestion, Follow, Post, PostLike, QAQuestion, QAUpvote, Story, SuggestionUpvote,
+    Block, Bookmark, ChallengeSuggestion, Follow, Post, PostLike, QAQuestion, QAUpvote, Story, SuggestionUpvote,
     TaskReview, User, UserInterest, UserSurvey, WorkChallenge,
 )
+from app.core.config import settings
 from app.schemas.user import SurveyResponse
 
 
@@ -25,12 +26,15 @@ async def user_public_out(db: AsyncSession, user: User, viewer: Optional[User] =
     following_count = (
         await db.execute(select(func.count()).select_from(Follow).where(Follow.follower_id == user.id))
     ).scalar_one()
-    is_following = False
+    is_following = is_blocked = False
     if viewer is not None and viewer.id != user.id:
         is_following = (
             await db.execute(
                 select(Follow.follower_id).where(Follow.follower_id == viewer.id, Follow.followee_id == user.id)
             )
+        ).first() is not None
+        is_blocked = (
+            await db.execute(select(Block.blocker_id).where(Block.blocker_id == viewer.id, Block.blocked_id == user.id))
         ).first() is not None
     avg_rating = (
         await db.execute(
@@ -49,6 +53,7 @@ async def user_public_out(db: AsyncSession, user: User, viewer: Optional[User] =
         "followers_count": followers_count,
         "following_count": following_count,
         "is_following": is_following,
+        "is_blocked": is_blocked,
         "posts_count": posts_count,
         "rating": round(float(avg_rating), 1) if avg_rating is not None else None,
     }
@@ -62,6 +67,7 @@ async def user_me_out(db: AsyncSession, user: User) -> dict:
     ).scalars().all()
     data["email"] = user.email
     data["email_verified"] = bool(user.email and user.email_verified_at)
+    data["is_admin"] = user.username in settings.ADMIN_USERNAMES
     data["survey"] = SurveyResponse.model_validate(survey) if survey else None
     data["interests"] = sorted(interests)
     return data
@@ -278,7 +284,9 @@ def suggestion_out(s: ChallengeSuggestion, upvoted_ids: Set[str] = frozenset()) 
     }
 
 
-def challenge_out(c: WorkChallenge, upvoted_suggestion_ids: Set[str] = frozenset()) -> dict:
+def challenge_out(
+    c: WorkChallenge, upvoted_suggestion_ids: Set[str] = frozenset(), hidden_user_ids: Set[str] = frozenset(),
+) -> dict:
     w = c.worker
     return {
         "id": c.id,
@@ -293,6 +301,8 @@ def challenge_out(c: WorkChallenge, upvoted_suggestion_ids: Set[str] = frozenset
         "media_url": c.media_url,
         "urgency_level": c.urgency_level,
         "is_solved": bool(c.is_solved),
-        "suggestions": [suggestion_out(s, upvoted_suggestion_ids) for s in c.suggestions],
+        "suggestions": [
+            suggestion_out(s, upvoted_suggestion_ids) for s in c.suggestions if s.suggester_id not in hidden_user_ids
+        ],
         "created_at": c.created_at,
     }

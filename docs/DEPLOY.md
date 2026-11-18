@@ -43,6 +43,7 @@ You don't need to create any tables: the API creates them itself on its first st
    - **DATABASE_URL:** paste the Neon connection string from step 1 exactly as Neon gave it. The app converts it to
      the format it needs.
    - **BREVO_API_KEY**, **EMAIL_FROM** and **SENTRY_DSN:** leave these empty for now. Steps 4 and 5 fill them in.
+   - **ADMIN_USERNAMES:** leave empty for now. Step 6 fills it in once you have an account.
 5. Click **Apply** / **Deploy Blueprint**. The first build takes about 5–10 minutes.
 6. When it says **Live**, copy the service address at the top of the page, for example
    `https://prologue-api.onrender.com`. If that name was taken, Render adds a suffix; use whatever it shows.
@@ -161,6 +162,24 @@ valid"). Brevo's dashboard also lists every email it sent under **Transactional*
 - How it works: a reset link works for 60 minutes and only once. A confirmation link works for 7 days.
   Reset links are only sent to confirmed addresses, so a typo in someone's email can't hand their account to a
   stranger. "Forgot password" answers the same whether or not an account exists.
+
+## 6. Make yourself a moderator (2 minutes)
+
+Moderators get a **Moderation** page in the menu. It lists what people reported, grouped by post, comment,
+question, challenge, idea or account, with the reasons and notes. For each one you can:
+- **Remove** the content;
+- **Suspend** its author, who then can't log in and whose content is hidden everywhere until you lift it (under
+  **Suspended**);
+- mark it **Nothing wrong**.
+
+1. Sign up on the site with the account you'll use.
+2. Render → **prologue-api** → **Environment** → **ADMIN_USERNAMES** = `["your_username"]` (with the brackets and
+   quotes; for several moderators: `["you", "a_friend"]`) → **Save**. Render redeploys by itself.
+3. Reload the site. **Moderation** appears in the menu.
+
+Everyone else can **report** posts, comments, questions, challenges, ideas and accounts (the flag button), and
+**block** accounts from their profile. Blocked accounts are listed in **Settings**, where they can be unblocked.
+Nobody is told who reported or blocked them.
 
 ---
 

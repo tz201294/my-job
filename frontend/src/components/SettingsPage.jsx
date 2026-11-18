@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Settings, User, Lock, Shield, Info, LogOut, RotateCcw, Pencil, AlertTriangle, Check, Loader2,
+  Settings, User, Lock, Shield, Info, LogOut, RotateCcw, Pencil, AlertTriangle, Check, Loader2, Ban,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { DEFAULT_AVATAR } from '../api/mappers';
@@ -74,6 +74,43 @@ function EmailField({ account }) {
         </div>
       )}
     </div>
+  );
+}
+
+// People you blocked, with a way to unblock them.
+function BlockedAccounts({ onChange }) {
+  const [list, setList] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.getBlocked().then(setList).catch((err) => setError(err.message));
+  }, []);
+
+  const unblock = async (username) => {
+    try {
+      await api.unblockUser(username);
+      setList((l) => l.filter((u) => u.username !== username));
+      onChange?.();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  if (error) return <p role="alert" className="text-xs font-bold text-rose-600">{error}</p>;
+  if (list === null) return <p className="text-xs text-slate-500">Loading…</p>;
+  if (!list.length) {
+    return <p className="text-xs text-slate-600">You haven't blocked anyone. You can block an account from its profile.</p>;
+  }
+  return (
+    <ul className="divide-y divide-slate-100">
+      {list.map((u) => (
+        <li key={u.username} className="flex items-center justify-between gap-3 py-2">
+          <span className="text-sm text-slate-800"><strong>{u.full_name}</strong> <span className="text-slate-500">@{u.username}</span></span>
+          <button type="button" onClick={() => unblock(u.username)}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100">Unblock</button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -374,7 +411,7 @@ function DeleteAccount({ username, onDeleteAccount }) {
 
 // Account settings: profile, password, privacy, and deleting the account.
 export default function SettingsPage({
-  account, me, isDemo, onSaveProfile, onChangePassword, onDeleteAccount, onLogout, onResetDemo,
+  account, me, isDemo, onSaveProfile, onChangePassword, onDeleteAccount, onLogout, onResetDemo, onBlockChange,
 }) {
   const [editing, setEditing] = useState(false);
   const [options, setOptions] = useState(null);
@@ -426,6 +463,10 @@ export default function SettingsPage({
         ) : (
           <p className="text-xs text-slate-600">This account has no sign-up survey, so there is nothing to share.</p>
         )}
+      </Card>
+
+      <Card icon={Ban} title="Blocked accounts">
+        <BlockedAccounts onChange={onBlockChange} />
       </Card>
 
       {isDemo && (

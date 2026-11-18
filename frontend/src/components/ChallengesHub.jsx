@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 
 import OwnerActions from './OwnerActions';
+import ReportButton from './ReportButton';
 
 const inputCls = 'w-full px-3.5 py-2 bg-white border border-teal-200 rounded-xl text-xs sm:text-sm text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-medium';
 
@@ -258,6 +259,9 @@ export default function ChallengesHub({
                   confirmText="Delete this challenge and all its ideas? This cannot be undone."
                 />
               )}
+              {!isOwner && currentUserId && (
+                <ReportButton targetType="challenge" targetId={activeChallenge.id} label="challenge" />
+              )}
               {activeChallenge.isSolved ? (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -347,6 +351,9 @@ export default function ChallengesHub({
                             ? 'Delete this idea? It is the accepted solution, so the challenge will be reopened.'
                             : 'Delete this idea? This cannot be undone.'}
                         />
+                      )}
+                      {currentUserId && sug.suggesterId !== currentUserId && editingSuggestionId !== sug.id && (
+                        <ReportButton targetType="suggestion" targetId={sug.id} label="idea" />
                       )}
                       {/* Upvote button */}
                       <button

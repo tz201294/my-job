@@ -26,6 +26,9 @@ What is done, what is next, and decisions still open. Update this file when a st
   account); only successful actions count. A test makes sure every new write endpoint picks a limit.
 - "Forgot password" and email confirmation (Brevo API; one-time signed links; reset only to confirmed
   addresses). Setup: docs/DEPLOY.md step 5.
+- Reports, blocking and moderation: report any post, comment, question, challenge, idea or account; block from a
+  profile (hidden both ways, no contact); a Moderation page for ADMIN_USERNAMES to remove content and suspend or
+  reinstate accounts. Setup: docs/DEPLOY.md step 6.
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.

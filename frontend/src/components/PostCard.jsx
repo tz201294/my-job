@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 
 import OwnerActions from './OwnerActions';
+import ReportButton from './ReportButton';
 import CommentsSection from './CommentsSection';
 
 const difficultyGradients = {
@@ -73,6 +74,7 @@ export default function PostCard({
               confirmText="Delete this post? Its likes, saves and reviews are removed too. This cannot be undone."
             />
           )}
+          {!isOwn && currentUserId && <ReportButton targetType="post" targetId={post.id} label="post" />}
           {isCaseStudy ? (
             <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-xs font-black shadow-sm shadow-teal-500/20">
               <Layers className="w-3.5 h-3.5" />

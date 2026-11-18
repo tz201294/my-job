@@ -245,6 +245,7 @@ export function toProfileUser(u) {
         : 'Curious about how every profession works.'),
     followersCount: u.followers_count,
     isFollowing: u.is_following,
+    isBlocked: !!u.is_blocked,
     followingCount: u.following_count,
     postsCount: u.posts_count,
     rating: u.rating, // null until one of their posts is reviewed

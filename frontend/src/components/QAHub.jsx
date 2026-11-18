@@ -5,6 +5,7 @@ import {
 import { api } from '../api/client';
 import { toQuestion } from '../api/mappers';
 import OwnerActions from './OwnerActions';
+import ReportButton from './ReportButton';
 
 const MAX_ANSWER = 5000;
 
@@ -134,7 +135,7 @@ function QuestionEditForm({ qa, onSubmit, onCancel }) {
   );
 }
 
-function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onDelete }) {
+function QuestionCard({ qa, isMine, isAsker, canReport, onUpvoteQA, onAnswer, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(false);
   const answered = !!qa.answerText;
@@ -178,6 +179,7 @@ function QuestionCard({ qa, isMine, isAsker, onUpvoteQA, onAnswer, onUpdate, onD
               : 'Delete this question? This cannot be undone.'}
           />
         )}
+        {canReport && <ReportButton targetType="question" targetId={qa.id} label="question" />}
         <button
           onClick={() => onUpvoteQA(qa.id)}
           aria-pressed={qa.upvotedByMe}
@@ -456,6 +458,7 @@ export default function QAHub({
             qa={qa}
             isMine={!!currentUserId && qa.workerId === currentUserId}
             isAsker={!!currentUserId && qa.askerId === currentUserId}
+            canReport={!!currentUserId && qa.askerId !== currentUserId}
             onUpvoteQA={handleUpvote}
             onAnswer={handleAnswer}
             onUpdate={handleUpdate}

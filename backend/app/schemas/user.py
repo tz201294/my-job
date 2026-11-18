@@ -134,6 +134,7 @@ class UserResponse(BaseModel):
     followers_count: int = 0
     following_count: int = 0
     is_following: bool = False  # whether the signed-in viewer follows this user
+    is_blocked: bool = False  # whether the signed-in viewer blocked this user
     posts_count: int = 0
     rating: Optional[float] = None  # average of this user's reviewed posts
 
@@ -154,6 +155,7 @@ class UserMeResponse(UserResponse):
     """The signed-in user's own account, including private onboarding answers."""
     email: Optional[str] = None
     email_verified: bool = False  # confirmed through the link sent to it
+    is_admin: bool = False  # sees the Moderation page
     survey: Optional[SurveyResponse] = None
     interests: List[str] = []
 

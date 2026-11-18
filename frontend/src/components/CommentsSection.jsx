@@ -3,6 +3,7 @@ import { Loader2, Send, SmilePlus } from 'lucide-react';
 import { api } from '../api/client';
 import { REACTION_EMOJIS, toComment } from '../api/mappers';
 import OwnerActions from './OwnerActions';
+import ReportButton from './ReportButton';
 
 const PAGE_SIZE = 20;
 const MAX_LENGTH = 2000;
@@ -69,7 +70,7 @@ function Reactions({ comment, onReact }) {
   );
 }
 
-function CommentItem({ comment, canEdit, canDelete, canReact, onSave, onDelete, onReact }) {
+function CommentItem({ comment, canEdit, canDelete, canReact, canReport, onSave, onDelete, onReact }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(comment.body);
   const [busy, setBusy] = useState(false);
@@ -110,6 +111,7 @@ function CommentItem({ comment, canEdit, canDelete, canReact, onSave, onDelete, 
                 confirmText="Delete this comment?"
               />
             )}
+            {canReport && !editing && <ReportButton targetType="comment" targetId={comment.id} label="comment" />}
           </div>
           {editing ? (
             <form onSubmit={save} className="mt-1.5 space-y-1.5">
@@ -282,6 +284,7 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
               canEdit={c.userId === currentUserId}
               canDelete={c.userId === currentUserId || isPostAuthor}
               canReact={!!currentUserId}
+              canReport={!!currentUserId && c.userId !== currentUserId}
               onSave={saveEdit}
               onDelete={remove}
               onReact={react}

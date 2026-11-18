@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import {
   ShieldCheck, Star, Wrench, Layers, Image as ImageIcon, HelpCircle, ArrowLeft, UserPlus, Check, MessageSquare, Send, Heart,
+  Ban,
 } from 'lucide-react';
 
 import OwnerActions from './OwnerActions';
+import ReportButton from './ReportButton';
 
 export default function UserProfile({
   user,
@@ -11,6 +13,7 @@ export default function UserProfile({
   qaItems,
   isOwnProfile = false,
   onToggleFollow,
+  onToggleBlock,
   onBack,
   onOpenCaseStudy,
   onAskQuestion,
@@ -121,8 +124,8 @@ export default function UserProfile({
               </div>
 
               {/* Follow & Message Buttons */}
-              <div className="flex items-center gap-2">
-                {!isOwnProfile && (
+              <div className="flex flex-wrap items-center gap-2">
+                {!isOwnProfile && !user.isBlocked && (
                   <button
                     onClick={() => onToggleFollow(user.username)}
                     aria-pressed={isFollowing}
@@ -146,14 +149,34 @@ export default function UserProfile({
                   </button>
                 )}
 
-                <button 
+                {!user.isBlocked && (
+                <button
                   onClick={() => setProfileTab('qa')}
                   className="px-4 py-2.5 rounded-full bg-gradient-to-r from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 text-teal-900 border border-teal-200 text-xs font-black transition-all shadow-2xs"
                 >
                   Ask AMA
                 </button>
+                )}
+
+                {!isOwnProfile && onToggleBlock && (
+                  <>
+                    <button type="button" onClick={() => onToggleBlock(user.username)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold ${
+                        user.isBlocked ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700'}`}>
+                      <Ban className="w-3.5 h-3.5" /> {user.isBlocked ? 'Unblock' : 'Block'}
+                    </button>
+                    {!user.isBlocked && <ReportButton targetType="user" targetId={user.id} label="account" withText />}
+                  </>
+                )}
               </div>
             </div>
+
+            {user.isBlocked && (
+              <p role="status" className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                You blocked @{user.username}. You don't see each other's posts, comments or stories, and neither of you
+                can follow, comment on, ask or notify the other.
+              </p>
+            )}
 
             {/* Bio */}
             <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-semibold">

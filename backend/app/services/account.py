@@ -7,7 +7,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Bookmark, ChallengeSuggestion, CommentReaction, Follow, Notification, Post, PostComment, PostLike,
+    Block, Bookmark, ChallengeSuggestion, CommentReaction, Follow, Notification, Post, PostComment, PostLike, Report,
     ProfessionProfile, QAQuestion, QAUpvote, Story, SuggestionUpvote, TaskDetails, TaskReview, User, UserInterest,
     UserSurvey, WorkChallenge,
 )
@@ -81,6 +81,10 @@ async def delete_account(db: AsyncSession, user_id: str) -> None:
     for model in (PostLike, QAUpvote, SuggestionUpvote, Bookmark):
         await db.execute(delete(model).where(model.user_id == user_id))
     await db.execute(delete(Follow).where((Follow.follower_id == user_id) | (Follow.followee_id == user_id)))
+    await db.execute(delete(Block).where((Block.blocker_id == user_id) | (Block.blocked_id == user_id)))
+    # Reports by or about this person go; reports they resolved as a moderator stay, without their name.
+    await db.execute(delete(Report).where((Report.reporter_id == user_id) | (Report.target_user_id == user_id)))
+    await db.execute(update(Report).where(Report.resolved_by_id == user_id).values(resolved_by_id=None))
 
     # 2. Reviews and comments on other people's posts: remove, then recount those posts.
     reviewed = set((await db.execute(select(TaskReview.post_id).where(TaskReview.user_id == user_id))).scalars())

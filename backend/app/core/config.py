@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     PASSWORD_RESET_LINK_MINUTES: int = 60
     EMAIL_VERIFY_LINK_DAYS: int = 7
 
+    # Moderators: these usernames see the Moderation page (reports, suspending accounts). Set as a JSON list,
+    # e.g. ADMIN_USERNAMES='["tz201294"]'. Usernames are stored lower-case.
+    ADMIN_USERNAMES: List[str] = []
+
     # Spam limits on sign-ups, posts, comments, reactions etc. (see app/api/rate_limits.py).
     RATE_LIMITS_ENABLED: bool = True
 
@@ -95,6 +99,11 @@ class Settings(BaseSettings):
     # Error reporting (see app/core/monitoring.py). Empty = off. The DSN comes from the Sentry project's settings.
     SENTRY_DSN: str = ""
     SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+
+    @field_validator("ADMIN_USERNAMES")
+    @classmethod
+    def _lower_admins(cls, v: List[str]) -> List[str]:
+        return [u.strip().lower() for u in v if u.strip()]
 
     @field_validator("FRONTEND_URL")
     @classmethod

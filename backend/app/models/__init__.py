@@ -3,6 +3,7 @@ from app.models.story import Story
 from app.models.post import CommentReaction, Post, PostComment, PostLike, TaskDetails
 from app.models.notification import Notification
 from app.models.social import Follow, Bookmark
+from app.models.moderation import Block, Report
 from app.models.community import (
     TaskReview, QAQuestion, QAUpvote, WorkChallenge, ChallengeSuggestion, SuggestionUpvote,
 )
@@ -21,6 +22,8 @@ __all__ = [
     "TaskDetails",
     "Follow",
     "Bookmark",
+    "Block",
+    "Report",
     "TaskReview",
     "QAQuestion",
     "QAUpvote",

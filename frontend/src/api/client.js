@@ -101,6 +101,19 @@ export const api = {
   resetPassword: (token, newPassword) => post('/auth/password/reset', { token, new_password: newPassword }),
   verifyEmail: (token) => post('/auth/email/verify', { token }),
   resendVerification: () => post('/auth/email/resend'),
+
+  // Reports, blocking, moderation
+  report: (targetType, targetId, reason, details) =>
+    post('/moderation/reports', { target_type: targetType, target_id: targetId, reason, details }),
+  blockUser: (username) => post(`/auth/users/${encodeURIComponent(username)}/block`),
+  unblockUser: (username) => del(`/auth/users/${encodeURIComponent(username)}/block`),
+  getBlocked: () => request('/auth/me/blocked'),
+  getReports: (status = 'open') => request(`/moderation/reports?status=${encodeURIComponent(status)}`),
+  resolveReports: (targetType, targetId, action) =>
+    post('/moderation/reports/resolve', { target_type: targetType, target_id: targetId, action }),
+  getSuspended: () => request('/moderation/suspended'),
+  suspendUser: (username) => post(`/moderation/users/${encodeURIComponent(username)}/suspend`),
+  unsuspendUser: (username) => post(`/moderation/users/${encodeURIComponent(username)}/unsuspend`),
   getUserProfile: (username) => request(`/auth/users/${encodeURIComponent(username)}`),
   getProfessionals: () => request('/auth/professionals'),
   followUser: (username) => post(`/auth/users/${encodeURIComponent(username)}/follow`),

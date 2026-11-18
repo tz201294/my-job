@@ -190,6 +190,7 @@ function publicUser(u) {
   return {
     ...u,
     email_verified: !!u.email, // the demo sends no emails, so addresses count as confirmed
+    is_blocked: !!s.meUsername && (s.blocked || []).includes(u.username),
     is_following: s.following.includes(u.username),
     posts_count: Math.max(u.posts_count || 0, posts),
   };
@@ -277,9 +278,39 @@ function setFollow(username, follow) {
   return { username, is_following: follow, followers_count: target.followers_count };
 }
 
+// ---------- blocking (like the server: blocked people's content is hidden) ----------
+
+function blockedNames() {
+  const s = load();
+  if (!s.meUsername) return [];
+  s.blocked = s.blocked || [];
+  return s.blocked;
+}
+
+// A filter keeping items whose author (under any of `keys`) isn't blocked.
+const notBlocked = (...keys) => (x) => {
+  const blocked = blockedNames();
+  return !blocked.length || !keys.some((k) => blocked.includes(String(x?.[k] || '').toLowerCase()));
+};
+const postVisible = notBlocked('authorUsername', 'author_username');
+
+function setBlock(username, on) {
+  const s = load();
+  const u = me();
+  if (!s.users[username]) fail(404, 'User not found');
+  if (username === u.username) fail(400, "You can't block yourself");
+  s.blocked = (s.blocked || []).filter((x) => x !== username);
+  if (on) {
+    s.blocked.unshift(username);
+    s.following = s.following.filter((x) => x !== username);
+  }
+  save();
+  return { username, is_blocked: on };
+}
+
 function feed(params) {
   const s = load();
-  let posts = s.posts;
+  let posts = s.posts.filter(postVisible);
   if (params.get('following') === 'true') {
     const self = me();
     posts = posts.filter((p) => p.authorUsername === self.username || s.following.includes(p.authorUsername));
@@ -444,7 +475,7 @@ function toggleUpvote(item, notFound) {
 }
 
 function listQuestions(params) {
-  let qs = load().questions;
+  let qs = load().questions.filter(notBlocked('askerUsername', 'asker_username', 'workerUsername', 'worker_username'));
   const workerId = params.get('worker_id');
   if (workerId) qs = qs.filter((q) => q.workerId === workerId);
   const answered = params.get('answered');
@@ -693,7 +724,7 @@ function syncCommentsCount(post) {
 
 function listComments(postId, params) {
   byId(load().posts, postId) || fail(404, 'Post not found');
-  const all = postComments(postId);
+  const all = postComments(postId).filter(notBlocked('username'));
   const limit = Number(params.get('limit')) || 50;
   const offset = Number(params.get('offset')) || 0;
   return { total: all.length, comments: all.slice(offset, offset + limit).map(viewComment) };
@@ -1004,6 +1035,18 @@ function handle(endpoint, options) {
     fail(400, "Links from emails don't work in the demo.");
   }
   if (route === 'POST /auth/email/resend') fail(400, "The demo doesn't send emails.");
+  if (route === 'GET /auth/me/blocked') {
+    me();
+    return blockedNames().map((n) => s.users[n]).filter(Boolean)
+      .map((u) => ({ username: u.username, full_name: u.full_name, avatar_url: u.avatar_url }));
+  }
+  // Reports are accepted (nobody moderates the demo); the moderation page is for real moderators only.
+  if (route === 'POST /moderation/reports') {
+    me();
+    if (!body?.reason) fail(422, 'reason: Field required');
+    return { detail: 'Thanks for letting us know. (In the demo, reports go nowhere.)' };
+  }
+  if (parts[0] === 'moderation') fail(403, 'Only moderators can do this');
   if (route === 'GET /auth/professionals') {
     return Object.values(s.users).filter((u) => u.profession).map(publicProfile);
   }
@@ -1011,6 +1054,8 @@ function handle(endpoint, options) {
     const username = parts[2].toLowerCase();
     if (parts[3] === 'follow' && method === 'POST') return setFollow(username, true);
     if (parts[3] === 'follow' && method === 'DELETE') return setFollow(username, false);
+    if (parts[3] === 'block' && method === 'POST') return setBlock(username, true);
+    if (parts[3] === 'block' && method === 'DELETE') return setBlock(username, false);
     if (!parts[3] && method === 'GET') {
       const u = s.users[username] || fail(404, 'User not found');
       return publicProfile(u);
@@ -1018,13 +1063,13 @@ function handle(endpoint, options) {
   }
 
   // Stories
-  if (route === 'GET /stories/feed') return s.stories;
+  if (route === 'GET /stories/feed') return s.stories.filter(notBlocked('username'));
   if (route === 'POST /stories') return createStory(body);
   if (parts[0] === 'stories' && parts[1] && !parts[2] && method === 'DELETE') return deleteStory(parts[1]);
 
   // Posts
   if (route === 'GET /posts/feed') return feed(url.searchParams);
-  if (route === 'GET /posts/bookmarks') { me(); return s.posts.filter((p) => p.isBookmarked); }
+  if (route === 'GET /posts/bookmarks') { me(); return s.posts.filter((p) => p.isBookmarked && postVisible(p)); }
   if (route === 'POST /posts') return createPost(body);
   if (parts[0] === 'posts' && parts[1]) {
     if (parts[2] === 'like' && method === 'POST') return toggleLike(parts[1]);
@@ -1044,7 +1089,11 @@ function handle(endpoint, options) {
   if (route === 'GET /discovery/categories') return INITIAL_CATEGORIES;
 
   // Community
-  if (route === 'GET /community/challenges') return s.challenges;
+  if (route === 'GET /community/challenges') {
+    const ideaVisible = notBlocked('suggesterUsername', 'suggester_username');
+    return s.challenges.filter(notBlocked('workerUsername', 'worker_username'))
+      .map((c) => ({ ...c, suggestions: (c.suggestions || []).filter(ideaVisible) }));
+  }
   if (route === 'POST /community/challenges') return createChallenge(body);
   if (parts[0] === 'community') {
     if (parts[1] === 'challenges' && parts[2] && !parts[3] && method === 'PATCH') return updateChallenge(parts[2], body || {});

@@ -26,6 +26,7 @@ RULES = {
     "question": ([(10, HOUR), (30, DAY)], "You've asked a lot of questions"),  # each lands in someone's inbox
     "reaction": ([(60, MINUTE), (600, HOUR)], "You're doing that very fast"),  # likes, saves, upvotes, follows
     "edit": ([(30, MINUTE), (300, HOUR)], "You're making a lot of changes"),
+    "report": ([(20, HOUR), (50, DAY)], "You've sent a lot of reports"),
     "email": ([(3, HOUR), (10, DAY)], "We've already sent you several emails"),  # resending confirmation links
 }
 

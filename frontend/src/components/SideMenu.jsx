@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  Home, Zap, MessageSquareText, Film, User, Bookmark, Activity, Bell, Settings, LogOut, X, ShieldCheck,
+  Home, Zap, MessageSquareText, Film, User, Bookmark, Activity, Bell, Settings, LogOut, X, ShieldCheck, ShieldAlert,
 } from 'lucide-react';
 
 // Main sections, then personal pages. `key` is what App navigates to.
@@ -18,6 +18,8 @@ const PERSONAL_ITEMS = [
   { key: 'notifications', label: 'Notifications', icon: Bell },
   { key: 'settings', label: 'Settings', icon: Settings },
 ];
+
+const MODERATOR_ITEM = { key: 'moderation', label: 'Moderation', icon: ShieldAlert };
 
 function MenuItem({ item, active, onNavigate, badge = 0 }) {
   const Icon = item.icon;
@@ -49,7 +51,7 @@ function MenuItem({ item, active, onNavigate, badge = 0 }) {
   );
 }
 
-function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0 }) {
+function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0, isAdmin = false }) {
   return (
     <nav aria-label="Main menu" className="flex flex-col gap-4">
       {/* Who is signed in */}
@@ -77,7 +79,7 @@ function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0 }) {
       <div className="border-t border-slate-200" />
 
       <ul className="space-y-0.5">
-        {PERSONAL_ITEMS.map((item) => (
+        {(isAdmin ? [...PERSONAL_ITEMS, MODERATOR_ITEM] : PERSONAL_ITEMS).map((item) => (
           <MenuItem key={item.key} item={item} active={activeKey === item.key} onNavigate={onNavigate}
             badge={item.key === 'notifications' ? unreadCount : 0} />
         ))}

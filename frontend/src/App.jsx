@@ -25,6 +25,7 @@ import { MenuDrawer, Sidebar } from './components/SideMenu';
 import BottomNav from './components/BottomNav';
 import ActivityPage from './components/ActivityPage';
 import SettingsPage from './components/SettingsPage';
+import ModerationPage from './components/ModerationPage';
 import NotificationsPage from './components/NotificationsPage';
 import NotFoundPage from './components/NotFoundPage';
 import { ResetPasswordPage, VerifyEmailPage } from './components/EmailLinkPages';
@@ -122,9 +123,11 @@ export default function App() {
       });
   }, []);
 
-  const loadAll = useCallback(async () => {
-    setLoadState('loading');
-    setLoadError('');
+  const loadAll = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) {
+      setLoadState('loading');
+      setLoadError('');
+    }
     try {
       const [p, s, c, ch, qa, pros] = await Promise.all([
         api.getPosts({ limit: 50 }),
@@ -142,6 +145,7 @@ export default function App() {
       setProfessionals(pros.map(toProfileUser));
       setLoadState('ready');
     } catch (err) {
+      if (quiet) return;
       setLoadError(err.message);
       setLoadState('error');
     }
@@ -211,6 +215,28 @@ export default function App() {
     } catch (err) {
       updatePost(postId, flip);
       showToast(`Couldn't update saved posts: ${err.message}`);
+    }
+  };
+
+  // Blocking hides both people's content from each other, so everything on screen is refreshed.
+  const handleToggleBlock = async (username) => {
+    const was = viewingUser?.isBlocked;
+    if (!was && !window.confirm(
+      `Block @${username}? You won't see each other's posts, comments or stories, and neither of you can follow, `
+      + 'comment on, ask or notify the other. They are not told.',
+    )) return;
+    try {
+      const r = was ? await api.unblockUser(username) : await api.blockUser(username);
+      setViewingUser((u) => (u && u.username === username
+        ? { ...u, isBlocked: r.is_blocked, isFollowing: false,
+            followersCount: Math.max(0, (u.followersCount || 0) - (!was && u.isFollowing ? 1 : 0)) }
+        : u));
+      setViewingPosts(was ? (await api.getPostsByAuthor(username)).map(toPost) : []);
+      showToast(was ? `@${username} is unblocked.` : `@${username} is blocked.`);
+      loadAll({ quiet: true });
+      if (feedView !== 'all') loadFeedView(feedView);
+    } catch (err) {
+      showToast(`Couldn't ${was ? 'unblock' : 'block'}: ${err.message}`);
     }
   };
 
@@ -727,7 +753,9 @@ export default function App() {
   // What the menus highlight as the current page.
   const activeKey = menuKeyForRoute(route, currentUser.username);
 
-  const menuProps = { me, activeKey, onNavigate: navigate, onLogout: handleLogout, unreadCount };
+  const menuProps = {
+    me, activeKey, onNavigate: navigate, onLogout: handleLogout, unreadCount, isAdmin: !!currentUser.is_admin,
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -790,6 +818,7 @@ export default function App() {
             qaItems={qaItems}
             isOwnProfile={viewingUser.id === currentUser.id}
             onToggleFollow={handleToggleFollow}
+            onToggleBlock={handleToggleBlock}
             onBack={() => (location.key !== 'default' ? go(-1) : go(paths.home))}
             onOpenCaseStudy={setSelectedCaseStudy}
             onAskQuestion={handleAskQuestion}
@@ -851,7 +880,12 @@ export default function App() {
             onDeleteAccount={handleDeleteAccount}
             onLogout={handleLogout}
             onResetDemo={handleResetDemo}
+            onBlockChange={() => loadAll({ quiet: true })}
           />
+        ) : activeTab === 'moderation' ? (
+          currentUser.is_admin
+            ? <ModerationPage onOpen={(path) => go(path)} onChanged={() => loadAll({ quiet: true })} />
+            : <NotFoundPage />
         ) : (
           /* MAIN SECTIONS */
           <>

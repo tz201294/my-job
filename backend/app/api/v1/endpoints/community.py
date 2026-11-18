@@ -12,7 +12,9 @@ from app.api.serializers import (
 )
 from app.core.time import utcnow
 from app.db.session import get_db
-from app.services.notifications import forget, notify
+from app.services.content import remove_challenge, remove_question, remove_suggestion
+from app.services.notifications import notify
+from app.services.moderation import ensure_can_interact, hidden_user_ids, is_hidden_from
 from app.models import (
     ChallengeSuggestion, Post, QAQuestion, QAUpvote, SuggestionUpvote, TaskReview, User, WorkChallenge,
 )
@@ -27,10 +29,14 @@ router = APIRouter()
 
 # Reviews & Ratings
 @router.get("/reviews/{post_id}", response_model=List[TaskReviewResponse])
-async def get_task_reviews(post_id: str, db: AsyncSession = Depends(get_db)):
+async def get_task_reviews(
+    post_id: str, db: AsyncSession = Depends(get_db), user: Optional[User] = Depends(get_optional_user),
+):
     rows = (
         await db.execute(
-            select(TaskReview).where(TaskReview.post_id == post_id).order_by(TaskReview.created_at.desc())
+            select(TaskReview)
+            .where(TaskReview.post_id == post_id, TaskReview.user_id.not_in(hidden_user_ids(user)))
+            .order_by(TaskReview.created_at.desc())
         )
     ).scalars().all()
     return [review_out(r) for r in rows]
@@ -47,6 +53,7 @@ async def create_task_review(
         raise HTTPException(status_code=404, detail="Post not found")
     if post.author_id == user.id:
         raise HTTPException(status_code=400, detail="You can't review your own post")
+    await ensure_can_interact(db, user, post.author_id)
     already = (
         await db.execute(
             select(TaskReview.id).where(TaskReview.post_id == post.id, TaskReview.user_id == user.id)
@@ -101,7 +108,12 @@ async def list_questions(
     `worker_id` limits the list to questions addressed to one worker; `answered=false` lists only
     questions still waiting for an answer (e.g. a worker's inbox).
     """
-    stmt = select(QAQuestion).order_by(QAQuestion.created_at.desc()).limit(limit).offset(offset)
+    hidden = hidden_user_ids(user)
+    stmt = (
+        select(QAQuestion)
+        .where(QAQuestion.asker_id.not_in(hidden), QAQuestion.worker_id.not_in(hidden))
+        .order_by(QAQuestion.created_at.desc()).limit(limit).offset(offset)
+    )
     if worker_id:
         stmt = stmt.where(QAQuestion.worker_id == worker_id)
     if answered is not None:
@@ -118,11 +130,13 @@ async def get_worker_qa(
     user: Optional[User] = Depends(get_optional_user),
 ):
     worker = (await db.execute(select(User).where(User.id == worker_id))).scalar_one_or_none()
-    if not worker:
+    if not worker or await is_hidden_from(db, user, worker.id):
         raise HTTPException(status_code=404, detail="Worker not found")
     questions = (
         await db.execute(
-            select(QAQuestion).where(QAQuestion.worker_id == worker_id).order_by(QAQuestion.created_at.desc())
+            select(QAQuestion)
+            .where(QAQuestion.worker_id == worker_id, QAQuestion.asker_id.not_in(hidden_user_ids(user)))
+            .order_by(QAQuestion.created_at.desc())
         )
     ).scalars().all()
     voted = await upvoted_question_ids(db, user, questions)
@@ -146,6 +160,7 @@ async def ask_worker_question(
     worker = (await db.execute(select(User).where(User.id == worker_id))).scalar_one_or_none()
     if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
+    await ensure_can_interact(db, user, worker.id)
     q = QAQuestion(
         worker_id=worker_id,
         asker_id=user.id,
@@ -173,6 +188,7 @@ async def answer_question(
         raise HTTPException(status_code=404, detail="Question not found")
     if q.worker_id != user.id:
         raise HTTPException(status_code=403, detail="Only the professional who was asked can answer this question")
+    await ensure_can_interact(db, user, q.asker_id)
 
     q.answer_text = a_in.answer_text
     q.video_response_url = a_in.video_response_url
@@ -228,9 +244,7 @@ async def delete_question(
     q = await _question_or_404(db, question_id)
     if user.id not in (q.asker_id, q.worker_id):
         raise HTTPException(status_code=403, detail="Only the asker or the professional asked can delete this question")
-    await db.execute(delete(QAUpvote).where(QAUpvote.question_id == question_id))
-    await forget(db, question_id=question_id)
-    await db.delete(q)
+    await remove_question(db, q)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -253,12 +267,14 @@ async def get_work_challenges(
     db: AsyncSession = Depends(get_db),
     user: Optional[User] = Depends(get_optional_user),
 ):
-    stmt = select(WorkChallenge).order_by(WorkChallenge.created_at.desc())
+    hidden = hidden_user_ids(user)
+    stmt = select(WorkChallenge).where(WorkChallenge.worker_id.not_in(hidden)).order_by(WorkChallenge.created_at.desc())
     if category:
         stmt = stmt.where(func.lower(WorkChallenge.profession_category) == category.lower())
     challenges = (await db.execute(stmt)).scalars().all()
     voted = await upvoted_suggestion_ids(db, user, challenges)
-    return [challenge_out(c, voted) for c in challenges]
+    hidden_ids = set((await db.execute(hidden)).scalars().all())
+    return [challenge_out(c, voted, hidden_ids) for c in challenges]
 
 
 @router.post("/challenges", dependencies=[Depends(limit("post"))], response_model=WorkChallengeResponse, status_code=status.HTTP_201_CREATED)
@@ -312,10 +328,7 @@ async def delete_challenge(
 ):
     """The owner deletes their challenge, with all suggestions and their upvotes."""
     chal = await _own_challenge(db, user, challenge_id)
-    suggestion_ids = select(ChallengeSuggestion.id).where(ChallengeSuggestion.challenge_id == challenge_id)
-    await db.execute(delete(SuggestionUpvote).where(SuggestionUpvote.suggestion_id.in_(suggestion_ids)))
-    await forget(db, challenge_id=challenge_id)
-    await db.delete(chal)  # suggestions go with it (delete-orphan)
+    await remove_challenge(db, chal)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -335,6 +348,7 @@ async def submit_challenge_suggestion(
     chal = (await db.execute(select(WorkChallenge).where(WorkChallenge.id == challenge_id))).scalar_one_or_none()
     if not chal:
         raise HTTPException(status_code=404, detail="Challenge not found")
+    await ensure_can_interact(db, user, chal.worker_id)
     sug = ChallengeSuggestion(
         challenge_id=challenge_id,
         suggester_id=user.id,
@@ -395,11 +409,7 @@ async def delete_suggestion(
     chal = (await db.execute(select(WorkChallenge).where(WorkChallenge.id == sug.challenge_id))).scalar_one()
     if user.id not in (sug.suggester_id, chal.worker_id):
         raise HTTPException(status_code=403, detail="Only the author or the challenge owner can delete this idea")
-    if sug.is_accepted_by_worker:
-        chal.is_solved = False
-    await db.execute(delete(SuggestionUpvote).where(SuggestionUpvote.suggestion_id == suggestion_id))
-    await forget(db, suggestion_id=suggestion_id)
-    await db.delete(sug)
+    await remove_suggestion(db, sug)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
