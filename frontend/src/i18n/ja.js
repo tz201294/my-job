@@ -561,4 +561,6 @@ export default {
   "catalog.unlink": "カタログの職業とのリンクを外す",
   "catalog.notListed": "リストにありません。そのまま入力どおりに保存されます。",
   "catalog.pickHint": "リストから選ぶとプロフィールがその職業にリンクされます。自由に入力することもできます。",
+  "pod.label": "今日の職業",
+  "pod.cta": "ある一日を見る",
 };

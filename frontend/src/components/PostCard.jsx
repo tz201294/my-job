@@ -201,7 +201,8 @@ export default function PostCard({
                 post.isLiked ? 'text-rose-600' : 'hover:text-rose-600 text-slate-600'
               }`}
             >
-              <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
+              <Heart key={post.isLiked ? 'liked' : 'not-liked'}
+                className={`w-4 h-4 ${post.isLiked ? 'fill-rose-500 text-rose-500 like-pop' : ''}`} />
               <span>{post.likesCount}</span>
             </button>
 

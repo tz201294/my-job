@@ -573,4 +573,6 @@ export default {
   "catalog.unlink": "No vincular a una profesión del catálogo",
   "catalog.notListed": "No está en nuestra lista. No pasa nada: se guarda tal como lo escribiste.",
   "catalog.pickHint": "Elige de la lista para vincular tu perfil a esa profesión, o escribe la tuya.",
+  "pod.label": "Profesión del día",
+  "pod.cta": "Ver un día normal",
 };

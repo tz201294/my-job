@@ -28,6 +28,7 @@ import ActivityPage from './components/ActivityPage';
 import SettingsPage from './components/SettingsPage';
 import ModerationPage from './components/ModerationPage';
 import { ProfessionPage, ProfessionsPage } from './components/ProfessionPages';
+import ProfessionOfTheDay from './components/ProfessionOfTheDay';
 import NotificationsPage from './components/NotificationsPage';
 import NotFoundPage from './components/NotFoundPage';
 import { ResetPasswordPage, VerifyEmailPage } from './components/EmailLinkPages';
@@ -959,6 +960,8 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+
+                {feedView === 'all' && !searchTerm && selectedCategory === 'all' && <ProfessionOfTheDay />}
 
                 {feedView !== 'all' && feedState === 'loading' ? (
                   <div className="flex justify-center py-10" role="status" aria-label={t('common.loading')}>

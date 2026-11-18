@@ -573,4 +573,6 @@ export default {
   "catalog.unlink": "Nicht mit einem Katalogberuf verknüpfen",
   "catalog.notListed": "Nicht in unserer Liste. Kein Problem: Er wird so gespeichert, wie du ihn geschrieben hast.",
   "catalog.pickHint": "Wähle aus der Liste, um dein Profil mit diesem Beruf zu verknüpfen, oder schreib deinen eigenen.",
+  "pod.label": "Beruf des Tages",
+  "pod.cta": "Einen typischen Tag ansehen",
 };

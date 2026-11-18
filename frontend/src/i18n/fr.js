@@ -573,4 +573,6 @@ export default {
   "catalog.unlink": "Ne pas relier à un métier du catalogue",
   "catalog.notListed": "Pas dans notre liste. Pas de souci : il est enregistré tel que vous l'avez écrit.",
   "catalog.pickHint": "Choisissez dans la liste pour relier votre profil à ce métier, ou écrivez le vôtre.",
+  "pod.label": "Métier du jour",
+  "pod.cta": "Voir une journée type",
 };
