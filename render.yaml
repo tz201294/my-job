@@ -29,6 +29,8 @@ services:
         sync: false
       - key: EMAIL_FROM               # the sender address verified in Brevo
         sync: false
+      - key: CLOUDINARY_URL           # photo uploads (docs/DEPLOY.md step 8); without it, only image links work
+        sync: false
       - key: ADMIN_USERNAMES          # moderators, as a JSON list of usernames, e.g. ["your_username"]
         sync: false
       - key: SENTRY_DSN               # optional error reporting (docs/DEPLOY.md step 4); leave empty to skip

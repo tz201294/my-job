@@ -32,6 +32,8 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Privacy Policy and Terms of Service pages, accepted at sign-up (version recorded), Download my data (JSON), and
   the font served from the site instead of Google Fonts. Before launch: set VITE_CONTACT_EMAIL and have the text
   checked by someone who knows the law (docs/DEPLOY.md step 6).
+- Photo uploads for post covers, step photos, stories and profile photos (checked, turned upright, resized,
+  stripped of GPS and other hidden data, stored on Cloudinary). Setup: docs/DEPLOY.md step 8.
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.
@@ -45,15 +47,14 @@ without code changes. Everything is in the repo (`render.yaml`, deploy workflow 
 settings, deep links). CI runs every backend test and the migrations on Postgres 17 (Neon's default), checks
 the migrations match the models and can be undone, and Render only deploys once CI passes.
 
-### 2. Real file uploads
-Upload photos and videos instead of pasting links: storage (local disk first, then an S3-compatible bucket
-for hosting), size and type limits, image resizing, upload UI in every create form, and a stand-in for the
-demo site. **Decision needed:** where files are stored once hosted.
+### 2. More on uploads
+Photo uploads are done (Cloudinary). Still open: video uploads, deleting a photo from Cloudinary when its post,
+story or profile photo is removed, and an image on Live Work challenges.
 
 ### 3. Frontend: what's left before real users
 The frontend itself is ready; these depend on the backend steps above or are polish:
 - Point the build at the deployed API (`VITE_API_URL`) once step 1 is done (the demo stays at /demo/).
-- Photo/video upload UI (step 2).
+- Video upload UI (step 2).
 - Basic analytics, if wanted.
 - An accessibility pass with a screen reader, and loading skeletons.
 

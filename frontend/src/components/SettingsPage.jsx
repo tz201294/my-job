@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { DEFAULT_AVATAR } from '../api/mappers';
+import ImageField from './ImageField';
 
 const inputCls =
   'w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20';
@@ -255,10 +256,9 @@ function ProfileForm({ account, options, onSave, onDone }) {
           alt="Photo preview"
           className="w-14 h-14 rounded-full object-cover ring-2 ring-teal-200"
         />
-        <div className="flex-1">
-          <label className={labelCls} htmlFor="set-avatar">Photo link</label>
-          <input id="set-avatar" type="url" className={inputCls} placeholder="https://..." maxLength={512}
-            value={avatarUrl} onChange={(e) => { setAvatarUrl(e.target.value); setPreviewOk(true); }} />
+        <div className="flex-1 min-w-0">
+          <ImageField label="Profile photo" value={avatarUrl} purpose="avatar" preview="none" inputId="set-avatar"
+            onChange={(url) => { setAvatarUrl(url); setPreviewOk(true); }} />
         </div>
       </div>
       <div>

@@ -27,6 +27,7 @@ RULES = {
     "reaction": ([(60, MINUTE), (600, HOUR)], "You're doing that very fast"),  # likes, saves, upvotes, follows
     "edit": ([(30, MINUTE), (300, HOUR)], "You're making a lot of changes"),
     "report": ([(20, HOUR), (50, DAY)], "You've sent a lot of reports"),
+    "upload": ([(30, HOUR), (100, DAY)], "You've uploaded a lot of photos"),
     "export": ([(5, HOUR), (20, DAY)], "You've downloaded your data several times already"),
     "email": ([(3, HOUR), (10, DAY)], "We've already sent you several emails"),  # resending confirmation links
 }

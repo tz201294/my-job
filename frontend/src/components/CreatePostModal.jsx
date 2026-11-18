@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { PLACEHOLDER_IMAGE } from '../api/mappers';
 import TagInput from './TagInput';
+import ImageField from './ImageField';
 import { MAX_TAGS, normalizeTag } from '../api/tags';
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'];
@@ -205,26 +206,8 @@ export default function CreatePostModal({
           {/* STORY FORM */}
           {contentType === 'story' && (
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Story Photo URL
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={storyMedia}
-                  onChange={(e) => setStoryMedia(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
-                  required
-                />
-                <p className="mt-1 text-[11px] text-slate-400">Direct file uploads are not available yet — paste a link to an image.</p>
-                {storyMedia && (
-                  <div className="mt-3 relative w-32 h-44 rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
-                    <img loading="lazy" decoding="async" src={storyMedia} alt="Preview" className="w-full h-full object-cover" />
-                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Preview</span>
-                  </div>
-                )}
-              </div>
+              <ImageField label="Story photo" value={storyMedia} onChange={setStoryMedia} purpose="story"
+                preview="tall" required inputId="story-photo" />
 
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
@@ -332,25 +315,8 @@ export default function CreatePostModal({
                 <TagInput id="post-tags" tags={tags} onChange={setTags} pending={pendingTag} onPendingChange={setPendingTag} />
               </div>
 
-              {/* Cover media (URL only until file uploads exist) */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Cover Photo / Diagram URL (optional)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
-                />
-                <p className="mt-1 text-[11px] text-slate-400">Direct file uploads are not available yet — paste a link to an image.</p>
-                {mediaUrl && (
-                  <div className="mt-2 w-full aspect-video max-h-40 rounded-xl overflow-hidden border border-slate-200">
-                    <img loading="lazy" decoding="async" src={mediaUrl} alt="Cover Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
-              </div>
+              <ImageField label="Cover photo or diagram (optional)" value={mediaUrl} onChange={setMediaUrl}
+                purpose="post" inputId="cover-photo" />
 
               {/* PRO CASE STUDY DEEP DIVE FIELDS */}
               {contentType === 'pro_case_study' && (
@@ -492,20 +458,9 @@ export default function CreatePostModal({
                           required
                         />
 
-                        {/* Step image (URL only until file uploads exist) */}
-                        <input
-                          type="url"
-                          placeholder="Image URL (optional) https://..."
-                          value={st.imageUrl || ''}
-                          onChange={(e) => handleStepChange(idx, 'imageUrl', e.target.value)}
-                          className="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-[11px] outline-none"
-                        />
-
-                        {st.imageUrl && (
-                          <div className="w-24 h-16 rounded-lg overflow-hidden border border-slate-200">
-                            <img loading="lazy" decoding="async" src={st.imageUrl} alt="Step preview" className="w-full h-full object-cover" />
-                          </div>
-                        )}
+                        {/* Step photo (optional) */}
+                        <ImageField value={st.imageUrl || ''} onChange={(url) => handleStepChange(idx, 'imageUrl', url)}
+                          purpose="step" compact preview="small" inputId={`step-photo-${idx}`} />
 
                         <input
                           type="text"

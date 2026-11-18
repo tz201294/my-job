@@ -567,7 +567,8 @@ function submitReview(body) {
 
 // ---------- edit & delete (same rules as the server) ----------
 
-const isHttpUrl = (v) => /^https?:\/\/[^/\s]+/i.test(String(v || '').trim());
+// Links must be http(s). The demo also accepts its own uploaded photos, which are data: addresses (see demoUploadImage).
+const isHttpUrl = (v) => /^(https?:\/\/[^/\s]+|data:image\/)/i.test(String(v || '').trim());
 
 function requiredText(body, field, max) {
   if (!(field in body)) return undefined;
@@ -1036,6 +1037,7 @@ function handle(endpoint, options) {
     fail(400, "Links from emails don't work in the demo.");
   }
   if (route === 'POST /auth/email/resend') fail(400, "The demo doesn't send emails.");
+  if (route === 'GET /uploads/status') return { images: true, max_mb: 10 };
   if (route === 'GET /auth/me/export') {
     const u = me();
     const mine = (x) => [x.authorUsername, x.author_username, x.username].includes(u.username);
@@ -1140,6 +1142,27 @@ function handle(endpoint, options) {
   }
 
   fail(404, `Not available in the demo: ${method} ${path}`);
+}
+
+// The demo has no server to store photos on: they're shrunk in the browser (small enough to fit in its saved
+// data) and kept as data: addresses. createImageBitmap turns phone photos upright; the canvas drops EXIF data.
+export async function demoUploadImage(file, purpose = 'post') {
+  me();
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    fail(415, "That file isn't a photo we can read. Use a JPEG, PNG, WebP or GIF image.");
+  }
+  const max = purpose === 'avatar' ? 300 : 900;
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const width = Math.round(bitmap.width * scale);
+  const height = Math.round(bitmap.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+  return { url: canvas.toDataURL('image/jpeg', 0.72), width, height };
 }
 
 // Throws away everything done in this browser's demo and starts again from the sample data.

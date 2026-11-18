@@ -84,6 +84,24 @@ async function request(endpoint, options = {}) {
   return body;
 }
 
+// File uploads: a multipart form instead of JSON.
+async function upload(endpoint, form) {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', body: form, headers: authHeaders() });
+  } catch {
+    throw new Error("Can't reach the Prologue server. Check your connection and try again.");
+  }
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    if (res.status === 401 && tokenStore.get() && unauthorizedHandler) unauthorizedHandler();
+    const err = new Error(errorMessage(body, `Upload failed (${res.status})`));
+    err.status = res.status;
+    throw err;
+  }
+  return body;
+}
+
 const post = (endpoint, data) => request(endpoint, { method: 'POST', ...(data ? { body: JSON.stringify(data) } : {}) });
 const patch = (endpoint, data) => request(endpoint, { method: 'PATCH', body: JSON.stringify(data) });
 const del = (endpoint) => request(endpoint, { method: 'DELETE' });
@@ -109,6 +127,16 @@ export const api = {
   unblockUser: (username) => del(`/auth/users/${encodeURIComponent(username)}/block`),
   getBlocked: () => request('/auth/me/blocked'),
   exportMyData: () => request('/auth/me/export'),
+
+  // Photos: uploads one and answers { url, width, height }.
+  getUploadStatus: () => request('/uploads/status'),
+  uploadImage: async (file, purpose = 'post') => {
+    if (IS_DEMO) return (await demo()).demoUploadImage(file, purpose);
+    const form = new FormData();
+    form.append('file', file);
+    form.append('purpose', purpose);
+    return upload('/uploads/images', form);
+  },
   getReports: (status = 'open') => request(`/moderation/reports?status=${encodeURIComponent(status)}`),
   resolveReports: (targetType, targetId, action) =>
     post('/moderation/reports/resolve', { target_type: targetType, target_id: targetId, action }),

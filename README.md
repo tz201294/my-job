@@ -86,6 +86,10 @@ Privacy and terms: `/privacy` and `/terms` (text in `frontend/src/components/Leg
 `VITE_CONTACT_EMAIL`); sign-up requires accepting them and records the version (`backend/app/core/legal.py`).
 Settings → Download my data exports everything stored about the account as JSON. The font is served from the site
 itself, not Google Fonts.
+Photo uploads: `POST /api/v1/uploads/images` (form fields `file`, `purpose`). Photos are validated, turned upright,
+resized and re-encoded as WebP without metadata (no GPS), then stored on Cloudinary (`CLOUDINARY_URL`) or, in
+development, in `MEDIA_DIR` served at `/media/`. In production without Cloudinary, uploads are refused and the app
+shows only the link box. The demo shrinks photos in the browser instead.
 Moderation: anyone can report content or accounts and block accounts; the usernames in `ADMIN_USERNAMES` get a
 Moderation page (remove content, suspend or reinstate accounts). Suspended accounts can't log in and their content is
 hidden; blocking hides content both ways and stops follows, comments, questions and notifications between the two.

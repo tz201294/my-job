@@ -1,9 +1,12 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from pathlib import Path
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,7 +50,24 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
+@app.middleware("http")
+async def refuse_oversized_uploads(request: Request, call_next):
+    """Turn away uploads that are too big before reading them (the endpoint checks again while reading)."""
+    if request.url.path.startswith(f"{settings.API_V1_STR}/uploads/"):
+        length = request.headers.get("content-length")
+        # The file plus a little room for the form around it.
+        if length and length.isdigit() and int(length) > settings.MAX_UPLOAD_MB * 1024 * 1024 + 64 * 1024:
+            return JSONResponse(status_code=413,
+                                content={"detail": f"That photo is too big. The limit is {settings.MAX_UPLOAD_MB} MB."})
+    return await call_next(request)
+
+
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Local development without Cloudinary: uploaded photos are files in MEDIA_DIR, served from here.
+if not settings.CLOUDINARY_URL and not settings.is_production:
+    Path(settings.MEDIA_DIR).mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=settings.MEDIA_DIR), name="media")
 
 
 @app.get("/health", tags=["System"])

@@ -81,6 +81,13 @@ class Settings(BaseSettings):
     # e.g. ADMIN_USERNAMES='["tz201294"]'. Usernames are stored lower-case.
     ADMIN_USERNAMES: List[str] = []
 
+    # Photo uploads (app/services/images.py). In production they need Cloudinary: CLOUDINARY_URL is the
+    # "API environment variable" from the Cloudinary dashboard, cloudinary://<key>:<secret>@<cloud name>.
+    # Without it, outside production, photos are saved in MEDIA_DIR and served by the API at /media/.
+    CLOUDINARY_URL: str = ""
+    MEDIA_DIR: str = "./media"
+    MAX_UPLOAD_MB: int = 10
+
     # Spam limits on sign-ups, posts, comments, reactions etc. (see app/api/rate_limits.py).
     RATE_LIMITS_ENABLED: bool = True
 
@@ -133,6 +140,8 @@ class Settings(BaseSettings):
             problems.append("SEED_DEMO_DATA must be false (demo accounts share a public password)")
         if not self.FRONTEND_URL.startswith("https://"):
             problems.append("FRONTEND_URL must be the website's https:// address (used in links in emails)")
+        if self.CLOUDINARY_URL and not self.CLOUDINARY_URL.startswith("cloudinary://"):
+            problems.append("CLOUDINARY_URL must look like cloudinary://<api key>:<api secret>@<cloud name>")
         if self.BREVO_API_KEY and not self.EMAIL_FROM:
             problems.append("EMAIL_FROM must be set when BREVO_API_KEY is (the sender address verified in Brevo)")
         if "*" in self.BACKEND_CORS_ORIGINS:

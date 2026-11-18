@@ -16,7 +16,7 @@ function contentSecurityPolicy(apiUrl) {
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:", // data: for the smallest font files, which Vite inlines
-    "img-src 'self' data: blob: https:",
+    `img-src 'self' data: blob: https: http://localhost:8000 http://127.0.0.1:8000${apiOrigin ? ` ${apiOrigin}` : ''}`,
     "media-src 'self' blob: https:",
     `connect-src 'self' https: http://localhost:8000 http://127.0.0.1:8000${apiOrigin ? ` ${apiOrigin}` : ''}`,
     "manifest-src 'self'",

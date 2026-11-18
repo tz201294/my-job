@@ -42,7 +42,8 @@ You don't need to create any tables: the API creates them itself on its first st
 4. Render asks for the values it can't know:
    - **DATABASE_URL:** paste the Neon connection string from step 1 exactly as Neon gave it. The app converts it to
      the format it needs.
-   - **BREVO_API_KEY**, **EMAIL_FROM** and **SENTRY_DSN:** leave these empty for now. Steps 4 and 5 fill them in.
+   - **BREVO_API_KEY**, **EMAIL_FROM**, **SENTRY_DSN** and **CLOUDINARY_URL:** leave these empty for now. Steps 4, 5
+     and 8 fill them in.
    - **ADMIN_USERNAMES:** leave empty for now. Step 7 fills it in once you have an account.
 5. Click **Apply** / **Deploy Blueprint**. The first build takes about 5–10 minutes.
 6. When it says **Live**, copy the service address at the top of the page, for example
@@ -198,6 +199,28 @@ question, challenge, idea or account, with the reasons and notes. For each one y
 Everyone else can **report** posts, comments, questions, challenges, ideas and accounts (the flag button), and
 **block** accounts from their profile. Blocked accounts are listed in **Settings**, where they can be unblocked.
 Nobody is told who reported or blocked them.
+
+## 8. Photo uploads (free, about 10 minutes)
+
+Without this, people can only add photos by pasting a link (the Upload button doesn't appear). Photos are stored on
+**Cloudinary**, because Render's free plan has no lasting disk. Cloudinary's free plan needs no credit card and is
+plenty to start (25 monthly "credits", roughly 25 GB of storage or traffic).
+
+Before a photo is stored, the API checks it really is an image, turns phone photos the right way up, shrinks it (at
+most 1600 px, profile photos 512 px) and removes everything hidden in the file, such as the GPS location where it was
+taken. Uploads are limited to 10 MB and 30 an hour per person.
+
+1. Go to **cloudinary.com** and sign up (free plan).
+2. On the dashboard (**Programmable Media** → **Dashboard**, or **Settings** → **API Keys**), copy the
+   **API environment variable**. It looks like `cloudinary://123456789012345:AbCdEf...@your-cloud-name`. It contains
+   a secret: never put it in the repo.
+3. Render → **prologue-api** → **Environment** → **CLOUDINARY_URL** = that value (without `CLOUDINARY_URL=` in
+   front) → **Save**. Render redeploys by itself.
+4. Try it: on the site, **Post** → **Upload photo**. The photo appears in **Media Library** → folder **prologue** on
+   Cloudinary.
+
+Good to know: photos stay on Cloudinary when a post is deleted (they're unlisted, so nobody finds them without the
+address). Cleaning those up is on the roadmap.
 
 ---
 
