@@ -1,4 +1,5 @@
 import { fieldName } from '../api/mappers';
+import { useCatalog } from '../catalog';
 import React from 'react';
 import {
   Briefcase, Scale, Wrench, Truck, Code, HeartPulse,
@@ -39,9 +40,13 @@ export default function ProfessionDiscovery({
   categories, 
   selectedCategory, 
   onSelectCategory,
-  onSelectRole 
+  onSelectRole,
+  onOpenProfession,
 }) {
   const { t } = useI18n();
+  const { professions } = useCatalog();
+  const selectedName = categories.find((c) => c.slug === selectedCategory)?.name;
+  const catalogInField = professions.filter((p) => p.field === selectedName);
   return (
     <div className="bg-white/95 border border-teal-100 rounded-3xl p-4 sm:p-5 shadow-sm mb-5 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-3.5 px-1">
@@ -91,7 +96,17 @@ export default function ProfessionDiscovery({
           <span className="text-[11px] font-black text-teal-400 uppercase tracking-wider">
             {t('discover.popularIn', { field: fieldName(categories.find((c) => c.slug === selectedCategory)?.name) })}
           </span>
-          {categories
+          {/* Catalog professions in this field; if none match (the demo's sample fields), its popular roles. */}
+          {catalogInField.length > 0 ? catalogInField.map((p) => (
+            <button
+              key={p.slug}
+              type="button"
+              onClick={() => onOpenProfession(p.slug)}
+              className="px-3 py-1 rounded-xl bg-gradient-to-r from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 text-teal-800 border border-teal-200/80 text-xs font-bold transition-all shadow-2xs hover:scale-105"
+            >
+              {p.name}
+            </button>
+          )) : categories
             .find((c) => c.slug === selectedCategory)
             ?.popularRoles?.map((role, idx) => (
               <button

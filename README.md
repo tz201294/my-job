@@ -82,6 +82,10 @@ the form hosts hand out (`postgresql://...?sslmode=require`); the app converts i
 Email (confirmation and password-reset links) goes through Brevo's API when `BREVO_API_KEY` and `EMAIL_FROM` are
 set; without them, emails are written to the API's log instead, so locally you can copy the link from there.
 Links point to `FRONTEND_URL`. Setup: docs/DEPLOY.md step 5.
+Profession catalog: 51 professions (description, daily tasks, tools, how to get in, related professions) in every
+app language, at `/professions` and `/professions/<slug>`. The list is `frontend/src/catalog/professions.json`
+(the server keeps a copy in `backend/app/core/professions.json`; a test checks they match) and the words are in
+`frontend/src/catalog/text/<lang>.js`. People can link their profession to it at sign-up and in Settings.
 Languages: English, Spanish, French, German and Japanese for everything the app itself says (buttons, menus,
 messages, emails); posts and names stay as written. The app starts in the device's language (else a guess from
 its time zone, else English), and the choice in Settings or on the login screen is saved on the account.

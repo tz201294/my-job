@@ -162,6 +162,9 @@ export const api = {
     const query = new URLSearchParams(params).toString();
     return request(`/posts/feed${query ? `?${query}` : ''}`);
   },
+  getPostsByProfession: (slug) => request(`/posts/feed?profession=${encodeURIComponent(slug)}&limit=50`),
+  getCatalog: () => request('/professions'),
+  getProfessionPeople: (slug) => request(`/professions/${encodeURIComponent(slug)}/people`),
   getPostsByAuthor: (username) => request(`/posts/feed?author_username=${encodeURIComponent(username)}&limit=100`),
   getPostById: (id) => request(`/posts/${id}`),
   createPost: (data) => post('/posts', data),

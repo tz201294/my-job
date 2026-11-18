@@ -239,6 +239,7 @@ export function toProfileUser(u) {
     fullName: u.full_name,
     avatarUrl: u.avatar_url || DEFAULT_AVATAR,
     professionTitle: p?.title || tNow('role.explorer'),
+    professionSlug: p?.catalog_slug || null,
     industry: p?.industry || tNow('role.exploring'),
     specialization: p?.specialization || '',
     yearsExp: p?.years_of_experience ?? 0,

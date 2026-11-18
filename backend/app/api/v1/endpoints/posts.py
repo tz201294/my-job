@@ -11,7 +11,7 @@ from app.api.serializers import bookmarked_ids_for, comment_out, liked_ids_for, 
 from app.core.time import utcnow
 from app.db.session import get_db
 from app.models import (
-    Bookmark, CommentReaction, Follow, Post, PostComment, PostLike, TaskDetails, User,
+    Bookmark, CommentReaction, Follow, Post, PostComment, PostLike, ProfessionProfile, TaskDetails, User,
 )
 from app.schemas.comment import (
     CommentCreate, CommentPage, CommentResponse, CommentUpdate, ReactionIn, ReactionState,
@@ -29,6 +29,7 @@ async def get_feed(
     post_type: Optional[PostType] = None,
     profession_category: Optional[str] = None,
     author_username: Optional[str] = None,
+    profession: Optional[str] = None,
     following: bool = False,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -50,6 +51,10 @@ async def get_feed(
         stmt = stmt.where(or_(Post.author_id.in_(followed), Post.author_id == user.id))
     if author_username:
         stmt = stmt.join(User, User.id == Post.author_id).where(User.username == author_username.lower())
+    if profession:  # posts by people in one catalog profession
+        stmt = stmt.where(Post.author_id.in_(
+            select(ProfessionProfile.user_id).where(ProfessionProfile.catalog_slug == profession)
+        ))
     if post_type:
         stmt = stmt.where(Post.post_type == post_type.value)
     if profession_category:

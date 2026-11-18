@@ -5,6 +5,7 @@ import {
 import { api } from '../api/client';
 import { DEFAULT_AVATAR, fieldName } from '../api/mappers';
 import LanguageSelect from './LanguageSelect';
+import ProfessionPicker from './ProfessionPicker';
 import ImageField from './ImageField';
 import { useI18n } from '../i18n';
 
@@ -219,6 +220,7 @@ function ProfileForm({ account, options, onSave, onDone }) {
   const [works, setWorks] = useState(!!p);
   const [industry, setIndustry] = useState(p?.industry || options.industries[0] || '');
   const [title, setTitle] = useState(p?.title || '');
+  const [slug, setSlug] = useState(p?.catalog_slug || null);
   const [specialization, setSpecialization] = useState(p?.specialization || '');
   const [years, setYears] = useState(p?.years_of_experience ?? 0);
   const [company, setCompany] = useState(p?.company_or_freelance || '');
@@ -240,6 +242,7 @@ function ProfileForm({ account, options, onSave, onDone }) {
       data.profession = {
         industry,
         title: title.trim(),
+        catalog_slug: slug,
         specialization: specialization.trim() || null,
         years_of_experience: Number(years) || 0,
         company_or_freelance: company.trim() || null,
@@ -303,7 +306,12 @@ function ProfileForm({ account, options, onSave, onDone }) {
             </div>
             <div>
               <label className={labelCls} htmlFor="set-title">{t('settings.jobTitle')}</label>
-              <input id="set-title" className={inputCls} required minLength={2} maxLength={128} value={title} onChange={(e) => setTitle(e.target.value)} />
+              <ProfessionPicker id="set-title" inputClassName={inputCls} title={title} slug={slug}
+                onChange={({ title: next, slug: nextSlug, field }) => {
+                  setTitle(next);
+                  setSlug(nextSlug || null);
+                  if (field) setIndustry(field);
+                }} />
             </div>
             <div>
               <label className={labelCls} htmlFor="set-spec">{t('signup.specialization')}</label>

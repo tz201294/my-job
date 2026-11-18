@@ -34,6 +34,8 @@ MESSAGES = {
     "Question not found": dict(es="Pregunta no encontrada", fr="Question introuvable", de="Frage nicht gefunden", ja="質問が見つかりません"),
     "Challenge not found": dict(es="Reto no encontrado", fr="Défi introuvable", de="Challenge nicht gefunden", ja="チャレンジが見つかりません"),
     "Story not found": dict(es="Historia no encontrada", fr="Story introuvable", de="Story nicht gefunden", ja="ストーリーが見つかりません"),
+    "Profession not found": dict(es="Profesión no encontrada", fr="Métier introuvable", de="Beruf nicht gefunden", ja="職業が見つかりません"),
+    "Unknown profession": dict(es="Profesión desconocida", fr="Métier inconnu", de="Unbekannter Beruf", ja="不明な職業です"),
     "Comment not found": dict(es="Comentario no encontrado", fr="Commentaire introuvable", de="Kommentar nicht gefunden", ja="コメントが見つかりません"),
     "That no longer exists.": dict(es="Eso ya no existe.", fr="Cela n'existe plus.", de="Das gibt es nicht mehr.", ja="これはもう存在しません。"),
     "That account no longer exists": dict(es="Esa cuenta ya no existe", fr="Ce compte n'existe plus", de="Dieses Konto gibt es nicht mehr", ja="このアカウントはもう存在しません"),

@@ -20,7 +20,7 @@ DEMO_USERS = [
         bio="Master Plumber | 10+ yrs in commercial pipe systems & troubleshooting",
         avatar=U + "photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
         gender="female", age=36,
-        prof=dict(industry="Trades & Craftsmanship", title="Master Plumber",
+        prof=dict(industry="Trades & Craftsmanship", title="Master Plumber", slug="plumber",
                   specialization="Commercial & Residential Diagnostics", years=10, company="Jenkins Plumbing LLC",
                   tools=["Pipe Wrench", "Drain Snake", "Infrared Thermal Camera", "PEX Crimper"]),
         interests=["Trades & Craftsmanship", "Technology & Engineering"],
@@ -30,7 +30,7 @@ DEMO_USERS = [
         bio="City Transit Bus Driver | Navigating 40ft electric buses through dense rush hours",
         avatar=U + "photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
         gender="male", age=41,
-        prof=dict(industry="Transportation & Logistics", title="Transit Bus Operator",
+        prof=dict(industry="Transportation & Logistics", title="Transit Bus Operator", slug="bus-driver",
                   specialization="Articulated & Electric Fleet", years=6, company="Metro Express Transit",
                   tools=["Fleet Telematics", "Route Dispatch System", "Defensive Driving Radar"]),
         interests=["Transportation & Logistics", "Public Service & Safety"],
@@ -40,7 +40,7 @@ DEMO_USERS = [
         bio="Commercial Litigation Partner | Tech Contracts, IP Disputes, and Courtroom Strategy",
         avatar=U + "photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
         gender="female", age=44,
-        prof=dict(industry="Legal & Finance", title="Commercial Litigation Attorney",
+        prof=dict(industry="Legal & Finance", title="Commercial Litigation Attorney", slug="lawyer",
                   specialization="IP & Breach of Contract Disputes", years=12, company="Vance & Associates Law",
                   tools=["Westlaw", "LexisNexis", "Clio Litigation Suite", "Adobe Pro Redaction"]),
         interests=["Legal & Finance", "Technology & Engineering"],
@@ -158,7 +158,7 @@ async def seed_demo_data(db: AsyncSession) -> bool:
             avatar_url=d["avatar"],
         )
         u.profession = ProfessionProfile(
-            industry=p["industry"], title=p["title"], specialization=p["specialization"],
+            industry=p["industry"], title=p["title"], catalog_slug=p.get("slug"), specialization=p["specialization"],
             years_of_experience=p["years"], is_verified_pro=True, company_or_freelance=p["company"],
             key_tools=p["tools"],
         )

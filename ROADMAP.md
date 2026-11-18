@@ -32,6 +32,8 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Privacy Policy and Terms of Service pages, accepted at sign-up (version recorded), Download my data (JSON), and
   the font served from the site instead of Google Fonts. Before launch: set VITE_CONTACT_EMAIL and have the text
   checked by someone who knows the law (docs/DEPLOY.md step 6).
+- Profession catalog: 51 professions in 5 languages, profession pages with the people who do them and their posts,
+  a profession picker at sign-up and in Settings (links the profile and sets the field).
 - Languages, round 1: English, Spanish, French, German, Japanese (device language by default; Settings; saved on
   the account; server messages and emails too). Translations should be checked by native speakers before launch.
 - Photo uploads for post covers, step photos, stories and profile photos (checked, turned upright, resized,

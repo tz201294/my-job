@@ -1,5 +1,6 @@
 export const INITIAL_USERS = {
   "elena_lawyer": {
+    catalogSlug: "lawyer",
     id: "usr_103",
     username: "elena_lawyer",
     fullName: "Elena Vance, Esq.",
@@ -23,6 +24,7 @@ export const INITIAL_USERS = {
     ]
   },
   "sarah_plumber": {
+    catalogSlug: "plumber",
     id: "usr_101",
     username: "sarah_plumber",
     fullName: "Sarah Jenkins",
@@ -45,6 +47,7 @@ export const INITIAL_USERS = {
     ]
   },
   "alex_driver": {
+    catalogSlug: "bus-driver",
     id: "usr_102",
     username: "alex_driver",
     fullName: "Alex Rivera",
@@ -66,6 +69,7 @@ export const INITIAL_USERS = {
     ]
   },
   "david_cpa": {
+    catalogSlug: "accountant",
     id: "usr_104",
     username: "david_cpa",
     fullName: "David Chen, CPA",

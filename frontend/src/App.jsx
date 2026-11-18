@@ -27,6 +27,7 @@ import BottomNav from './components/BottomNav';
 import ActivityPage from './components/ActivityPage';
 import SettingsPage from './components/SettingsPage';
 import ModerationPage from './components/ModerationPage';
+import { ProfessionPage, ProfessionsPage } from './components/ProfessionPages';
 import NotificationsPage from './components/NotificationsPage';
 import NotFoundPage from './components/NotFoundPage';
 import { ResetPasswordPage, VerifyEmailPage } from './components/EmailLinkPages';
@@ -906,6 +907,10 @@ export default function App() {
             onBlockChange={() => loadAll({ quiet: true })}
             onLanguageChange={handleLanguageChange}
           />
+        ) : route.page === 'professions' ? (
+          <ProfessionsPage />
+        ) : route.page === 'profession' ? (
+          <ProfessionPage slug={route.slug} />
         ) : activeTab === 'moderation' ? (
           currentUser.is_admin
             ? <ModerationPage onOpen={(path) => go(path)} onChanged={() => loadAll({ quiet: true })} />
@@ -929,6 +934,7 @@ export default function App() {
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}
               onSelectRole={(role) => setSearchTerm(role)}
+              onOpenProfession={(slug) => go(paths.profession(slug))}
             />
             </>
             )}

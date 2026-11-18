@@ -5,6 +5,7 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
+from app.core.professions import FIELD_OF
 from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
 from app.schemas.common import NonEmptyStr, OptionalHttpUrlStr, OptionalStr, PartialUpdate
 from app.schemas.profession import ProfessionResponse
@@ -43,6 +44,8 @@ class SignupProfession(BaseModel):
     specialization: Optional[str] = Field(default=None, max_length=128)
     years_of_experience: int = Field(default=0, ge=0, le=70)
     company_or_freelance: Optional[str] = Field(default=None, max_length=128)
+    # A profession from the built-in catalog (its slug, e.g. "plumber"); the title stays the person's own words.
+    catalog_slug: Optional[str] = Field(default=None, max_length=64)
 
     @field_validator("industry")
     @classmethod
@@ -50,6 +53,22 @@ class SignupProfession(BaseModel):
         if v not in INDUSTRY_OPTIONS:
             raise ValueError("Unknown industry")
         return v
+
+    @field_validator("catalog_slug")
+    @classmethod
+    def slug_must_be_in_catalog(cls, v):
+        if v in (None, ""):
+            return None
+        if v not in FIELD_OF:
+            raise ValueError("Unknown profession")
+        return v
+
+    @model_validator(mode="after")
+    def field_follows_catalog(self):
+        # A catalog profession belongs to one field, so picking it decides the field.
+        if self.catalog_slug:
+            self.industry = FIELD_OF[self.catalog_slug]
+        return self
 
     @field_validator("title", "specialization", "company_or_freelance")
     @classmethod

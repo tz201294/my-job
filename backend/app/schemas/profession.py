@@ -10,6 +10,7 @@ class ProfessionBase(BaseModel):
     is_verified_pro: bool = False
     company_or_freelance: Optional[str] = None
     key_tools: List[str] = []
+    catalog_slug: Optional[str] = None  # the built-in catalog profession, if picked
 
 
 class ProfessionResponse(ProfessionBase):

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  Home, Zap, MessageSquareText, Film, User, Bookmark, Activity, Bell, Settings, LogOut, X, ShieldCheck, ShieldAlert,
+  Home, Zap, MessageSquareText, Film, User, Bookmark, Activity, Bell, Settings, LogOut, X, ShieldCheck, ShieldAlert, Briefcase,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 
@@ -8,6 +8,7 @@ import { useI18n } from '../i18n';
 export const MAIN_ITEMS = [
   { key: 'feed', label: 'nav.home', icon: Home },
   { key: 'challenges', label: 'nav.liveWork', icon: Zap },
+  { key: 'professions', label: 'nav.professions', icon: Briefcase },
   { key: 'qa', label: 'nav.qa', icon: MessageSquareText },
   { key: 'reels', label: 'nav.reels', icon: Film, note: 'nav.sample' },
 ];

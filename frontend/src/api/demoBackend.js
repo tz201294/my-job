@@ -16,13 +16,14 @@ import {
 } from './mappers';
 
 import { DEMO_PASSWORD } from './demoConstants';
+import CATALOG from '../catalog/professions.json';
 import { MAX_TAGS, normalizeTag } from './tags';
 
 export { DEMO_PASSWORD };
 export const DEMO_TOKEN = 'demo_token';
 
 // Bump the version when the sample data changes so returning visitors get the new data.
-const STORE_KEY = 'myjob_demo_store_v6';
+const STORE_KEY = 'myjob_demo_store_v7'; // v7: profession catalog
 // undefined (a 204 No Content reply) becomes null, like an empty response body.
 const clone = (x) => (x === undefined ? null : JSON.parse(JSON.stringify(x)));
 
@@ -151,6 +152,7 @@ function uiUserToApi(u) {
           is_verified_pro: !!u.isVerified,
           company_or_freelance: null,
           key_tools: u.keyTools || [],
+          catalog_slug: u.catalogSlug || null,
         }
       : null,
     followers_count: u.followersCount ?? 0,
@@ -236,7 +238,8 @@ function register(body) {
     profession: p
       ? {
           title: p.title,
-          industry: p.industry,
+          industry: FIELD_OF[p.catalog_slug] || p.industry,
+          catalog_slug: FIELD_OF[p.catalog_slug] ? p.catalog_slug : null,
           specialization: p.specialization || null,
           years_of_experience: p.years_of_experience ?? null,
           is_verified_pro: false,
@@ -309,9 +312,27 @@ function setBlock(username, on) {
   return { username, is_blocked: on };
 }
 
+// The profession catalog: like the server, the demo knows which professions exist and who does them.
+const FIELD_OF = Object.fromEntries(CATALOG.map((p) => [p.slug, p.field]));
+const inProfession = (u, slug) => u?.profession?.catalog_slug === slug && !blockedNames().includes(u.username);
+
+function catalogWithCounts() {
+  const users = Object.values(load().users);
+  return CATALOG.map((p) => ({ ...p, people_count: users.filter((u) => inProfession(u, p.slug)).length }));
+}
+
+function peopleInProfession(slug) {
+  if (!FIELD_OF[slug]) fail(404, 'Profession not found');
+  return Object.values(load().users).filter((u) => inProfession(u, slug))
+    .sort((a, b) => (b.profession.is_verified_pro ? 1 : 0) - (a.profession.is_verified_pro ? 1 : 0))
+    .map(publicProfile);
+}
+
 function feed(params) {
   const s = load();
   let posts = s.posts.filter(postVisible);
+  const profession = params.get('profession');
+  if (profession) posts = posts.filter((p) => inProfession(s.users[p.authorUsername || p.author_username], profession));
   if (params.get('following') === 'true') {
     const self = me();
     posts = posts.filter((p) => p.authorUsername === self.username || s.following.includes(p.authorUsername));
@@ -825,9 +846,11 @@ function updateMe(body) {
     if (title.length < 2) fail(422, 'profession → title: String should have at least 2 characters');
     const old = u.profession;
     const changed = !old || old.industry !== p.industry || old.title !== title;
+    if (p.catalog_slug && !FIELD_OF[p.catalog_slug]) fail(422, 'profession → catalog_slug: Unknown profession');
     u.profession = {
       title,
-      industry: p.industry,
+      industry: FIELD_OF[p.catalog_slug] || p.industry,
+      catalog_slug: p.catalog_slug || null,
       specialization: p.specialization || null,
       years_of_experience: Number(p.years_of_experience) || 0,
       company_or_freelance: p.company_or_freelance || null,
@@ -1038,6 +1061,10 @@ function handle(endpoint, options) {
   }
   if (route === 'POST /auth/email/resend') fail(400, "The demo doesn't send emails.");
   if (route === 'GET /uploads/status') return { images: true, max_mb: 10 };
+  if (route === 'GET /professions') return catalogWithCounts();
+  if (parts[0] === 'professions' && parts[1] && parts[2] === 'people' && method === 'GET') {
+    return peopleInProfession(parts[1]);
+  }
   if (route === 'GET /auth/me/export') {
     const u = me();
     const mine = (x) => [x.authorUsername, x.author_username, x.username].includes(u.username);

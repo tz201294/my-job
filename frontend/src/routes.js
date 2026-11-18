@@ -7,6 +7,7 @@
 //   /u/<username>         a profile                /p/<postId>          a single post with its comments
 //   /reset-password#token=…  /verify-email#token=…   links from emails (work logged in or out)
 //   /privacy  /terms         the Privacy Policy and Terms of Service (work logged in or out)
+//   /professions             the profession catalog   /professions/<slug>  one profession
 
 import { tNow } from './i18n';
 
@@ -29,6 +30,8 @@ export const paths = {
   post: (id) => `/p/${enc(id)}`,
   resetPassword: '/reset-password',
   verifyEmail: '/verify-email',
+  professions: '/professions',
+  profession: (slug) => `/professions/${enc(slug)}`,
   privacy: '/privacy',
   terms: '/terms',
 };
@@ -48,6 +51,7 @@ export function pathForMenuKey(key, myUsername) {
     case 'notifications': return paths.notifications;
     case 'settings': return paths.settings;
     case 'moderation': return paths.moderation;
+    case 'professions': return paths.professions;
     case 'profile': return paths.profile(myUsername);
     default: return paths.home;
   }
@@ -83,6 +87,11 @@ export function parseRoute(pathname) {
   if (!b && a === 'reset-password') return { page: 'resetPassword' };
   if (!b && a === 'verify-email') return { page: 'verifyEmail' };
   if (!b && (a === 'privacy' || a === 'terms')) return { page: a };
+  if (a === 'professions') {
+    if (!b) return { page: 'professions' };
+    const slug = dec(b);
+    return slug ? { page: 'profession', slug } : { page: 'notFound' };
+  }
   if ((a === 'u' || a === 'p') && b) {
     const v = dec(b);
     if (!v) return { page: 'notFound' };
@@ -96,6 +105,7 @@ export function menuKeyForRoute(route, myUsername) {
   if (route.page === 'feed') return route.feedView === 'saved' ? 'saved' : 'feed';
   if (route.page === 'profile') return route.username === myUsername ? 'profile' : null;
   if (['challenges', 'qa', 'reels', 'activity', 'notifications', 'settings', 'moderation'].includes(route.page)) return route.page;
+  if (route.page === 'professions' || route.page === 'profession') return 'professions';
   return null;
 }
 
@@ -106,12 +116,12 @@ export function titleForRoute(route, extra) {
     challenges: 'nav.liveWork', qa: route.qaView === 'inbox' ? 'qa.inboxTitle' : 'nav.qa', reels: 'nav.reels',
     activity: 'nav.activity', notifications: 'nav.notifications', settings: 'nav.settings', notFound: 'notFound.title',
     resetPassword: 'reset.title', verifyEmail: 'verify.title', moderation: 'nav.moderation',
-    privacy: 'legal.privacy', terms: 'legal.terms',
+    privacy: 'legal.privacy', terms: 'legal.terms', professions: 'nav.professions', profession: 'nav.professions',
   };
   if (route.page === 'feed') {
     return route.feedView === 'all' ? `${base} — ${tNow('brand.tagline')}`
       : `${tNow(route.feedView === 'saved' ? 'feed.saved' : 'feed.following')} · ${base}`;
   }
-  if ((route.page === 'profile' || route.page === 'post') && extra) return `${extra} · ${base}`;
+  if ((route.page === 'profile' || route.page === 'post' || route.page === 'profession') && extra) return `${extra} · ${base}`;
   return names[route.page] ? `${tNow(names[route.page])} · ${base}` : base;
 }

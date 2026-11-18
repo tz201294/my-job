@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import { BrandMark, Wordmark } from './Brand';
 import LanguageSelect from './LanguageSelect';
+import ProfessionPicker from './ProfessionPicker';
 import { fieldName } from '../api/mappers';
 import { api, DEMO_URL, IS_DEMO, REAL_APP_URL, tokenStore } from '../api/client';
 import { SlowHint } from './SlowHint';
@@ -78,7 +79,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
   const [form, setForm] = useState({
     username: '', password: '', full_name: '', email: '',
     works: null, non_working_status: '',
-    industry: '', title: '', specialization: '', years_of_experience: '', company_or_freelance: '',
+    industry: '', title: '', catalog_slug: '', specialization: '', years_of_experience: '', company_or_freelance: '',
     interests: [],
     gender: '', age: '', country: '', education_level: '', data_consent: false, accept_terms: false,
   });
@@ -163,6 +164,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
         ? {
             industry: form.industry,
             title: form.title.trim(),
+            catalog_slug: form.catalog_slug || null,
             specialization: form.specialization.trim() || null,
             years_of_experience: Number(form.years_of_experience) || 0,
             company_or_freelance: form.company_or_freelance.trim() || null,
@@ -336,7 +338,11 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                         </select>
                       </Field>
                       <Field id="su-title" label={t('signup.profession')}>
-                        <input id="su-title" className={inputCls} placeholder={t('signup.professionPlaceholder')} value={form.title} onChange={(e) => set('title', e.target.value)} />
+                        <ProfessionPicker id="su-title" inputClassName={inputCls} placeholder={t('signup.professionPlaceholder')}
+                          title={form.title} slug={form.catalog_slug}
+                          onChange={({ title, slug, field }) => setForm((f) => ({
+                            ...f, title, catalog_slug: slug || '', ...(field ? { industry: field } : {}),
+                          }))} />
                       </Field>
                       <div className="grid grid-cols-2 gap-3">
                         <Field id="su-years" label={t('signup.years')}>

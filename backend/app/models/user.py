@@ -46,6 +46,8 @@ class ProfessionProfile(Base):
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     industry = Column(String(128), index=True, nullable=False)
     title = Column(String(128), index=True, nullable=False)
+    # The catalog profession this is (app/core/professions.py), if the person picked one; the title stays free text.
+    catalog_slug = Column(String(64), index=True, nullable=True)
     specialization = Column(String(128), nullable=True)
     years_of_experience = Column(Integer, default=0)
     is_verified_pro = Column(Boolean, default=False)

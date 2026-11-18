@@ -4,7 +4,9 @@ import {
   Ban,
 } from 'lucide-react';
 
+import { Link } from 'react-router-dom';
 import OwnerActions from './OwnerActions';
+import { paths } from '../routes';
 import { topicName } from '../api/mappers';
 import ReportButton from './ReportButton';
 import { useI18n } from '../i18n';
@@ -120,7 +122,11 @@ export default function UserProfile({
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm font-extrabold text-teal-700 flex items-center gap-1.5 mt-0.5">
-                  <span>{user.professionTitle}</span>
+                  {user.professionSlug ? (
+                    <Link to={paths.profession(user.professionSlug)} className="hover:underline">{user.professionTitle}</Link>
+                  ) : (
+                    <span>{user.professionTitle}</span>
+                  )}
                   <span className="text-slate-300">•</span>
                   <span className="text-slate-500 font-medium">{user.yearsExp} yrs experience</span>
                 </p>

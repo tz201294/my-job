@@ -146,6 +146,7 @@ async def register(
         user.profession = ProfessionProfile(
             industry=p.industry,
             title=p.title,
+            catalog_slug=p.catalog_slug,
             specialization=p.specialization,
             years_of_experience=p.years_of_experience,
             company_or_freelance=p.company_or_freelance,
@@ -243,7 +244,7 @@ async def update_me(
         ).scalar_one_or_none()
         if prof is None:
             db.add(ProfessionProfile(
-                user_id=user.id, industry=p.industry, title=p.title, specialization=p.specialization,
+                user_id=user.id, industry=p.industry, title=p.title, catalog_slug=p.catalog_slug, specialization=p.specialization,
                 years_of_experience=p.years_of_experience, company_or_freelance=p.company_or_freelance,
                 is_verified_pro=False, key_tools=[],
             ))
@@ -251,7 +252,7 @@ async def update_me(
             # The verified badge was granted for a specific profession; changing it removes the badge.
             if (prof.industry, prof.title) != (p.industry, p.title):
                 prof.is_verified_pro = False
-            prof.industry, prof.title = p.industry, p.title
+            prof.industry, prof.title, prof.catalog_slug = p.industry, p.title, p.catalog_slug
             prof.specialization, prof.years_of_experience = p.specialization, p.years_of_experience
             prof.company_or_freelance = p.company_or_freelance
 
