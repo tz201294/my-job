@@ -582,4 +582,7 @@ export default {
   "post.share": "投稿を共有",
   "pod.hide": "明日まで非表示",
   "discover.fields": "業界",
+  "rail.label": "おすすめ",
+  "rail.people": "おすすめのユーザー",
+  "rail.explore": "職業を探す",
 };

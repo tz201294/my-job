@@ -598,4 +598,7 @@ export default {
   "post.share": "Share post",
   "pod.hide": "Hide until tomorrow",
   "discover.fields": "Fields",
+  "rail.label": "Suggestions",
+  "rail.people": "People to follow",
+  "rail.explore": "Explore professions",
 };

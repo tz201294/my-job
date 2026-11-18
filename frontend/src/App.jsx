@@ -29,6 +29,7 @@ import SettingsPage from './components/SettingsPage';
 import ModerationPage from './components/ModerationPage';
 import { ProfessionPage, ProfessionsPage } from './components/ProfessionPages';
 import ProfessionOfTheDay from './components/ProfessionOfTheDay';
+import RightRail from './components/RightRail';
 import NotificationsPage from './components/NotificationsPage';
 import NotFoundPage from './components/NotFoundPage';
 import { ResetPasswordPage, VerifyEmailPage } from './components/EmailLinkPages';
@@ -283,6 +284,15 @@ export default function App() {
       apply(was, viewingUser.followersCount);
       showToast(t(was ? 'toast.unfollowFailed' : 'toast.followFailed', { error: err.message }));
     }
+  };
+
+  // Follow / unfollow from the "People to follow" list beside the feed.
+  const handleRailFollow = async (person) => {
+    const undo = person.isFollowing || person.followRequested;
+    const r = undo ? await api.unfollowUser(person.username) : await api.followUser(person.username);
+    setProfessionals((ps) => ps.map((p) => (p.username === person.username
+      ? { ...p, isFollowing: r.is_following, followRequested: !!r.follow_requested, followersCount: r.followers_count } : p)));
+    if (feedView === 'following') loadFeedView('following');
   };
 
   const handleLikeReel = (reelId) => {
@@ -743,6 +753,7 @@ export default function App() {
   const selectedCategoryName = categories.find((c) => c.slug === selectedCategory)?.name;
 
   const sourcePosts = feedView === 'all' ? posts : feedPosts;
+  const showRail = loadState === 'ready' && activeTab === 'feed';
 
   const filteredPosts = useMemo(() => {
     const q = searchTerm.toLowerCase();
@@ -815,9 +826,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Sidebar (wide screens) + page */}
-      <div className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-4 flex gap-8">
-      <main className="flex-1 min-w-0 max-w-2xl mx-auto py-4 sm:py-6 pb-24 lg:pb-8">
+      {/* Page, with a column of suggestions beside the home feed on wide screens */}
+      <div className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-4 flex justify-center gap-8">
+      <main className={`flex-1 min-w-0 max-w-2xl py-4 sm:py-6 pb-24 lg:pb-8 ${showRail ? '' : 'mx-auto'}`}>
         {loadState === 'loading' || loadState === 'idle' ? (
           <Loading />
         ) : loadState === 'error' ? (
@@ -1010,7 +1021,7 @@ export default function App() {
                     />
                     {/* Profession of the day: after the second post, so the feed opens on posts */}
                     {i === Math.min(1, filteredPosts.length - 1) && feedView === 'all' && !searchTerm && selectedCategory === 'all' && (
-                      <ProfessionOfTheDay />
+                      <div className="lg:hidden"><ProfessionOfTheDay /></div>
                     )}
                     </React.Fragment>
                   ))
@@ -1071,6 +1082,9 @@ export default function App() {
           </>
         )}
       </main>
+      {showRail && (
+        <RightRail people={professionals} meId={me.id} onToggleFollow={handleRailFollow} onOpenProfile={handleOpenUserProfile} />
+      )}
       </div>
 
       <BottomNav me={me} activeKey={activeKey} onNavigate={navigate} onOpenCreate={() => setIsCreateOpen(true)} />

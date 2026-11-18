@@ -597,4 +597,7 @@ export default {
   "post.share": "Partager la publication",
   "pod.hide": "Masquer jusqu'à demain",
   "discover.fields": "Secteurs",
+  "rail.label": "Suggestions",
+  "rail.people": "Personnes à suivre",
+  "rail.explore": "Explorer les métiers",
 };

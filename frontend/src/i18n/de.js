@@ -597,4 +597,7 @@ export default {
   "post.share": "Beitrag teilen",
   "pod.hide": "Bis morgen ausblenden",
   "discover.fields": "Branchen",
+  "rail.label": "Vorschläge",
+  "rail.people": "Personen zum Folgen",
+  "rail.explore": "Berufe entdecken",
 };
