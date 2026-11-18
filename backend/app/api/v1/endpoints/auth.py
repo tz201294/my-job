@@ -6,7 +6,7 @@ from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.rate_limits import allow_silently, limit, limit_ip
+from app.api.rate_limits import allow_silently, limit, limit_ip, wait_text
 from app.api.deps import get_current_user, get_optional_user
 from app.api.serializers import user_me_out, user_public_out
 from app.core.config import settings
@@ -17,6 +17,7 @@ from app.core.security import (
 )
 from app.core.time import utcnow
 from app.services.account import delete_account
+from app.core.i18n import pick_language, translate
 from app.core.legal import TERMS_VERSION
 from app.services.data_export import export_user_data
 from app.services.email import password_reset_email, send_email, verification_email
@@ -44,10 +45,9 @@ ip_limiter = FailureLimiter(settings.LOGIN_MAX_FAILURES_PER_IP, settings.LOGIN_F
 
 
 def _too_many_attempts(retry_after: int) -> HTTPException:
-    minutes = max(1, -(-retry_after // 60))
     return HTTPException(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        detail=f"Too many failed login attempts. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
+        detail=f"Too many failed login attempts. Try again in {wait_text(max(60, retry_after))}.",
         headers={"Retry-After": str(retry_after)},
     )
 
@@ -67,7 +67,7 @@ def _send_verification(background: BackgroundTasks, user: User) -> None:
         EMAIL_VERIFY, user.id, minutes=settings.EMAIL_VERIFY_LINK_DAYS * 24 * 60, email=user.email.lower()
     )
     background.add_task(
-        send_email, verification_email(user.email, user.full_name, _email_link("verify-email", token))
+        send_email, verification_email(user.email, user.full_name, _email_link("verify-email", token), user.language or "en")
     )
 
 
@@ -106,7 +106,9 @@ async def list_professionals(
     "/register", response_model=Token, status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(limit_ip("signup"))],
 )
-async def register(user_in: UserCreate, background: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def register(
+    user_in: UserCreate, request: Request, background: BackgroundTasks, db: AsyncSession = Depends(get_db),
+):
     """Creates an account, stores the onboarding survey, and signs the user in."""
     email = user_in.email.lower() if user_in.email else None
 
@@ -126,6 +128,8 @@ async def register(user_in: UserCreate, background: BackgroundTasks, db: AsyncSe
         full_name=user_in.full_name or user_in.username,
         terms_accepted_at=utcnow(),
         terms_version=TERMS_VERSION,
+        # The language the app was in at sign-up; changeable in Settings. Emails use it.
+        language=pick_language(request.headers.get("accept-language")),
     )
     user.survey = UserSurvey(
         works=user_in.works,
@@ -209,7 +213,7 @@ async def update_me(
     user = current_user
     user_id = user.id  # read now: attributes are expired (and can't lazy-load) after expire_all below
 
-    for field in ("full_name", "bio", "avatar_url"):
+    for field in ("full_name", "bio", "avatar_url", "language"):
         if field in changes:
             setattr(user, field, changes[field])
 
@@ -303,7 +307,9 @@ INVALID_VERIFY_LINK = "This confirmation link is invalid or has expired. Send a 
 
 
 @router.post("/password/forgot", status_code=status.HTTP_202_ACCEPTED, dependencies=[Depends(limit_ip("forgot"))])
-async def forgot_password(body: ForgotPassword, background: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def forgot_password(
+    body: ForgotPassword, request: Request, background: BackgroundTasks, db: AsyncSession = Depends(get_db),
+):
     """Emails a password-reset link to the account's confirmed address. The reply is the same whether or not the
     account exists, so it can't be used to find out who has an account."""
     ident = body.username_or_email.strip().lower()
@@ -319,9 +325,10 @@ async def forgot_password(body: ForgotPassword, background: BackgroundTasks, db:
             pw=password_fingerprint(user.hashed_password),
         )
         background.add_task(send_email, password_reset_email(
-            user.email, user.full_name, user.username, _email_link("reset-password", token)
+            user.email, user.full_name, user.username, _email_link("reset-password", token),
+            user.language or pick_language(request.headers.get("accept-language")),
         ))
-    return {"detail": FORGOT_PASSWORD_REPLY}
+    return {"detail": translate(FORGOT_PASSWORD_REPLY, pick_language(request.headers.get("accept-language")))}
 
 
 @router.post("/password/reset", response_model=Token)
@@ -362,14 +369,17 @@ async def verify_email(body: EmailVerify, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/email/resend", status_code=status.HTTP_202_ACCEPTED, dependencies=[Depends(limit("email"))])
-async def resend_verification(background: BackgroundTasks, current_user: User = Depends(get_current_user)):
+async def resend_verification(
+    request: Request, background: BackgroundTasks, current_user: User = Depends(get_current_user),
+):
     """Sends a new confirmation link to your email address."""
     if not current_user.email:
         raise HTTPException(status_code=400, detail="Add an email address in Settings first.")
     if current_user.email_verified_at:
         raise HTTPException(status_code=400, detail="Your email address is already confirmed.")
     _send_verification(background, current_user)
-    return {"detail": f"We've sent a new confirmation link to {current_user.email}."}
+    return {"detail": translate(f"We've sent a new confirmation link to {current_user.email}.",
+                                pick_language(request.headers.get("accept-language")))}
 
 
 @router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT)

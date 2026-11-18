@@ -15,6 +15,7 @@ from typing import List
 import httpx
 
 from app.core.config import settings
+from app.core.i18n import email_text
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +67,10 @@ async def send_email(message: Email) -> bool:
 
 # ---------- the emails ----------
 
-def _wrap(title: str, intro: str, button: str, link: str, outro: str) -> str:
+def _wrap(title: str, intro: str, button: str, link: str, outro: str, tagline: str, lang: str = "en") -> str:
     e = html.escape
     return f"""<!doctype html>
-<html><body style="margin:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+<html lang="{e(lang)}"><body style="margin:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
   <div style="max-width:480px;margin:0 auto;padding:32px 16px">
     <div style="background:#ffffff;border-radius:16px;padding:28px;border:1px solid #e2e8f0">
       <p style="margin:0 0 20px;font-size:22px;color:#0f766e"><b>Pro</b>logue</p>
@@ -80,27 +81,24 @@ def _wrap(title: str, intro: str, button: str, link: str, outro: str) -> str:
       <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#64748b">{e(outro)}</p>
       <p style="margin:12px 0 0;font-size:11px;color:#94a3b8;word-break:break-all">{e(link)}</p>
     </div>
-    <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:16px">Prologue — A story behind every profession</p>
+    <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:16px">{e(tagline)}</p>
   </div>
 </body></html>"""
 
 
-def verification_email(to: str, name: str, link: str) -> Email:
-    days = settings.EMAIL_VERIFY_LINK_DAYS
-    intro = (f"Hi {name}, please confirm that this is your email address. You'll then be able to reset your "
-             "password with it if you ever forget it.")
-    outro = (f"The link works for {days} days. If you didn't create a Prologue account or change your email, "
-             "you can ignore this message.")
-    text = f"{intro}\n\nConfirm your email: {link}\n\n{outro}\n"
-    return Email(to, "Confirm your email for Prologue", text,
-                 _wrap("Confirm your email", intro, "Confirm my email", link, outro))
+def verification_email(to: str, name: str, link: str, lang: str = "en") -> Email:
+    t = lambda key, **v: email_text(lang, key, **v)  # noqa: E731
+    intro = t("verify.intro", name=name)
+    outro = t("verify.outro", days=settings.EMAIL_VERIFY_LINK_DAYS)
+    text = f"{intro}\n\n{t('verify.button')}: {link}\n\n{outro}\n"
+    return Email(to, t("verify.subject"), text,
+                 _wrap(t("verify.title"), intro, t("verify.button"), link, outro, t("tagline"), lang))
 
 
-def password_reset_email(to: str, name: str, username: str, link: str) -> Email:
-    minutes = settings.PASSWORD_RESET_LINK_MINUTES
-    intro = f"Hi {name}, someone (hopefully you) asked to reset the password of the Prologue account @{username}."
-    outro = (f"The link works for {minutes} minutes and only once. If you didn't ask for this, ignore this message: "
-             "your password stays as it is.")
-    text = f"{intro}\n\nChoose a new password: {link}\n\n{outro}\n"
-    return Email(to, "Reset your Prologue password", text,
-                 _wrap("Reset your password", intro, "Choose a new password", link, outro))
+def password_reset_email(to: str, name: str, username: str, link: str, lang: str = "en") -> Email:
+    t = lambda key, **v: email_text(lang, key, **v)  # noqa: E731
+    intro = t("reset.intro", name=name, username=username)
+    outro = t("reset.outro", minutes=settings.PASSWORD_RESET_LINK_MINUTES)
+    text = f"{intro}\n\n{t('reset.button')}: {link}\n\n{outro}\n"
+    return Email(to, t("reset.subject"), text,
+                 _wrap(t("reset.title"), intro, t("reset.button"), link, outro, t("tagline"), lang))

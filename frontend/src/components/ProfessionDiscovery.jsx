@@ -1,9 +1,11 @@
+import { fieldName } from '../api/mappers';
 import React from 'react';
 import {
   Briefcase, Scale, Wrench, Truck, Code, HeartPulse,
   GraduationCap, ChefHat, Palette, FlaskConical, Shield,
   Compass
 } from 'lucide-react';
+import { useI18n } from '../i18n';
 
 const iconMap = {
   briefcase: Briefcase,
@@ -39,15 +41,16 @@ export default function ProfessionDiscovery({
   onSelectCategory,
   onSelectRole 
 }) {
+  const { t } = useI18n();
   return (
     <div className="bg-white/95 border border-teal-100 rounded-3xl p-4 sm:p-5 shadow-sm mb-5 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-3.5 px-1">
         <div>
           <h3 className="font-black text-sm sm:text-base text-slate-900 flex items-center gap-2">
             <Compass className="w-4 h-4 text-teal-600" />
-            <span>Explore Professions & Real Crafts</span>
+            <span>{t('discover.title')}</span>
           </h3>
-          <p className="text-xs text-slate-500 font-medium">Browse verified workers and workflows by industry</p>
+          <p className="text-xs text-slate-500 font-medium">{t('discover.subtitle')}</p>
         </div>
       </div>
 
@@ -69,7 +72,7 @@ export default function ProfessionDiscovery({
               }`}
             >
               <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-teal-600'}`} />
-              <span>{cat.name}</span>
+              <span>{cat.slug === 'all' ? t('discover.allProfessions') : fieldName(cat.name)}</span>
               {cat.activePros && (
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                   isSelected ? 'bg-white/25 text-white' : 'bg-teal-100 text-teal-800'
@@ -86,7 +89,7 @@ export default function ProfessionDiscovery({
       {selectedCategory !== 'all' && (
         <div className="mt-3.5 pt-3 border-t border-teal-100/70 flex items-center gap-2 flex-wrap animate-fade-in">
           <span className="text-[11px] font-black text-teal-400 uppercase tracking-wider">
-            Popular in {categories.find((c) => c.slug === selectedCategory)?.name}:
+            {t('discover.popularIn', { field: fieldName(categories.find((c) => c.slug === selectedCategory)?.name) })}
           </span>
           {categories
             .find((c) => c.slug === selectedCategory)

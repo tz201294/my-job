@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { toPost, toQuestion } from '../api/mappers';
+import { useI18n } from '../i18n';
 
 function Section({ icon: Icon, title, count, children, empty }) {
   return (
@@ -36,6 +37,7 @@ function Row({ onClick, title, meta, badge }) {
 
 // Everything the signed-in user has published or is involved in, in one place.
 export default function ActivityPage({ me, qaItems, challenges, onOpenPost, onGoToQA, onGoToChallenge }) {
+  const { t } = useI18n();
   const [posts, setPosts] = useState(null);
   const [inbox, setInbox] = useState(null);
   const [error, setError] = useState('');
@@ -65,7 +67,7 @@ export default function ActivityPage({ me, qaItems, challenges, onOpenPost, onGo
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-1">
         <span className="p-1.5 rounded-xl bg-teal-100 text-teal-700"><Activity className="w-5 h-5" /></span>
-        <h2 className="font-black text-xl text-slate-900">My activity</h2>
+        <h2 className="font-black text-xl text-slate-900">{t('nav.activity')}</h2>
       </div>
       {error && <p role="alert" className="text-xs font-bold text-rose-600">Couldn't load everything: {error}</p>}
 
@@ -81,9 +83,9 @@ export default function ActivityPage({ me, qaItems, challenges, onOpenPost, onGo
       )}
 
       {posts === null && !error ? (
-        <p className="flex items-center gap-1.5 text-xs text-slate-500"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading your posts…</p>
+        <p className="flex items-center gap-1.5 text-xs text-slate-500"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('activity.loadingPosts')}</p>
       ) : (
-        <Section icon={FileText} title="My posts" count={posts?.length ?? 0} empty="You haven't published anything yet.">
+        <Section icon={FileText} title={t('activity.myPosts')} count={posts?.length ?? 0} empty={t('activity.noPosts')}>
           {(posts || []).map((p) => (
             <Row
               key={p.id}
@@ -101,48 +103,48 @@ export default function ActivityPage({ me, qaItems, challenges, onOpenPost, onGo
         </Section>
       )}
 
-      <Section icon={HelpCircle} title="Questions I asked" count={myQuestions.length}
-        empty="You haven't asked anyone a question yet.">
+      <Section icon={HelpCircle} title={t('activity.questionsAsked')} count={myQuestions.length}
+        empty={t('activity.noQuestions')}>
         {myQuestions.map((q) => (
           <Row
             key={q.id}
             onClick={() => onGoToQA('all')}
             title={q.questionText}
-            meta={`To ${q.workerFullName} · ${q.timeAgo}`}
+            meta={`${t('activity.to', { name: q.workerFullName })} · ${q.timeAgo}`}
             badge={q.answerText
-              ? <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Answered</span>
-              : <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Waiting</span>}
+              ? <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">{t('activity.answered')}</span>
+              : <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">{t('activity.waiting')}</span>}
           />
         ))}
       </Section>
 
-      <Section icon={Zap} title="My live work challenges" count={myChallenges.length}
-        empty="You haven't posted a live work challenge yet.">
+      <Section icon={Zap} title={t('activity.myChallenges')} count={myChallenges.length}
+        empty={t('activity.noChallenges')}>
         {myChallenges.map((c) => (
           <Row
             key={c.id}
             onClick={() => onGoToChallenge(c.id)}
             title={c.title}
-            meta={`${c.suggestions?.length || 0} ideas · ${c.timeAgo}`}
+            meta={`${t('activity.ideas', { count: c.suggestions?.length || 0 })} · ${c.timeAgo}`}
             badge={c.isSolved && (
               <span className="inline-flex items-center gap-0.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                <CheckCircle2 className="w-3 h-3" /> Solved
+                <CheckCircle2 className="w-3 h-3" /> {t('activity.solved')}
               </span>
             )}
           />
         ))}
       </Section>
 
-      <Section icon={Lightbulb} title="Ideas I suggested" count={myIdeas.length}
-        empty="You haven't suggested an idea on a live work challenge yet.">
+      <Section icon={Lightbulb} title={t('activity.myIdeas')} count={myIdeas.length}
+        empty={t('activity.noIdeas')}>
         {myIdeas.map((s) => (
           <Row
             key={s.id}
             onClick={() => onGoToChallenge(s.challenge.id)}
             title={s.suggestionText}
-            meta={`On "${s.challenge.title}" · ${s.upvotes} upvotes`}
+            meta={`${t('activity.on', { title: s.challenge.title })} · ${t('activity.upvotes', { count: s.upvotes })}`}
             badge={s.isAccepted && (
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Accepted</span>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">{t('activity.accepted')}</span>
             )}
           />
         ))}

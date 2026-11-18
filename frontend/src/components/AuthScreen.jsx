@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, ArrowLeft, Check } from 'lucide-react';
-import { BrandMark, TAGLINE, Wordmark } from './Brand';
+import { BrandMark, Wordmark } from './Brand';
+import LanguageSelect from './LanguageSelect';
+import { fieldName } from '../api/mappers';
 import { api, DEMO_URL, IS_DEMO, REAL_APP_URL, tokenStore } from '../api/client';
 import { SlowHint } from './SlowHint';
 import { DEMO_PASSWORD } from '../api/demoConstants';
+import { useI18n } from '../i18n';
 
 // Used only if /auth/signup-options cannot be loaded; the server re-validates everything.
 const FALLBACK_OPTIONS = {
@@ -22,7 +25,6 @@ const FALLBACK_OPTIONS = {
   education_levels: ['high_school', 'vocational', 'bachelors', 'masters', 'doctorate', 'other'],
 };
 
-const label = (v) => v.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
 const inputCls =
   'w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all';
@@ -59,10 +61,11 @@ function Choice({ checked, onChange, children, type = 'radio', name }) {
   );
 }
 
-const STEPS = ['Account', 'About your work', 'About you'];
+const STEPS = ['signup.stepAccount', 'signup.stepWork', 'signup.stepYou'];
 
 // `notice` is a message from the previous session (e.g. "Your account was deleted.").
 export default function AuthScreen({ onAuthenticated, notice = '' }) {
+  const { t } = useI18n();
   const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot'
   const [info, setInfo] = useState(''); // e.g. "we've sent a link"
   const [forgotId, setForgotId] = useState('');
@@ -119,20 +122,20 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
   // Client-side checks per step (the server validates again).
   const stepError = () => {
     if (step === 0) {
-      if (!/^[A-Za-z0-9_]{3,30}$/.test(form.username.trim())) return 'Username must be 3-30 characters: letters, numbers and underscores.';
-      if (form.password.length < 8) return 'Password must be at least 8 characters.';
+      if (!/^[A-Za-z0-9_]{3,30}$/.test(form.username.trim())) return t('signup.errUsername');
+      if (form.password.length < 8) return t('signup.errPassword');
     }
     if (step === 1) {
-      if (form.works === null) return 'Please tell us whether you currently work.';
-      if (form.works && (!form.industry || form.title.trim().length < 2)) return 'Please choose your field and enter your profession.';
-      if (!form.works && !form.non_working_status) return 'Please tell us what describes you best.';
-      if (form.interests.length === 0) return 'Pick at least one field you are interested in.';
+      if (form.works === null) return t('signup.errWorks');
+      if (form.works && (!form.industry || form.title.trim().length < 2)) return t('signup.errProfession');
+      if (!form.works && !form.non_working_status) return t('signup.errStatus');
+      if (form.interests.length === 0) return t('signup.errInterests');
     }
     if (step === 2) {
       const age = Number(form.age);
-      if (!form.gender) return 'Please choose a gender option.';
-      if (!Number.isInteger(age) || age < 13 || age > 120) return 'Please enter an age between 13 and 120.';
-      if (!form.accept_terms) return 'Please accept the Terms of Service and Privacy Policy to create your account.';
+      if (!form.gender) return t('signup.errGender');
+      if (!Number.isInteger(age) || age < 13 || age > 120) return t('signup.errAge');
+      if (!form.accept_terms) return t('signup.errTerms');
     }
     return '';
   };
@@ -194,7 +197,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
         <div className="flex flex-col items-center gap-3 mb-6">
           <BrandMark size={64} title="Prologue" className="drop-shadow-[0_10px_24px_rgba(11,95,90,0.35)]" />
           <h1><Wordmark className="text-[2.6rem]" /></h1>
-          <p className="text-sm text-slate-500 font-medium tracking-wide">{TAGLINE}</p>
+          <p className="text-sm text-slate-500 font-medium tracking-wide">{t('brand.tagline')}</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
@@ -208,7 +211,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                 onClick={() => switchMode(m)}
                 className={`flex-1 py-2 rounded-lg transition-all ${mode === m ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}
               >
-                {m === 'login' ? 'Log in' : 'Sign up'}
+                {m === 'login' ? t('auth.login') : t('auth.signup')}
               </button>
             ))}
           </div>
@@ -229,18 +232,17 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
           {mode === 'forgot' ? (
             <form onSubmit={submitForgot} className="space-y-4">
               <p className="text-xs text-slate-600 leading-relaxed">
-                Enter your username or email. If your account has a confirmed email address, we'll send it a link to
-                choose a new password.
+                {t('auth.forgotIntro')}
               </p>
-              <Field id="forgot-id" label="Username or email">
+              <Field id="forgot-id" label={t('auth.usernameOrEmail')}>
                 <input id="forgot-id" className={inputCls} autoComplete="username" required value={forgotId}
                   onChange={(e) => setForgotId(e.target.value)} />
               </Field>
-              <SubmitButton busy={busy}>Send reset link</SubmitButton>
+              <SubmitButton busy={busy}>{t('auth.sendResetLink')}</SubmitButton>
               <SlowHint active={busy} className="text-center" />
               <p className="text-center text-xs text-slate-500">
                 <button type="button" onClick={() => switchMode('login')} className="font-bold text-teal-600 hover:underline">
-                  Back to log in
+                  {t('auth.backToLogin')}
                 </button>
               </p>
             </form>
@@ -248,69 +250,68 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
             <form onSubmit={submitLogin} className="space-y-4">
               {IS_DEMO && (
                 <p className="p-3 bg-teal-50 border border-teal-200 text-teal-800 rounded-xl text-xs">
-                  <strong>Demo mode:</strong> sample data, saved only in this browser. Log in as{' '}
-                  <code>sarah_plumber</code>, <code>alex_driver</code> or <code>elena_lawyer</code> with password{' '}
-                  <code>{DEMO_PASSWORD}</code>, or create an account.
+                  <strong>{t('demo.title')}</strong> {t('demo.loginIntro')}{' '}
+                  <code>sarah_plumber</code>, <code>alex_driver</code>, <code>elena_lawyer</code> · {t('demo.password')}{' '}
+                  <code>{DEMO_PASSWORD}</code>
                   {REAL_APP_URL && (
                     <>
-                      {' '}<a href={REAL_APP_URL} className="font-bold underline hover:text-teal-950">Join the real Prologue →</a>
+                      {' '}<a href={REAL_APP_URL} className="font-bold underline hover:text-teal-950">{t('demo.joinReal')}</a>
                     </>
                   )}
                 </p>
               )}
-              <Field id="login-id" label="Username or email">
+              <Field id="login-id" label={t('auth.usernameOrEmail')}>
                 <input id="login-id" className={inputCls} autoComplete="username" required value={login.username_or_email}
                   onChange={(e) => setLogin({ ...login, username_or_email: e.target.value })} />
               </Field>
-              <Field id="login-pw" label="Password">
+              <Field id="login-pw" label={t('auth.password')}>
                 <input id="login-pw" type="password" className={inputCls} autoComplete="current-password" required value={login.password}
                   onChange={(e) => setLogin({ ...login, password: e.target.value })} />
               </Field>
               <div className="-mt-2 text-right">
                 <button type="button" onClick={() => { switchMode('forgot'); setForgotId(login.username_or_email); }}
                   className="text-xs font-bold text-teal-600 hover:underline">
-                  Forgot password?
+                  {t('auth.forgotPassword')}
                 </button>
               </div>
-              <SubmitButton busy={busy}>Log in</SubmitButton>
+              <SubmitButton busy={busy}>{t('auth.login')}</SubmitButton>
               <SlowHint active={busy} className="text-center" />
               <p className="text-center text-xs text-slate-500">
-                New here?{' '}
+                {t('auth.newHere')}{' '}
                 <button type="button" onClick={() => switchMode('signup')} className="font-bold text-teal-600 hover:underline">
-                  Create an account
+                  {t('auth.createAccount')}
                 </button>
               </p>
               {DEMO_URL && (
                 <p className="text-center text-xs text-slate-500">
-                  Want to look around first?{' '}
-                  <a href={DEMO_URL} className="font-bold text-teal-600 hover:underline">Try the demo →</a>
+                  {t('auth.lookAround')}{' '}
+                  <a href={DEMO_URL} className="font-bold text-teal-600 hover:underline">{t('auth.tryDemo')}</a>
                 </p>
               )}
             </form>
           ) : (
             <form onSubmit={lastStep ? submitSignup : next} className="space-y-4" noValidate>
-              <ol className="flex items-center gap-2 mb-1" aria-label="Sign-up progress">
+              <ol className="flex items-center gap-2 mb-1" aria-label={t('signup.progress')}>
                 {STEPS.map((s, i) => (
                   <li key={s} className="flex-1" aria-current={i === step ? 'step' : undefined}>
                     <div className={`h-1.5 rounded-full ${i <= step ? 'bg-gradient-to-r from-teal-600 to-cyan-500' : 'bg-slate-200'}`} />
-                    <span className={`block mt-1 text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-teal-700' : 'text-slate-400'}`}>{s}</span>
+                    <span className={`block mt-1 text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-teal-700' : 'text-slate-400'}`}>{t(s)}</span>
                   </li>
                 ))}
               </ol>
 
               {step === 0 && (
                 <>
-                  <Field id="su-username" label="Username" hint="3-30 characters: letters, numbers, underscores.">
+                  <Field id="su-username" label={t('signup.username')} hint={t('signup.usernameHint')}>
                     <input id="su-username" className={inputCls} autoComplete="username" value={form.username} onChange={(e) => set('username', e.target.value)} />
                   </Field>
-                  <Field id="su-password" label="Password" hint="At least 8 characters.">
+                  <Field id="su-password" label={t('auth.password')} hint={t('signup.passwordHint')}>
                     <input id="su-password" type="password" className={inputCls} autoComplete="new-password" value={form.password} onChange={(e) => set('password', e.target.value)} />
                   </Field>
-                  <Field id="su-name" label="Display name (optional)">
+                  <Field id="su-name" label={t('signup.displayName')}>
                     <input id="su-name" className={inputCls} autoComplete="name" value={form.full_name} onChange={(e) => set('full_name', e.target.value)} />
                   </Field>
-                  <Field id="su-email" label="Email (optional, recommended)"
-                    hint="Needed to reset your password if you forget it. We'll send a link to confirm it. Never shown to others.">
+                  <Field id="su-email" label={t('signup.email')} hint={t('signup.emailHint')}>
                     <input id="su-email" type="email" className={inputCls} autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
                   </Field>
                 </>
@@ -319,33 +320,33 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
               {step === 1 && (
                 <>
                   <fieldset>
-                    <legend className={labelCls}>Do you currently work?</legend>
+                    <legend className={labelCls}>{t('signup.doYouWork')}</legend>
                     <div className="grid grid-cols-2 gap-2">
-                      <Choice name="works" checked={form.works === true} onChange={() => set('works', true)}>Yes, I work</Choice>
-                      <Choice name="works" checked={form.works === false} onChange={() => set('works', false)}>No, not currently</Choice>
+                      <Choice name="works" checked={form.works === true} onChange={() => set('works', true)}>{t('signup.yesWork')}</Choice>
+                      <Choice name="works" checked={form.works === false} onChange={() => set('works', false)}>{t('signup.noWork')}</Choice>
                     </div>
                   </fieldset>
 
                   {form.works === true && (
                     <>
-                      <Field id="su-industry" label="Which field do you work in?">
+                      <Field id="su-industry" label={t('signup.whichField')}>
                         <select id="su-industry" className={inputCls} value={form.industry} onChange={(e) => set('industry', e.target.value)}>
-                          <option value="">Select a field…</option>
-                          {options.industries.map((i) => <option key={i}>{i}</option>)}
+                          <option value="">{t('signup.selectField')}</option>
+                          {options.industries.map((i) => <option key={i} value={i}>{fieldName(i)}</option>)}
                         </select>
                       </Field>
-                      <Field id="su-title" label="Your profession">
-                        <input id="su-title" className={inputCls} placeholder="e.g. Master Plumber, Accountant, Bus Driver" value={form.title} onChange={(e) => set('title', e.target.value)} />
+                      <Field id="su-title" label={t('signup.profession')}>
+                        <input id="su-title" className={inputCls} placeholder={t('signup.professionPlaceholder')} value={form.title} onChange={(e) => set('title', e.target.value)} />
                       </Field>
                       <div className="grid grid-cols-2 gap-3">
-                        <Field id="su-years" label="Years of experience">
+                        <Field id="su-years" label={t('signup.years')}>
                           <input id="su-years" type="number" min="0" max="70" className={inputCls} value={form.years_of_experience} onChange={(e) => set('years_of_experience', e.target.value)} />
                         </Field>
-                        <Field id="su-spec" label="Specialization (optional)">
+                        <Field id="su-spec" label={t('signup.specialization')}>
                           <input id="su-spec" className={inputCls} value={form.specialization} onChange={(e) => set('specialization', e.target.value)} />
                         </Field>
                       </div>
-                      <Field id="su-company" label="Company or freelance (optional)">
+                      <Field id="su-company" label={t('signup.company')}>
                         <input id="su-company" className={inputCls} value={form.company_or_freelance} onChange={(e) => set('company_or_freelance', e.target.value)} />
                       </Field>
                     </>
@@ -353,20 +354,20 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
 
                   {form.works === false && (
                     <fieldset>
-                      <legend className={labelCls}>What describes you best?</legend>
+                      <legend className={labelCls}>{t('signup.describesYou')}</legend>
                       <div className="grid grid-cols-2 gap-2">
                         {options.non_working_statuses.map((s) => (
-                          <Choice key={s} name="nws" checked={form.non_working_status === s} onChange={() => set('non_working_status', s)}>{label(s)}</Choice>
+                          <Choice key={s} name="nws" checked={form.non_working_status === s} onChange={() => set('non_working_status', s)}>{t(`option.${s}`)}</Choice>
                         ))}
                       </div>
                     </fieldset>
                   )}
 
                   <fieldset>
-                    <legend className={labelCls}>Which fields interest you? <span className="font-medium text-slate-500">(pick one or more)</span></legend>
+                    <legend className={labelCls}>{t('signup.interests')} <span className="font-medium text-slate-500">{t('signup.pickOneOrMore')}</span></legend>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {options.interests.map((i) => (
-                        <Choice key={i} type="checkbox" name="interests" checked={form.interests.includes(i)} onChange={() => toggleInterest(i)}>{i}</Choice>
+                        <Choice key={i} type="checkbox" name="interests" checked={form.interests.includes(i)} onChange={() => toggleInterest(i)}>{fieldName(i)}</Choice>
                       ))}
                     </div>
                   </fieldset>
@@ -376,43 +377,42 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
               {step === 2 && (
                 <>
                   <fieldset>
-                    <legend className={labelCls}>Gender</legend>
+                    <legend className={labelCls}>{t('signup.gender')}</legend>
                     <div className="grid grid-cols-2 gap-2">
                       {options.genders.map((g) => (
-                        <Choice key={g} name="gender" checked={form.gender === g} onChange={() => set('gender', g)}>{label(g)}</Choice>
+                        <Choice key={g} name="gender" checked={form.gender === g} onChange={() => set('gender', g)}>{t(`option.${g}`)}</Choice>
                       ))}
                     </div>
                   </fieldset>
                   <div className="grid grid-cols-2 gap-3">
-                    <Field id="su-age" label="Age">
+                    <Field id="su-age" label={t('signup.age')}>
                       <input id="su-age" type="number" min="13" max="120" className={inputCls} value={form.age} onChange={(e) => set('age', e.target.value)} />
                     </Field>
-                    <Field id="su-country" label="Country (optional)">
+                    <Field id="su-country" label={t('signup.country')}>
                       <input id="su-country" className={inputCls} autoComplete="country-name" value={form.country} onChange={(e) => set('country', e.target.value)} />
                     </Field>
                   </div>
-                  <Field id="su-edu" label="Education (optional)">
+                  <Field id="su-edu" label={t('signup.education')}>
                     <select id="su-edu" className={inputCls} value={form.education_level} onChange={(e) => set('education_level', e.target.value)}>
-                      <option value="">Prefer not to say</option>
-                      {options.education_levels.map((e) => <option key={e} value={e}>{label(e)}</option>)}
+                      <option value="">{t('option.prefer_not_to_say')}</option>
+                      {options.education_levels.map((e) => <option key={e} value={e}>{t(`option.${e}`)}</option>)}
                     </select>
                   </Field>
                   <label className="flex items-start gap-2.5 text-xs text-slate-600 leading-relaxed cursor-pointer">
                     <input type="checkbox" className="mt-0.5 w-4 h-4 accent-teal-600" checked={form.data_consent} onChange={(e) => set('data_consent', e.target.checked)} />
                     <span>
-                      I agree that my answers above may be used in anonymised form for analysis and research.
-                      Your name, email and password are never included.
+                      {t('signup.researchConsent')}
                     </span>
                   </label>
                   <label className="flex items-start gap-2.5 text-xs text-slate-700 leading-relaxed cursor-pointer">
                     <input type="checkbox" className="mt-0.5 w-4 h-4 accent-teal-600" checked={form.accept_terms}
                       onChange={(e) => set('accept_terms', e.target.checked)} />
                     <span>
-                      I agree to the{' '}
-                      <a href={`${import.meta.env.BASE_URL}terms`} target="_blank" rel="noreferrer" className="font-bold text-teal-700 underline">Terms of Service</a>
-                      {' '}and have read the{' '}
-                      <a href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noreferrer" className="font-bold text-teal-700 underline">Privacy Policy</a>.
-                      {' '}<span className="text-slate-500">(Required)</span>
+                      {t('signup.agreeBefore')}{' '}
+                      <a href={`${import.meta.env.BASE_URL}terms`} target="_blank" rel="noreferrer" className="font-bold text-teal-700 underline">{t('legal.terms')}</a>
+                      {' '}{t('signup.agreeMiddle')}{' '}
+                      <a href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noreferrer" className="font-bold text-teal-700 underline">{t('legal.privacy')}</a>{t('signup.agreeAfter')}
+                      {' '}<span className="text-slate-500">{t('signup.required')}</span>
                     </span>
                   </label>
                 </>
@@ -422,19 +422,21 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                 {step > 0 && (
                   <button type="button" onClick={() => { setError(''); setStep(step - 1); }}
                     className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
-                    <ArrowLeft className="w-4 h-4" /> Back
+                    <ArrowLeft className="w-4 h-4" /> {t('common.back')}
                   </button>
                 )}
-                <SubmitButton busy={busy}>{lastStep ? 'Create account' : 'Continue'}</SubmitButton>
+                <SubmitButton busy={busy}>{lastStep ? t('signup.createAccount') : t('common.continue')}</SubmitButton>
               </div>
               <SlowHint active={busy} className="text-center" />
             </form>
           )}
         </div>
         <p className="text-center text-xs text-slate-500 mt-4">
-          <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:underline">Privacy</a>
+          <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:underline">{t('legal.privacyShort')}</a>
           {' · '}
-          <a href={`${import.meta.env.BASE_URL}terms`} className="hover:underline">Terms</a>
+          <a href={`${import.meta.env.BASE_URL}terms`} className="hover:underline">{t('legal.termsShort')}</a>
+          {' · '}
+          <LanguageSelect compact />
         </p>
       </div>
     </div>

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Settings, User, Lock, Shield, Info, LogOut, RotateCcw, Pencil, AlertTriangle, Check, Loader2, Ban, Download,
+  Settings, User, Lock, Shield, Info, LogOut, RotateCcw, Pencil, AlertTriangle, Check, Loader2, Ban, Download, Globe,
 } from 'lucide-react';
 import { api } from '../api/client';
-import { DEFAULT_AVATAR } from '../api/mappers';
+import { DEFAULT_AVATAR, fieldName } from '../api/mappers';
+import LanguageSelect from './LanguageSelect';
 import ImageField from './ImageField';
+import { useI18n } from '../i18n';
 
 const inputCls =
   'w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20';
@@ -27,6 +29,7 @@ function Card({ icon: Icon, title, action, children, tone = 'default' }) {
 
 // The email row: the address, whether it's confirmed, and a way to get a new confirmation link.
 function EmailField({ account }) {
+  const { t } = useI18n();
   const [state, setState] = useState({ busy: false, message: '', error: false });
 
   const resend = async () => {
@@ -41,30 +44,30 @@ function EmailField({ account }) {
   return (
     <div className="py-2 border-b border-slate-100 last:border-0">
       <div className="flex items-baseline justify-between gap-4">
-        <dt className="text-xs font-semibold text-slate-500">Email</dt>
+        <dt className="shrink-0 text-xs font-semibold text-slate-500">{t('settings.email')}</dt>
         <dd className="text-sm font-semibold text-slate-800 text-right break-words min-w-0">
           {account.email || '—'}
           {account.email && (account.email_verified ? (
             <span className="ml-2 inline-flex items-center gap-0.5 align-middle px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">
-              <Check className="w-3 h-3" /> Confirmed
+              <Check className="w-3 h-3" /> {t('settings.confirmed')}
             </span>
           ) : (
             <span className="ml-2 align-middle px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold">
-              Not confirmed
+              {t('settings.notConfirmed')}
             </span>
           ))}
         </dd>
       </div>
       {!account.email && (
-        <p className="mt-1 text-[11px] text-slate-500">Add one (Edit) so you can reset your password if you forget it.</p>
+        <p className="mt-1 text-[11px] text-slate-500">{t('settings.addEmailHint')}</p>
       )}
       {account.email && !account.email_verified && (
         <div className="mt-1.5 text-[11px] text-slate-600">
           <p>
-            Confirm it with the link we emailed you, so you can reset your password if you forget it.{' '}
+            {t('settings.confirmEmailHint')}{' '}
             <button type="button" onClick={resend} disabled={state.busy}
               className="font-bold text-teal-700 hover:underline disabled:opacity-60">
-              {state.busy ? 'Sending…' : 'Send a new link'}
+              {state.busy ? t('common.sending') : t('settings.sendNewLink')}
             </button>
           </p>
           {state.message && (
@@ -80,6 +83,7 @@ function EmailField({ account }) {
 
 // Everything Prologue stores about you, saved as a JSON file.
 function DownloadMyData({ username }) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -105,13 +109,13 @@ function DownloadMyData({ username }) {
   return (
     <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
       <div>
-        <p className="text-sm font-semibold text-slate-800">Download my data</p>
-        <p className="text-[11px] text-slate-500">Everything Prologue stores about you, in one file (JSON).</p>
+        <p className="text-sm font-semibold text-slate-800">{t('settings.downloadData')}</p>
+        <p className="text-[11px] text-slate-500">{t('settings.downloadDataHint')}</p>
         {error && <p role="alert" className="text-xs font-bold text-rose-600 mt-1">{error}</p>}
       </div>
       <button type="button" onClick={download} disabled={busy}
         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-60">
-        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Download
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} {t('settings.download')}
       </button>
     </div>
   );
@@ -119,6 +123,7 @@ function DownloadMyData({ username }) {
 
 // People you blocked, with a way to unblock them.
 function BlockedAccounts({ onChange }) {
+  const { t } = useI18n();
   const [list, setList] = useState(null);
   const [error, setError] = useState('');
 
@@ -137,9 +142,9 @@ function BlockedAccounts({ onChange }) {
   };
 
   if (error) return <p role="alert" className="text-xs font-bold text-rose-600">{error}</p>;
-  if (list === null) return <p className="text-xs text-slate-500">Loading…</p>;
+  if (list === null) return <p className="text-xs text-slate-500">{t('common.loading')}</p>;
   if (!list.length) {
-    return <p className="text-xs text-slate-600">You haven't blocked anyone. You can block an account from its profile.</p>;
+    return <p className="text-xs text-slate-600">{t('settings.noBlocked')}</p>;
   }
   return (
     <ul className="divide-y divide-slate-100">
@@ -147,7 +152,7 @@ function BlockedAccounts({ onChange }) {
         <li key={u.username} className="flex items-center justify-between gap-3 py-2">
           <span className="text-sm text-slate-800"><strong>{u.full_name}</strong> <span className="text-slate-500">@{u.username}</span></span>
           <button type="button" onClick={() => unblock(u.username)}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100">Unblock</button>
+            className="px-3 py-1.5 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100">{t('profile.unblock')}</button>
         </li>
       ))}
     </ul>
@@ -157,7 +162,7 @@ function BlockedAccounts({ onChange }) {
 function Field({ label, value }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
-      <dt className="text-xs font-semibold text-slate-500">{label}</dt>
+      <dt className="shrink-0 text-xs font-semibold text-slate-500">{label}</dt>
       <dd className="text-sm font-semibold text-slate-800 text-right break-words min-w-0">{value || '—'}</dd>
     </div>
   );
@@ -185,25 +190,27 @@ function useSubmit(fn) {
   return { busy, error, done, submit, setError };
 }
 
-function SaveRow({ busy, error, done, label = 'Save', onCancel, disabled }) {
+function SaveRow({ busy, error, done, label, onCancel, disabled }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
       {error && <p role="alert" className="mr-auto text-xs font-bold text-rose-600">{error}</p>}
-      {done && !error && <p className="mr-auto flex items-center gap-1 text-xs font-bold text-emerald-700"><Check className="w-3.5 h-3.5" /> Saved</p>}
+      {done && !error && <p className="mr-auto flex items-center gap-1 text-xs font-bold text-emerald-700"><Check className="w-3.5 h-3.5" /> {t('common.saved')}</p>}
       {onCancel && (
         <button type="button" onClick={onCancel} disabled={busy}
-          className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Cancel</button>
+          className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">{t('common.cancel')}</button>
       )}
       <button type="submit" disabled={busy || disabled}
         className="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60 inline-flex items-center gap-1.5">
         {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-        {busy ? 'Saving…' : label}
+        {busy ? t('common.saving') : (label || t('common.save'))}
       </button>
     </div>
   );
 }
 
 function ProfileForm({ account, options, onSave, onDone }) {
+  const { t } = useI18n();
   const p = account.profession;
   const [fullName, setFullName] = useState(account.full_name || '');
   const [bio, setBio] = useState(account.bio || '');
@@ -253,33 +260,33 @@ function ProfileForm({ account, options, onSave, onDone }) {
         <img loading="lazy" decoding="async"
           src={avatarUrl && previewOk ? avatarUrl : DEFAULT_AVATAR}
           onError={() => setPreviewOk(false)}
-          alt="Photo preview"
+          alt={t('settings.photoPreview')}
           className="w-14 h-14 rounded-full object-cover ring-2 ring-teal-200"
         />
         <div className="flex-1 min-w-0">
-          <ImageField label="Profile photo" value={avatarUrl} purpose="avatar" preview="none" inputId="set-avatar"
+          <ImageField label={t('settings.profilePhoto')} value={avatarUrl} purpose="avatar" preview="none" inputId="set-avatar"
             onChange={(url) => { setAvatarUrl(url); setPreviewOk(true); }} />
         </div>
       </div>
       <div>
-        <label className={labelCls} htmlFor="set-name">Name</label>
+        <label className={labelCls} htmlFor="set-name">{t('settings.name')}</label>
         <input id="set-name" className={inputCls} required maxLength={128} value={fullName} onChange={(e) => setFullName(e.target.value)} />
       </div>
       <div>
-        <label className={labelCls} htmlFor="set-bio">Bio</label>
-        <textarea id="set-bio" className={inputCls} rows={3} maxLength={1000} placeholder="What do you do, and what do you love about it?"
+        <label className={labelCls} htmlFor="set-bio">{t('settings.bio')}</label>
+        <textarea id="set-bio" className={inputCls} rows={3} maxLength={1000} placeholder={t('settings.bioPlaceholder')}
           value={bio} onChange={(e) => setBio(e.target.value)} />
       </div>
       <div>
-        <label className={labelCls} htmlFor="set-email">Email (optional, private)</label>
+        <label className={labelCls} htmlFor="set-email">{t('settings.emailOptional')}</label>
         <input id="set-email" type="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} />
-        <p className="text-[11px] text-slate-500 mt-1">Used to reset your password. A new address has to be confirmed again.</p>
+        <p className="text-[11px] text-slate-500 mt-1">{t('settings.emailEditHint')}</p>
       </div>
 
       <fieldset className="space-y-3">
-        <legend className={labelCls}>Work</legend>
-        <div className="flex gap-2" role="radiogroup" aria-label="Do you work?">
-          {[[true, 'I work'], [false, "I don't work right now"]].map(([val, text]) => (
+        <legend className={labelCls}>{t('settings.work')}</legend>
+        <div className="flex gap-2" role="radiogroup" aria-label={t('signup.doYouWork')}>
+          {[[true, t('settings.iWork')], [false, t('settings.iDontWork')]].map(([val, text]) => (
             <button key={text} type="button" role="radio" aria-checked={works === val} onClick={() => setWorks(val)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold border ${works === val ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-700 border-slate-300'}`}>
               {text}
@@ -289,25 +296,25 @@ function ProfileForm({ account, options, onSave, onDone }) {
         {works && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={labelCls} htmlFor="set-industry">Field</label>
+              <label className={labelCls} htmlFor="set-industry">{t('settings.field')}</label>
               <select id="set-industry" className={inputCls} value={industry} onChange={(e) => setIndustry(e.target.value)}>
-                {industries.map((i) => <option key={i} value={i}>{i}</option>)}
+                {industries.map((i) => <option key={i} value={i}>{fieldName(i)}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelCls} htmlFor="set-title">Job title</label>
+              <label className={labelCls} htmlFor="set-title">{t('settings.jobTitle')}</label>
               <input id="set-title" className={inputCls} required minLength={2} maxLength={128} value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div>
-              <label className={labelCls} htmlFor="set-spec">Specialization (optional)</label>
+              <label className={labelCls} htmlFor="set-spec">{t('signup.specialization')}</label>
               <input id="set-spec" className={inputCls} maxLength={128} value={specialization} onChange={(e) => setSpecialization(e.target.value)} />
             </div>
             <div>
-              <label className={labelCls} htmlFor="set-years">Years of experience</label>
+              <label className={labelCls} htmlFor="set-years">{t('signup.years')}</label>
               <input id="set-years" type="number" min={0} max={70} className={inputCls} value={years} onChange={(e) => setYears(e.target.value)} />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelCls} htmlFor="set-company">Company, or "Freelance" (optional)</label>
+              <label className={labelCls} htmlFor="set-company">{t('signup.company')}</label>
               <input id="set-company" className={inputCls} maxLength={128} value={company} onChange={(e) => setCompany(e.target.value)} />
             </div>
           </div>
@@ -315,31 +322,32 @@ function ProfileForm({ account, options, onSave, onDone }) {
         {professionChanged && p.is_verified_pro && (
           <p className="flex items-start gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
-            Changing your field or job title removes your verified badge.
+            {t('settings.badgeWarning')}
           </p>
         )}
       </fieldset>
 
       <fieldset>
-        <legend className={labelCls}>Interests</legend>
+        <legend className={labelCls}>{t('settings.interests')}</legend>
         <div className="flex flex-wrap gap-1.5">
           {options.interests.map((i) => (
             <button key={i} type="button" aria-pressed={interests.includes(i)} onClick={() => toggleInterest(i)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold border ${interests.includes(i) ? 'bg-teal-50 text-teal-800 border-teal-400' : 'bg-white text-slate-600 border-slate-300'}`}>
-              {i}
+              {fieldName(i)}
             </button>
           ))}
         </div>
-        {interests.length === 0 && <p className="mt-1 text-[11px] font-semibold text-rose-600">Choose at least one.</p>}
+        {interests.length === 0 && <p className="mt-1 text-[11px] font-semibold text-rose-600">{t('settings.chooseOne')}</p>}
       </fieldset>
 
-      <SaveRow busy={busy} error={error} label="Save profile" onCancel={onDone}
+      <SaveRow busy={busy} error={error} label={t('settings.saveProfile')} onCancel={onDone}
         disabled={!fullName.trim() || interests.length === 0 || (works && title.trim().length < 2)} />
     </form>
   );
 }
 
 function PasswordForm({ onChangePassword }) {
+  const { t } = useI18n();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -351,31 +359,32 @@ function PasswordForm({ onChangePassword }) {
   return (
     <form onSubmit={submit} className="space-y-3">
       <div>
-        <label className={labelCls} htmlFor="pw-current">Current password</label>
+        <label className={labelCls} htmlFor="pw-current">{t('settings.currentPassword')}</label>
         <input id="pw-current" type="password" autoComplete="current-password" required className={inputCls}
           value={current} onChange={(e) => setCurrent(e.target.value)} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className={labelCls} htmlFor="pw-new">New password</label>
+          <label className={labelCls} htmlFor="pw-new">{t('settings.newPassword')}</label>
           <input id="pw-new" type="password" autoComplete="new-password" required minLength={8} className={inputCls}
             value={next} onChange={(e) => setNext(e.target.value)} />
         </div>
         <div>
-          <label className={labelCls} htmlFor="pw-confirm">Repeat new password</label>
+          <label className={labelCls} htmlFor="pw-confirm">{t('settings.repeatPassword')}</label>
           <input id="pw-confirm" type="password" autoComplete="new-password" required className={inputCls}
             value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         </div>
       </div>
-      {mismatch && <p className="text-[11px] font-semibold text-rose-600">The new passwords don't match.</p>}
-      <p className="text-[11px] text-slate-500">At least 8 characters. Changing it signs you out on your other devices.</p>
-      <SaveRow busy={busy} error={error} done={done} label="Change password"
+      {mismatch && <p className="text-[11px] font-semibold text-rose-600">{t('settings.passwordMismatch')}</p>}
+      <p className="text-[11px] text-slate-500">{t('settings.passwordHint')}</p>
+      <SaveRow busy={busy} error={error} done={done} label={t('settings.changePassword')}
         disabled={!current || next.length < 8 || next !== confirm} />
     </form>
   );
 }
 
 function ConsentToggle({ survey, onSave }) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const toggle = async () => {
@@ -393,8 +402,8 @@ function ConsentToggle({ survey, onSave }) {
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p id="consent-label" className="text-sm font-semibold text-slate-800">Share my anonymous survey answers for research</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">Your answers from sign-up, with no name, email or password.</p>
+          <p id="consent-label" className="text-sm font-semibold text-slate-800">{t('settings.shareSurvey')}</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">{t('settings.shareSurveyHint')}</p>
         </div>
         <button type="button" role="switch" aria-checked={!!survey.data_consent} aria-labelledby="consent-label"
           onClick={toggle} disabled={busy}
@@ -408,6 +417,7 @@ function ConsentToggle({ survey, onSave }) {
 }
 
 function DeleteAccount({ username, onDeleteAccount }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [typed, setTyped] = useState('');
@@ -416,32 +426,31 @@ function DeleteAccount({ username, onDeleteAccount }) {
     return (
       <button type="button" onClick={() => setOpen(true)}
         className="px-4 py-2 rounded-xl text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200">
-        Delete my account…
+        {t('settings.deleteAccountOpen')}
       </button>
     );
   }
   return (
     <form onSubmit={submit} className="space-y-3">
       <p className="text-xs text-rose-800 font-semibold">
-        This permanently deletes your account, your posts, stories, comments, questions, challenges and ideas.
-        It cannot be undone.
+        {t('settings.deleteWarning')}
       </p>
       <div>
-        <label className={labelCls} htmlFor="del-username">Type your username (<strong>{username}</strong>) to confirm</label>
+        <label className={labelCls} htmlFor="del-username">{t('settings.typeUsername', { username })}</label>
         <input id="del-username" className={inputCls} autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
       </div>
       <div>
-        <label className={labelCls} htmlFor="del-password">Password</label>
+        <label className={labelCls} htmlFor="del-password">{t('auth.password')}</label>
         <input id="del-password" type="password" autoComplete="current-password" className={inputCls}
           value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
         {error && <p role="alert" className="mr-auto text-xs font-bold text-rose-600">{error}</p>}
         <button type="button" onClick={() => { setOpen(false); setPassword(''); setTyped(''); }} disabled={busy}
-          className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Cancel</button>
+          className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">{t('common.cancel')}</button>
         <button type="submit" disabled={busy || !password || typed.trim().toLowerCase() !== username}
           className="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50">
-          {busy ? 'Deleting…' : 'Delete my account permanently'}
+          {busy ? t('common.deleting') : t('settings.deleteForever')}
         </button>
       </div>
     </form>
@@ -451,7 +460,9 @@ function DeleteAccount({ username, onDeleteAccount }) {
 // Account settings: profile, password, privacy, and deleting the account.
 export default function SettingsPage({
   account, me, isDemo, onSaveProfile, onChangePassword, onDeleteAccount, onLogout, onResetDemo, onBlockChange,
+  onLanguageChange,
 }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [options, setOptions] = useState(null);
   const survey = account.survey;
@@ -465,16 +476,16 @@ export default function SettingsPage({
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-1">
         <span className="p-1.5 rounded-xl bg-teal-100 text-teal-700"><Settings className="w-5 h-5" /></span>
-        <h2 className="font-black text-xl text-slate-900">Settings</h2>
+        <h2 className="font-black text-xl text-slate-900">{t('nav.settings')}</h2>
       </div>
 
       <Card
         icon={User}
-        title="Profile"
+        title={t('settings.profile')}
         action={!editing && (
           <button type="button" onClick={() => setEditing(true)} disabled={!options}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-50">
-            <Pencil className="w-3.5 h-3.5" /> Edit
+            <Pencil className="w-3.5 h-3.5" /> {t('common.edit')}
           </button>
         )}
       >
@@ -482,64 +493,65 @@ export default function SettingsPage({
           <ProfileForm account={account} options={options} onSave={onSaveProfile} onDone={() => setEditing(false)} />
         ) : (
           <dl>
-            <Field label="Name" value={me.fullName} />
-            <Field label="Username" value={`@${me.username}`} />
-            {account.bio && <Field label="Bio" value={account.bio} />}
+            <Field label={t('settings.name')} value={me.fullName} />
+            <Field label={t('signup.username')} value={`@${me.username}`} />
+            {account.bio && <Field label={t('settings.bio')} value={account.bio} />}
             <EmailField account={account} />
-            <Field label="Work" value={account.profession ? `${me.professionTitle} · ${me.industry}` : "Not working right now"} />
-            {interests.length > 0 && <Field label="Interests" value={interests.join(', ')} />}
+            <Field label={t('settings.work')} value={account.profession ? `${me.professionTitle} · ${fieldName(me.industry)}` : t('settings.notWorking')} />
+            {interests.length > 0 && <Field label={t('settings.interests')} value={interests.map(fieldName).join(', ')} />}
           </dl>
         )}
       </Card>
 
-      <Card icon={Lock} title="Password">
+      <Card icon={Lock} title={t('auth.password')}>
         <PasswordForm onChangePassword={onChangePassword} />
       </Card>
 
-      <Card icon={Shield} title="Privacy & data">
+      <Card icon={Globe} title={t('language.label')}>
+        <LanguageSelect id="settings-language" onChange={onLanguageChange} />
+        <p className="text-[11px] text-slate-500 mt-2">{t('settings.languageHint')}</p>
+      </Card>
+
+      <Card icon={Shield} title={t('settings.privacyData')}>
         {survey ? (
           <ConsentToggle survey={survey} onSave={onSaveProfile} />
         ) : (
-          <p className="text-xs text-slate-600">This account has no sign-up survey, so there is nothing to share.</p>
+          <p className="text-xs text-slate-600">{t('settings.noSurvey')}</p>
         )}
         <DownloadMyData username={me.username} />
       </Card>
 
-      <Card icon={Ban} title="Blocked accounts">
+      <Card icon={Ban} title={t('settings.blockedAccounts')}>
         <BlockedAccounts onChange={onBlockChange} />
       </Card>
 
       {isDemo && (
-        <Card icon={RotateCcw} title="Demo data">
-          <p className="text-xs text-slate-600 mb-3">
-            This is the demo: everything you do is saved only in this browser. Resetting brings back the original
-            sample data and signs you out.
-          </p>
+        <Card icon={RotateCcw} title={t('settings.demoData')}>
+          <p className="text-xs text-slate-600 mb-3">{t('settings.demoDataHint')}</p>
           <button type="button" onClick={onResetDemo}
             className="px-4 py-2 rounded-xl text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200">
-            Reset demo data
+            {t('settings.resetDemo')}
           </button>
         </Card>
       )}
 
-      <Card icon={Info} title="About">
+      <Card icon={Info} title={t('settings.about')}>
         <p className="text-xs text-slate-600">
-          <strong className="text-slate-800">Prologue</strong> — a story behind every profession. See how every profession really
-          works, from the people doing it.
+          <strong className="text-slate-800">Prologue</strong> — {t('settings.aboutText')}
         </p>
         <p className="text-xs text-slate-600 mt-2">
-          <a href={`${import.meta.env.BASE_URL}privacy`} className="font-bold text-teal-700 hover:underline">Privacy Policy</a>
+          <a href={`${import.meta.env.BASE_URL}privacy`} className="font-bold text-teal-700 hover:underline">{t('legal.privacy')}</a>
           {' · '}
-          <a href={`${import.meta.env.BASE_URL}terms`} className="font-bold text-teal-700 hover:underline">Terms of Service</a>
+          <a href={`${import.meta.env.BASE_URL}terms`} className="font-bold text-teal-700 hover:underline">{t('legal.terms')}</a>
         </p>
       </Card>
 
       <button type="button" onClick={onLogout}
         className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200">
-        <LogOut className="w-4 h-4" /> Log out
+        <LogOut className="w-4 h-4" /> {t('nav.logout')}
       </button>
 
-      <Card icon={AlertTriangle} title="Delete account" tone="danger">
+      <Card icon={AlertTriangle} title={t('settings.deleteAccount')} tone="danger">
         <DeleteAccount username={me.username} onDeleteAccount={onDeleteAccount} />
       </Card>
     </div>

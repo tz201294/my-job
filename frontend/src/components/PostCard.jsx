@@ -6,6 +6,7 @@ import {
 import OwnerActions from './OwnerActions';
 import ReportButton from './ReportButton';
 import CommentsSection from './CommentsSection';
+import { useI18n } from '../i18n';
 
 const difficultyGradients = {
   expert: 'from-slate-700 to-slate-900',
@@ -28,6 +29,7 @@ export default function PostCard({
   onCommentsCountChange,
   initialShowComments = false,
 }) {
+  const { t } = useI18n();
   const [showComments, setShowComments] = useState(initialShowComments);
   const isCaseStudy = post.postType === 'pro_case_study' || post.postType === 'task_walkthrough';
   const task = post.taskDetails;
@@ -71,18 +73,18 @@ export default function PostCard({
               label="post"
               onEdit={() => onEdit(post)}
               onDelete={() => onDelete(post.id)}
-              confirmText="Delete this post? Its likes, saves and reviews are removed too. This cannot be undone."
+              confirmText={t('post.confirmDelete')}
             />
           )}
           {!isOwn && currentUserId && <ReportButton targetType="post" targetId={post.id} label="post" />}
           {isCaseStudy ? (
             <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-xs font-black shadow-sm shadow-teal-500/20">
               <Layers className="w-3.5 h-3.5" />
-              Pro Case Study
+              {t('post.caseStudy')}
             </span>
           ) : (
             <span className="px-3 py-1 rounded-full bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-900 text-xs font-extrabold border border-teal-200">
-              Milestone
+              {t('post.milestone')}
             </span>
           )}
         </div>
@@ -104,10 +106,10 @@ export default function PostCard({
           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-transparent p-4 sm:p-5 pt-12 text-white">
             <div className="flex items-center gap-2 mb-1.5">
               <span className={`px-2.5 py-0.5 rounded-full bg-gradient-to-r ${diffGradient} text-white text-[10px] font-black uppercase tracking-wider shadow-xs`}>
-                {task?.difficulty || 'Professional'}
+                {task?.difficulty ? t(`difficulty.${task.difficulty.toLowerCase()}`) : t('role.professional')}
               </span>
               <span className="text-xs text-white/90 font-bold bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full">
-                ⏱️ {task?.estimatedDuration || 'Workflow Guide'}
+                ⏱️ {task?.estimatedDuration || t('post.workflowGuide')}
               </span>
             </div>
             <h3 className="font-extrabold text-base sm:text-lg text-white leading-snug line-clamp-2 drop-shadow-sm">
@@ -135,7 +137,7 @@ export default function PostCard({
             <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-teal-100">
               <div className="flex items-center gap-1.5 text-xs font-black text-teal-950">
                 <Wrench className="w-4 h-4 text-teal-600" />
-                <span>Tools & Reference Standards</span>
+                <span>{t('post.tools')}</span>
               </div>
               <span className="text-[11px] font-bold text-teal-600 bg-white px-2 py-0.5 rounded-full border border-teal-200 shadow-2xs">
                 {task.steps?.length || 0} Step Workflow
@@ -174,7 +176,7 @@ export default function PostCard({
               onClick={() => onOpenCaseStudy(post)}
               className="mt-3.5 w-full py-2.5 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-teal-500/20 active:scale-[0.99]"
             >
-              <span>Explore Full Step-by-Step Execution</span>
+              <span>{t('post.exploreSteps')}</span>
               <ChevronRight className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
@@ -207,7 +209,7 @@ export default function PostCard({
             <button
               onClick={() => setShowComments((v) => !v)}
               aria-expanded={showComments}
-              aria-label={`Comments (${post.commentsCount})`}
+              aria-label={t('post.commentsLabel', { n: post.commentsCount })}
               className={`flex items-center gap-1.5 transition-colors ${showComments ? 'text-teal-600' : 'hover:text-teal-600'}`}
             >
               <MessageCircle className="w-4 h-4" />
@@ -227,7 +229,7 @@ export default function PostCard({
                     <span className="text-[10px] text-amber-800 font-semibold">({post.reviewsCount})</span>
                   </>
                 ) : (
-                  <span className="font-black text-[11px]">Be the first to review</span>
+                  <span className="font-black text-[11px]">{t('post.firstReview')}</span>
                 )}
               </button>
             )}

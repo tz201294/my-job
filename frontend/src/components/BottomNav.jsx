@@ -1,8 +1,10 @@
 import React from 'react';
 import { Home, Zap, Plus, MessageSquareText } from 'lucide-react';
+import { useI18n } from '../i18n';
 
 // Phone-style tab bar at the bottom of the screen (hidden on wide screens, where the sidebar is shown).
 export default function BottomNav({ me, activeKey, onNavigate, onOpenCreate }) {
+  const { t } = useI18n();
   const tab = (key, label, Icon) => {
     const active = activeKey === key;
     return (
@@ -22,17 +24,17 @@ export default function BottomNav({ me, activeKey, onNavigate, onOpenCreate }) {
 
   return (
     <nav
-      aria-label="Sections"
+      aria-label={t('nav.sections')}
       className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 pb-[env(safe-area-inset-bottom)]"
     >
       <div className="max-w-xl mx-auto flex items-stretch h-16 px-1">
-        {tab('feed', 'Home', Home)}
-        {tab('challenges', 'Live Work', Zap)}
+        {tab('feed', t('nav.home'), Home)}
+        {tab('challenges', t('nav.liveWork'), Zap)}
         <div className="flex-1 flex items-center justify-center">
           <button
             type="button"
             onClick={onOpenCreate}
-            aria-label="Create a post"
+            aria-label={t('nav.createPost')}
             className="w-12 h-12 -mt-1 rounded-2xl bg-gradient-to-tr from-teal-600 via-cyan-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-teal-500/30 active:scale-95 transition-transform"
           >
             <Plus className="w-6 h-6 stroke-[2.5]" />
@@ -52,7 +54,7 @@ export default function BottomNav({ me, activeKey, onNavigate, onOpenCreate }) {
             alt=""
             className={`w-6 h-6 rounded-full object-cover ${activeKey === 'profile' ? 'ring-2 ring-teal-600' : ''}`}
           />
-          <span>Profile</span>
+          <span>{t('nav.profile')}</span>
         </button>
       </div>
     </nav>

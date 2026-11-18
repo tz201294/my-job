@@ -2,26 +2,28 @@ import React, { useEffect, useRef } from 'react';
 import {
   Home, Zap, MessageSquareText, Film, User, Bookmark, Activity, Bell, Settings, LogOut, X, ShieldCheck, ShieldAlert,
 } from 'lucide-react';
+import { useI18n } from '../i18n';
 
 // Main sections, then personal pages. `key` is what App navigates to.
 export const MAIN_ITEMS = [
-  { key: 'feed', label: 'Home', icon: Home },
-  { key: 'challenges', label: 'Live Work', icon: Zap },
-  { key: 'qa', label: 'Q&A', icon: MessageSquareText },
-  { key: 'reels', label: 'Reels', icon: Film, note: 'sample' },
+  { key: 'feed', label: 'nav.home', icon: Home },
+  { key: 'challenges', label: 'nav.liveWork', icon: Zap },
+  { key: 'qa', label: 'nav.qa', icon: MessageSquareText },
+  { key: 'reels', label: 'nav.reels', icon: Film, note: 'nav.sample' },
 ];
 
 const PERSONAL_ITEMS = [
-  { key: 'profile', label: 'Profile', icon: User },
-  { key: 'saved', label: 'Saved', icon: Bookmark },
-  { key: 'activity', label: 'My activity', icon: Activity },
-  { key: 'notifications', label: 'Notifications', icon: Bell },
-  { key: 'settings', label: 'Settings', icon: Settings },
+  { key: 'profile', label: 'nav.profile', icon: User },
+  { key: 'saved', label: 'feed.saved', icon: Bookmark },
+  { key: 'activity', label: 'nav.activity', icon: Activity },
+  { key: 'notifications', label: 'nav.notifications', icon: Bell },
+  { key: 'settings', label: 'nav.settings', icon: Settings },
 ];
 
-const MODERATOR_ITEM = { key: 'moderation', label: 'Moderation', icon: ShieldAlert };
+const MODERATOR_ITEM = { key: 'moderation', label: 'nav.moderation', icon: ShieldAlert };
 
 function MenuItem({ item, active, onNavigate, badge = 0 }) {
+  const { t } = useI18n();
   const Icon = item.icon;
   return (
     <li>
@@ -36,15 +38,15 @@ function MenuItem({ item, active, onNavigate, badge = 0 }) {
         }`}
       >
         <Icon className={`w-5 h-5 ${active ? 'text-teal-600' : 'text-slate-500'}`} />
-        <span>{item.label}</span>
+        <span>{t(item.label)}</span>
         {badge > 0 && (
           <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center"
-            aria-label={`${badge} unread`}>
+            aria-label={t('nav.unread', { count: badge })}>
             {badge > 99 ? '99+' : badge}
           </span>
         )}
         {item.note && (
-          <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800">{item.note}</span>
+          <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800">{t(item.note)}</span>
         )}
       </button>
     </li>
@@ -52,8 +54,9 @@ function MenuItem({ item, active, onNavigate, badge = 0 }) {
 }
 
 function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0, isAdmin = false }) {
+  const { t } = useI18n();
   return (
-    <nav aria-label="Main menu" className="flex flex-col gap-4">
+    <nav aria-label={t('nav.mainMenu')} className="flex flex-col gap-4">
       {/* Who is signed in */}
       <button
         type="button"
@@ -93,13 +96,13 @@ function MenuContent({ me, activeKey, onNavigate, onLogout, unreadCount = 0, isA
         className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-rose-50 hover:text-rose-700"
       >
         <LogOut className="w-5 h-5" />
-        <span>Log out</span>
+        <span>{t('nav.logout')}</span>
       </button>
 
       <p className="px-3.5 text-[11px] text-slate-400">
-        <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:underline">Privacy</a>
+        <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:underline">{t('legal.privacyShort')}</a>
         {' · '}
-        <a href={`${import.meta.env.BASE_URL}terms`} className="hover:underline">Terms</a>
+        <a href={`${import.meta.env.BASE_URL}terms`} className="hover:underline">{t('legal.termsShort')}</a>
       </p>
     </nav>
   );
@@ -118,6 +121,7 @@ export function Sidebar(props) {
 
 // Slide-in menu on phones and tablets, opened from the header's menu button.
 export function MenuDrawer({ open, onClose, ...props }) {
+  const { t } = useI18n();
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -135,7 +139,7 @@ export function MenuDrawer({ open, onClose, ...props }) {
 
   if (!open) return null;
   return (
-    <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Menu">
+    <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={t('nav.menu')}>
       <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[2px]" onClick={onClose} />
       <div
         ref={panelRef}
@@ -143,7 +147,7 @@ export function MenuDrawer({ open, onClose, ...props }) {
         className="absolute inset-y-0 left-0 w-[82%] max-w-xs bg-white shadow-2xl p-4 overflow-y-auto outline-none"
       >
         <div className="flex justify-end mb-1">
-          <button type="button" onClick={onClose} aria-label="Close menu"
+          <button type="button" onClick={onClose} aria-label={t('nav.closeMenu')}
             className="p-2 rounded-full text-slate-500 hover:bg-slate-100">
             <X className="w-5 h-5" />
           </button>

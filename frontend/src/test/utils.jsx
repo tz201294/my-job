@@ -2,18 +2,22 @@
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import App from '../App';
+import { I18nProvider } from '../i18n';
 
 function Where() {
   const location = useLocation();
   return <output data-testid="where" hidden>{location.pathname}</output>;
 }
 
-export function renderApp(path = '/') {
+// Tests run in English unless they pass another language.
+export function renderApp(path = '/', { language = 'en' } = {}) {
   return render(
-    <MemoryRouter initialEntries={[path]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <App />
-      <Where />
-    </MemoryRouter>
+    <I18nProvider initial={language}>
+      <MemoryRouter initialEntries={[path]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <App />
+        <Where />
+      </MemoryRouter>
+    </I18nProvider>
   );
 }
 

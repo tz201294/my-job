@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -165,6 +165,7 @@ class UserMeResponse(UserResponse):
     email: Optional[str] = None
     email_verified: bool = False  # confirmed through the link sent to it
     is_admin: bool = False  # sees the Moderation page
+    language: Optional[str] = None  # the app language chosen on the account
     survey: Optional[SurveyResponse] = None
     interests: List[str] = []
 
@@ -199,6 +200,7 @@ class ProfileUpdate(PartialUpdate):
     works: Optional[bool] = None
     profession: Optional[SignupProfession] = None
     data_consent: Optional[bool] = None
+    language: Optional[Literal["en", "es", "fr", "de", "ja"]] = None
 
     @field_validator("avatar_url")
     @classmethod

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import {
   X, Plus, Trash2,
 } from 'lucide-react';
-import { PLACEHOLDER_IMAGE } from '../api/mappers';
+import { PLACEHOLDER_IMAGE, fieldName } from '../api/mappers';
 import TagInput from './TagInput';
 import ImageField from './ImageField';
 import { MAX_TAGS, normalizeTag } from '../api/tags';
+import { useI18n } from '../i18n';
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'];
 
@@ -17,6 +18,7 @@ const EMPTY_STEP = { stepNumber: 1, title: '', description: '', imageUrl: '', ti
 export default function CreatePostModal({
   currentUser, categories = [], editPost = null, onClose, onCreatePost, onUpdatePost, onCreateStory, onCreateChallenge,
 }) {
+  const { t } = useI18n();
   const td = editPost?.taskDetails;
   const isEditing = !!editPost;
   const [contentType, setContentType] = useState(
@@ -103,7 +105,7 @@ export default function CreatePostModal({
       if (tag && !tags.includes(tag)) allTags = [...tags, tag];
     }
     if (allTags.length > MAX_TAGS) {
-      setError(`Use at most ${MAX_TAGS} tags.`);
+      setError(t('tags.tooMany', { max: MAX_TAGS }));
       return;
     }
     setBusy(true);
@@ -132,7 +134,7 @@ export default function CreatePostModal({
       }
       onClose();
     } catch (err) {
-      setError(err.message || 'Could not publish. Please try again.');
+      setError(err.message || t('create.failed'));
       setBusy(false);
     }
   };
@@ -143,9 +145,9 @@ export default function CreatePostModal({
         {/* Modal Header */}
         <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
           <div>
-            <h3 className="font-extrabold text-base sm:text-lg">{isEditing ? 'Edit post' : 'Publishing Studio'}</h3>
+            <h3 className="font-extrabold text-base sm:text-lg">{isEditing ? t('create.editTitle') : t('create.title')}</h3>
             <p className="text-xs text-slate-400">
-              {isEditing ? 'Change the text, photo, tags or steps of your post' : 'Upload media or document step-by-step profession techniques'}
+              {isEditing ? t('create.editSubtitle') : t('create.subtitle')}
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-full">
@@ -164,7 +166,7 @@ export default function CreatePostModal({
                 : 'bg-white text-slate-700 hover:bg-slate-200'
             }`}
           >
-            📑 Pro Case Study
+            📑 {t('post.caseStudy')}
           </button>
           <button
             type="button"
@@ -175,7 +177,7 @@ export default function CreatePostModal({
                 : 'bg-white text-slate-700 hover:bg-slate-200'
             }`}
           >
-            🏆 General Post
+            🏆 {t('create.generalPost')}
           </button>
           <button
             type="button"
@@ -186,7 +188,7 @@ export default function CreatePostModal({
                 : 'bg-white text-slate-700 hover:bg-slate-200'
             }`}
           >
-            ☕ 24h Daily Story
+            ☕ {t('create.story')}
           </button>
           <button
             type="button"
@@ -197,7 +199,7 @@ export default function CreatePostModal({
                 : 'bg-white text-slate-700 hover:bg-slate-200 font-bold'
             }`}
           >
-            ⚡ Live Work
+            ⚡ {t('nav.liveWork')}
           </button>
         </div>
 
@@ -206,16 +208,16 @@ export default function CreatePostModal({
           {/* STORY FORM */}
           {contentType === 'story' && (
             <div className="space-y-4">
-              <ImageField label="Story photo" value={storyMedia} onChange={setStoryMedia} purpose="story"
+              <ImageField label={t('create.storyPhoto')} value={storyMedia} onChange={setStoryMedia} purpose="story"
                 preview="tall" required inputId="story-photo" />
 
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Daily Worklife Moment (Caption)
+                  {t('create.storyCaption')}
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="e.g. Grabbing coffee before the deposition... / Setting up the pipe pressure tester..."
+                  placeholder={t('create.storyPlaceholder')}
                   value={storyCaption}
                   onChange={(e) => setStoryCaption(e.target.value)}
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
@@ -223,7 +225,7 @@ export default function CreatePostModal({
                 />
               </div>
               <p className="text-[11px] text-slate-400">
-                ⏳ This story will appear in the top story tray and automatically expire in 24 hours.
+                ⏳ {t('create.storyHint')}
               </p>
             </div>
           )}
@@ -233,11 +235,11 @@ export default function CreatePostModal({
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-black text-slate-800 mb-1">
-                  Live Work Scenario Title
+                  {t('create.challengeTitle')}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Live shift: Rare HVAC error code on inverter unit / Conflicting statutory timeline"
+                  placeholder={t('create.challengeTitlePlaceholder')}
                   value={challengeTitle}
                   onChange={(e) => setChallengeTitle(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-teal-200 rounded-xl text-xs outline-none focus:border-cyan-500 font-medium"
@@ -246,7 +248,7 @@ export default function CreatePostModal({
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-800 mb-1">
-                  Category
+                  {t('create.category')}
                 </label>
                 <select
                   value={category}
@@ -254,17 +256,17 @@ export default function CreatePostModal({
                   className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
                 >
                   {categoryNames.map((n) => (
-                    <option key={n} value={n}>{n}</option>
+                    <option key={n} value={n}>{fieldName(n)}</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-800 mb-1">
-                  Detailed Scenario & What You've Tested So Far
+                  {t('create.challengeDetails')}
                 </label>
                 <textarea
                   rows={4}
-                  placeholder="Explain the problem, tools already used, and what hypothesis you're asking the community to brainstorm..."
+                  placeholder={t('create.challengeDetailsPlaceholder')}
                   value={challengeDesc}
                   onChange={(e) => setChallengeDesc(e.target.value)}
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
@@ -280,11 +282,11 @@ export default function CreatePostModal({
               {/* Title */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
-                  {contentType === 'pro_case_study' ? 'Case Study Title (e.g. How I Solved X)' : 'Post Headline / Milestone'}
+                  {contentType === 'pro_case_study' ? t('create.caseTitle') : t('create.postTitle')}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Drafting and Serving a Subpoena Duces Tecum / 5-Year Bar Anniversary"
+                  placeholder={t('create.titlePlaceholder')}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
@@ -295,11 +297,11 @@ export default function CreatePostModal({
               {/* Caption */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Summary & Context
+                  {t('create.summary')}
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Brief overview of the case, project, or milestone..."
+                  placeholder={t('create.summaryPlaceholder')}
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-500"
@@ -315,7 +317,7 @@ export default function CreatePostModal({
                 <TagInput id="post-tags" tags={tags} onChange={setTags} pending={pendingTag} onPendingChange={setPendingTag} />
               </div>
 
-              <ImageField label="Cover photo or diagram (optional)" value={mediaUrl} onChange={setMediaUrl}
+              <ImageField label={t('create.cover')} value={mediaUrl} onChange={setMediaUrl}
                 purpose="post" inputId="cover-photo" />
 
               {/* PRO CASE STUDY DEEP DIVE FIELDS */}
@@ -324,7 +326,7 @@ export default function CreatePostModal({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Category
+                        {t('create.category')}
                       </label>
                       <select
                         value={category}
@@ -332,14 +334,14 @@ export default function CreatePostModal({
                         className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
                       >
                         {categoryNames.map((n) => (
-                          <option key={n} value={n}>{n}</option>
+                          <option key={n} value={n}>{fieldName(n)}</option>
                         ))}
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Difficulty
+                        {t('create.difficulty')}
                       </label>
                       <select
                         value={difficulty}
@@ -347,20 +349,20 @@ export default function CreatePostModal({
                         className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
                       >
                         {DIFFICULTIES.map((d) => (
-                          <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
+                          <option key={d} value={d}>{t(`difficulty.${d}`)}</option>
                         ))}
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Estimated Time (minutes)
+                        {t('create.minutes')}
                       </label>
                       <input
                         type="number"
                         min="1"
                         max="10080"
-                        placeholder="e.g. 90"
+                        placeholder={t('create.minutesPlaceholder')}
                         value={minutes}
                         onChange={(e) => setMinutes(e.target.value)}
                         className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
@@ -371,11 +373,11 @@ export default function CreatePostModal({
                   {/* Problem Statement */}
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1">
-                      Problem Context (The Real Challenge)
+                      {t('create.problem')}
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="What was broken, disputed, or required solving?"
+                      placeholder={t('create.problemPlaceholder')}
                       value={problemStatement}
                       onChange={(e) => setProblemStatement(e.target.value)}
                       required
@@ -387,7 +389,7 @@ export default function CreatePostModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Tools / Standard References (comma separated)
+                        {t('create.tools')}
                       </label>
                       <input
                         type="text"
@@ -398,7 +400,7 @@ export default function CreatePostModal({
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Compliance / Safety Warning
+                        {t('create.safety')}
                       </label>
                       <input
                         type="text"
@@ -413,7 +415,7 @@ export default function CreatePostModal({
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                        Workflow Steps ({steps.length})
+                        {t('create.steps', { n: steps.length })}
                       </span>
                       <button
                         type="button"
@@ -421,7 +423,7 @@ export default function CreatePostModal({
                         className="flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-700"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Add Step</span>
+                        <span>{t('create.addStep')}</span>
                       </button>
                     </div>
 
@@ -429,7 +431,7 @@ export default function CreatePostModal({
                       <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-brand-700">
-                            Step {st.stepNumber}
+                            {t('create.step', { n: st.stepNumber })}
                           </span>
                           {steps.length > 1 && (
                             <button
@@ -443,7 +445,7 @@ export default function CreatePostModal({
                         </div>
                         <input
                           type="text"
-                          placeholder="Step Title (e.g. Isolate supply lines)"
+                          placeholder={t('create.stepTitle')}
                           value={st.title}
                           onChange={(e) => handleStepChange(idx, 'title', e.target.value)}
                           className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none"
@@ -451,7 +453,7 @@ export default function CreatePostModal({
                         />
                         <textarea
                           rows={2}
-                          placeholder="Step execution details..."
+                          placeholder={t('create.stepDetails')}
                           value={st.description}
                           onChange={(e) => handleStepChange(idx, 'description', e.target.value)}
                           className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none"
@@ -464,7 +466,7 @@ export default function CreatePostModal({
 
                         <input
                           type="text"
-                          placeholder="Pro tip for this step..."
+                          placeholder={t('create.stepTip')}
                           value={st.tip}
                           onChange={(e) => handleStepChange(idx, 'tip', e.target.value)}
                           className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none"
@@ -490,14 +492,14 @@ export default function CreatePostModal({
               onClick={onClose}
               className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={busy}
               className="px-6 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white shadow-sm transition-all"
             >
-              {isEditing ? (busy ? 'Saving…' : 'Save changes') : (busy ? 'Publishing…' : 'Publish to Prologue')}
+              {isEditing ? (busy ? t('common.saving') : t('create.saveChanges')) : (busy ? t('common.publishing') : t('create.publish'))}
             </button>
           </div>
         </form>

@@ -5,22 +5,24 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { toNotification } from '../api/mappers';
+import { useI18n } from '../i18n';
 
 const PAGE_SIZE = 30;
 
 // What each notification type says and looks like.
 const KINDS = {
-  follow: { icon: UserPlus, tone: 'bg-teal-100 text-teal-700', text: 'started following you' },
-  question: { icon: HelpCircle, tone: 'bg-cyan-100 text-cyan-700', text: 'asked you a question' },
-  answer: { icon: MessageSquareText, tone: 'bg-cyan-100 text-cyan-700', text: 'answered your question' },
-  suggestion: { icon: Lightbulb, tone: 'bg-amber-100 text-amber-700', text: 'suggested an idea on your challenge' },
-  accepted: { icon: CheckCircle2, tone: 'bg-emerald-100 text-emerald-700', text: 'accepted your idea as the solution' },
-  review: { icon: Star, tone: 'bg-amber-100 text-amber-700', text: 'reviewed your post' },
-  comment: { icon: MessageCircle, tone: 'bg-teal-100 text-teal-700', text: 'commented on your post' },
-  reaction: { icon: SmilePlus, tone: 'bg-rose-100 text-rose-600', text: 'reacted to your comment' },
+  follow: { icon: UserPlus, tone: 'bg-teal-100 text-teal-700', text: 'notif.follow' },
+  question: { icon: HelpCircle, tone: 'bg-cyan-100 text-cyan-700', text: 'notif.question' },
+  answer: { icon: MessageSquareText, tone: 'bg-cyan-100 text-cyan-700', text: 'notif.answer' },
+  suggestion: { icon: Lightbulb, tone: 'bg-amber-100 text-amber-700', text: 'notif.suggestion' },
+  accepted: { icon: CheckCircle2, tone: 'bg-emerald-100 text-emerald-700', text: 'notif.accepted' },
+  review: { icon: Star, tone: 'bg-amber-100 text-amber-700', text: 'notif.review' },
+  comment: { icon: MessageCircle, tone: 'bg-teal-100 text-teal-700', text: 'notif.comment' },
+  reaction: { icon: SmilePlus, tone: 'bg-rose-100 text-rose-600', text: 'notif.reaction' },
 };
 
 function NotificationRow({ n, onOpen }) {
+  const { t } = useI18n();
   const kind = KINDS[n.type] || { icon: Bell, tone: 'bg-slate-100 text-slate-600', text: '' };
   const Icon = kind.icon;
   return (
@@ -40,14 +42,14 @@ function NotificationRow({ n, onOpen }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm text-slate-800 leading-snug">
-            <span className="font-extrabold">{n.actorFullName}</span> {kind.text}
+            {t(kind.text, { name: '\u0000' }).split('\u0000').map((part, i) => (i ? <React.Fragment key={i}><span className="font-extrabold">{n.actorFullName}</span>{part}</React.Fragment> : part))}
           </p>
           {n.snippet && (
             <p className="mt-0.5 text-xs text-slate-500 line-clamp-2 break-words">“{n.snippet}”</p>
           )}
           <p className={`mt-1 text-[11px] font-semibold ${n.read ? 'text-slate-400' : 'text-teal-700'}`}>{n.timeAgo}</p>
         </div>
-        {!n.read && <span className="mt-2 w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0" aria-label="Unread" />}
+        {!n.read && <span className="mt-2 w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0" aria-label={t('notif.unread')} />}
       </button>
     </li>
   );
@@ -56,6 +58,7 @@ function NotificationRow({ n, onOpen }) {
 // Your notifications, newest first. Opening the page marks them as read (they stay highlighted until you leave,
 // so you can still see which ones were new). `onUnreadChange` keeps the bell's badge in step.
 export default function NotificationsPage({ onOpen, onUnreadChange }) {
+  const { t } = useI18n();
   const [items, setItems] = useState(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState('');
@@ -100,11 +103,11 @@ export default function NotificationsPage({ onOpen, onUnreadChange }) {
       <div className="flex items-center justify-between gap-2 mb-1">
         <div className="flex items-center gap-2">
           <span className="p-1.5 rounded-xl bg-teal-100 text-teal-700"><Bell className="w-5 h-5" /></span>
-          <h2 className="font-black text-xl text-slate-900">Notifications</h2>
+          <h2 className="font-black text-xl text-slate-900">{t('nav.notifications')}</h2>
         </div>
         {unreadHere > 0 && (
           <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-700">
-            <CheckCheck className="w-4 h-4" /> {unreadHere} new
+            <CheckCheck className="w-4 h-4" /> {t('notif.new', { count: unreadHere })}
           </span>
         )}
       </div>
@@ -112,15 +115,14 @@ export default function NotificationsPage({ onOpen, onUnreadChange }) {
       <section className="bg-white border border-teal-100 rounded-3xl p-2 sm:p-3 shadow-2xs">
         {error && <p role="alert" className="p-4 text-xs font-bold text-rose-600">Couldn't load notifications: {error}</p>}
         {!error && items === null && (
-          <p className="flex items-center gap-1.5 p-4 text-xs text-slate-500"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…</p>
+          <p className="flex items-center gap-1.5 p-4 text-xs text-slate-500"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('common.loading')}</p>
         )}
         {items && items.length === 0 && (
           <div className="p-6 text-center">
             <Bell className="w-10 h-10 mx-auto text-teal-200 mb-3" />
-            <p className="text-sm font-extrabold text-slate-800">No notifications yet</p>
+            <p className="text-sm font-extrabold text-slate-800">{t('notif.empty')}</p>
             <p className="text-xs text-slate-500 mt-1">
-              You'll see here when someone follows you, asks or answers a question, reviews or comments on your
-              posts, reacts to your comments, or responds to your live work.
+              {t('notif.emptyHint')}
             </p>
           </div>
         )}
@@ -133,7 +135,7 @@ export default function NotificationsPage({ onOpen, onUnreadChange }) {
           <div className="p-2 text-center">
             <button type="button" onClick={loadMore} disabled={loadingMore}
               className="text-xs font-bold text-teal-700 hover:underline disabled:opacity-60">
-              {loadingMore ? 'Loading…' : 'Show older notifications'}
+              {loadingMore ? t('common.loading') : t('notif.older')}
             </button>
           </div>
         )}

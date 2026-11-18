@@ -51,7 +51,8 @@ def allow_silently(name: str, key: str) -> bool:
     return True
 
 
-def _wait_text(seconds: int) -> str:
+def wait_text(seconds: int) -> str:
+    """"5 minutes", "1 hour" (in English; app/core/i18n.py translates the whole message)."""
     if seconds < 60:
         return f"{seconds} second{'s' if seconds != 1 else ''}"
     minutes = -(-seconds // 60)
@@ -69,7 +70,7 @@ def check(name: str, key: str) -> None:
     if wait:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"{RULES[name][1]}. Please try again in {_wait_text(wait)}.",
+            detail=f"{RULES[name][1]}. Please try again in {wait_text(wait)}.",
             headers={"Retry-After": str(wait)},
         )
 

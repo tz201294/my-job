@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { api } from '../api/client';
+import { useI18n } from '../i18n';
 
 // Whether this server takes uploads (asked once per page load). If not, only the link box is shown.
 let statusPromise = null;
@@ -16,6 +17,7 @@ const uploadStatus = () => {
 export default function ImageField({
   label, value, onChange, purpose = 'post', required = false, compact = false, preview = 'wide', inputId,
 }) {
+  const { t } = useI18n();
   const autoId = useId();
   const id = inputId || `image-${autoId}`;
   const fileRef = useRef(null);
@@ -35,7 +37,7 @@ export default function ImageField({
     e.target.value = ''; // picking the same file again still triggers a change
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setError('Please choose a photo (JPEG, PNG, WebP or GIF).');
+      setError(t('image.notPhoto'));
       return;
     }
     setBusy(true); setError('');
@@ -69,27 +71,27 @@ export default function ImageField({
               className={`shrink-0 inline-flex items-center gap-1.5 font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 disabled:opacity-60 ${
                 compact ? 'px-2 py-1.5 rounded-lg text-[11px]' : 'px-3 py-2 rounded-xl text-xs'}`}>
               {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
-              {busy ? 'Uploading…' : 'Upload photo'}
+              {busy ? t('image.uploading') : t('image.upload')}
             </button>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden"
               onChange={pick} data-testid={`${id}-file`} />
           </>
         )}
         <input id={id} type="url" value={value} required={required && !busy}
-          placeholder={canUpload ? 'or paste a link: https://…' : 'https://…'}
+          placeholder={canUpload ? t('image.orPaste') : 'https://…'}
           onChange={(e) => { setBroken(false); onChange(e.target.value); }}
           className={inputCls} />
       </div>
       {error && <p role="alert" className="mt-1 text-[11px] font-bold text-rose-600">{error}</p>}
-      {!canUpload && !compact && <p className="mt-1 text-[11px] text-slate-400">Paste a link to an image.</p>}
+      {!canUpload && !compact && <p className="mt-1 text-[11px] text-slate-400">{t('image.pasteLink')}</p>}
       {value && preview !== 'none' && (
         <div className={`relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 ${previewCls}`}>
           {broken ? (
-            <p className="h-full flex items-center justify-center text-[11px] text-slate-500 p-2 text-center">Can't show this image</p>
+            <p className="h-full flex items-center justify-center text-[11px] text-slate-500 p-2 text-center">{t('image.cantShow')}</p>
           ) : (
-            <img src={value} alt="Preview" onError={() => setBroken(true)} className="w-full h-full object-cover" />
+            <img src={value} alt={t('image.preview')} onError={() => setBroken(true)} className="w-full h-full object-cover" />
           )}
-          <button type="button" onClick={() => onChange('')} aria-label="Remove photo"
+          <button type="button" onClick={() => onChange('')} aria-label={t('image.remove')}
             className="absolute top-1 right-1 p-1 rounded-full bg-black/60 hover:bg-black/80 text-white">
             <X className="w-3 h-3" />
           </button>

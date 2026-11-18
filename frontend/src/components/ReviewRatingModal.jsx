@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import {
   X, Star, Check,
 } from 'lucide-react';
+import { useI18n } from '../i18n';
 
 export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
+  const { t } = useI18n();
   const [clarity, setClarity] = useState(5);
   const [accuracy, setAccuracy] = useState(5);
   const [feedback, setFeedback] = useState('');
@@ -39,7 +41,7 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
         {/* Header */}
         <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-base">Rate Technique & Peer Review</h3>
+            <h3 className="font-bold text-base">{t('review.title')}</h3>
             <p className="text-xs text-slate-400 truncate max-w-sm">{post.title}</p>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-full">
@@ -52,8 +54,8 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
             <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
               <Check className="w-6 h-6 stroke-[3]" />
             </div>
-            <h4 className="font-bold text-lg text-slate-900">Review Submitted!</h4>
-            <p className="text-xs text-slate-500">Thank you for contributing to professional clarity on Prologue.</p>
+            <h4 className="font-bold text-lg text-slate-900">{t('review.submitted')}</h4>
+            <p className="text-xs text-slate-500">{t('review.thanks')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
@@ -61,9 +63,9 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-slate-800">
-                  Explanation Clarity & Structure
+                  {t('review.clarity')}
                 </label>
-                <span className="text-xs font-extrabold text-amber-600">{clarity} / 5 Stars</span>
+                <span className="text-xs font-extrabold text-amber-600">{t('review.stars', { n: clarity })}</span>
               </div>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -83,9 +85,9 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-slate-800">
-                  Technical Accuracy & Best Practices
+                  {t('review.accuracy')}
                 </label>
-                <span className="text-xs font-extrabold text-brand-600">{accuracy} / 5 Stars</span>
+                <span className="text-xs font-extrabold text-brand-600">{t('review.stars', { n: accuracy })}</span>
               </div>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -104,28 +106,28 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
             {/* Reviewer Persona */}
             <div>
               <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                Your Background / Perspective
+                {t('review.background')}
               </label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-brand-500"
               >
-                <option value="Explorer / Student">Explorer / Student (Curious Learner)</option>
-                <option value="Peer Practitioner (Verified)">Peer Practitioner in this Industry</option>
-                <option value="Apprentice / Junior">Apprentice / Junior in Field</option>
-                <option value="Client / Customer">Client / Customer of this Service</option>
+                <option value="Explorer / Student">{t('review.roleExplorer')}</option>
+                <option value="Peer Practitioner (Verified)">{t('review.rolePeer')}</option>
+                <option value="Apprentice / Junior">{t('review.roleApprentice')}</option>
+                <option value="Client / Customer">{t('review.roleClient')}</option>
               </select>
             </div>
 
             {/* Feedback textarea */}
             <div>
               <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                Feedback & Observations
+                {t('review.feedback')}
               </label>
               <textarea
                 rows={3}
-                placeholder="What made this workflow useful or what nuances would you add from your experience?"
+                placeholder={t('review.feedbackPlaceholder')}
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-brand-500 transition-all"
@@ -146,14 +148,14 @@ export default function ReviewRatingModal({ post, onClose, onSubmitReview }) {
                 onClick={onClose}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={busy}
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white shadow-sm transition-all"
               >
-                {busy ? 'Publishing…' : 'Publish Review'}
+                {busy ? t('common.publishing') : t('review.publish')}
               </button>
             </div>
           </form>

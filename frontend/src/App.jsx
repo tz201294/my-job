@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { STANDALONE_PAGES, menuKeyForRoute, parseRoute, pathForMenuKey, paths, titleForRoute } from './routes';
+import { useI18n } from './i18n';
 import AuthScreen from './components/AuthScreen';
 import { api, IS_DEMO, onUnauthorized, tokenStore } from './api/client';
 import {
@@ -44,6 +45,7 @@ const EMPTY_CATEGORIES = [{ id: 'cat_all', name: 'All Professions', slug: 'all',
 const mapById = (list, id, fn) => list.map((x) => (x.id === id ? fn(x) : x));
 
 export default function App() {
+  const { t, lang, setLanguage } = useI18n();
   // Auth: undefined = checking stored token, null = signed out, object = signed-in account
   const [currentUser, setCurrentUser] = useState(tokenStore.get() ? undefined : null);
 
@@ -157,6 +159,27 @@ export default function App() {
     if (userId) loadAll();
   }, [userId, loadAll]);
 
+  // Times ("5 min ago") and defaults ("Explorer") are worded when data loads, so a new language reloads it.
+  const shownLanguage = useRef(lang);
+  useEffect(() => {
+    if (lang === shownLanguage.current) return;
+    shownLanguage.current = lang;
+    if (userId) loadAll({ quiet: true });
+  }, [lang, userId, loadAll]);
+
+  // Choosing a language in Settings also saves it on the account (emails then use it too).
+  const handleLanguageChange = (code) => {
+    api.updateMe({ language: code }).then(setCurrentUser).catch(() => {});
+  };
+
+  // The language saved on the account wins over this device's guess (e.g. on a new phone).
+  const accountLanguage = currentUser?.language;
+  useEffect(() => {
+    if (accountLanguage && accountLanguage !== lang) setLanguage(accountLanguage);
+    // Only when the account's choice changes, not on every language switch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountLanguage]);
+
   // Signing out (as opposed to a session expiring) returns to the home address, so whoever signs in next
   // starts on Home. An expired session keeps the address and comes back to it after signing in again.
   const handleLogout = () => {
@@ -174,9 +197,9 @@ export default function App() {
       setFeedState('ready');
     } catch (err) {
       setFeedState('error');
-      showToast(`Couldn't load this feed: ${err.message}`);
+      showToast(t('toast.feedFailed', { error: err.message }));
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => {
     if (loadState === 'ready') loadFeedView(feedView);
@@ -201,7 +224,7 @@ export default function App() {
       updatePost(postId, (p) => ({ ...p, isLiked: r.is_liked, likesCount: r.likes_count }));
     } catch (err) {
       updatePost(postId, flip); // undo the optimistic flip
-      showToast(`Couldn't update like: ${err.message}`);
+      showToast(t('toast.likeFailed', { error: err.message }));
     }
   };
 
@@ -215,17 +238,14 @@ export default function App() {
       if (!r.is_bookmarked && feedView === 'saved') setFeedPosts((ps) => ps.filter((p) => p.id !== postId));
     } catch (err) {
       updatePost(postId, flip);
-      showToast(`Couldn't update saved posts: ${err.message}`);
+      showToast(t('toast.saveFailed', { error: err.message }));
     }
   };
 
   // Blocking hides both people's content from each other, so everything on screen is refreshed.
   const handleToggleBlock = async (username) => {
     const was = viewingUser?.isBlocked;
-    if (!was && !window.confirm(
-      `Block @${username}? You won't see each other's posts, comments or stories, and neither of you can follow, `
-      + 'comment on, ask or notify the other. They are not told.',
-    )) return;
+    if (!was && !window.confirm(t('block.confirm', { username }))) return;
     try {
       const r = was ? await api.unblockUser(username) : await api.blockUser(username);
       setViewingUser((u) => (u && u.username === username
@@ -233,11 +253,11 @@ export default function App() {
             followersCount: Math.max(0, (u.followersCount || 0) - (!was && u.isFollowing ? 1 : 0)) }
         : u));
       setViewingPosts(was ? (await api.getPostsByAuthor(username)).map(toPost) : []);
-      showToast(was ? `@${username} is unblocked.` : `@${username} is blocked.`);
+      showToast(was ? t('block.unblocked', { username }) : t('block.blocked', { username }));
       loadAll({ quiet: true });
       if (feedView !== 'all') loadFeedView(feedView);
     } catch (err) {
-      showToast(`Couldn't ${was ? 'unblock' : 'block'}: ${err.message}`);
+      showToast(t(was ? 'block.unblockFailed' : 'block.blockFailed', { error: err.message }));
     }
   };
 
@@ -253,7 +273,7 @@ export default function App() {
       if (feedView === 'following') loadFeedView('following');
     } catch (err) {
       apply(was, viewingUser.followersCount);
-      showToast(`Couldn't ${was ? 'unfollow' : 'follow'}: ${err.message}`);
+      showToast(t(was ? 'toast.unfollowFailed' : 'toast.followFailed', { error: err.message }));
     }
   };
 
@@ -310,7 +330,7 @@ export default function App() {
     try {
       await api.deletePost(postId);
     } catch (err) {
-      showToast(`Couldn't delete the post: ${err.message}`);
+      showToast(t('toast.deletePostFailed', { error: err.message }));
       return;
     }
     const drop = (ps) => ps.filter((p) => p.id !== postId);
@@ -320,19 +340,19 @@ export default function App() {
     setSelectedCaseStudy((cs) => (cs && cs.id === postId ? null : cs));
     if (route.page === 'post' && route.postId === postId) go(paths.home, { replace: true });
     setViewingUser((u) => (u && u.id === currentUser.id ? { ...u, postsCount: Math.max(0, (u.postsCount || 1) - 1) } : u));
-    showToast('Post deleted');
+    showToast(t('toast.postDeleted'));
   };
 
   const handleDeleteStory = async (storyId) => {
     try {
       await api.deleteStory(storyId);
     } catch (err) {
-      showToast(`Couldn't delete the story: ${err.message}`);
+      showToast(t('toast.deleteStoryFailed', { error: err.message }));
       return;
     }
     setStories((ss) => ss.filter((s) => s.id !== storyId));
     setActiveStoryIdx(null);
-    showToast('Story deleted');
+    showToast(t('toast.storyDeleted'));
   };
 
   const handleUpdateChallenge = async (challengeId, draft) => {
@@ -350,11 +370,11 @@ export default function App() {
     try {
       await api.deleteChallenge(challengeId);
     } catch (err) {
-      showToast(`Couldn't delete the challenge: ${err.message}`);
+      showToast(t('toast.deleteChallengeFailed', { error: err.message }));
       return;
     }
     setChallenges((cs) => cs.filter((c) => c.id !== challengeId));
-    showToast('Challenge deleted');
+    showToast(t('toast.challengeDeleted'));
   };
 
   const handleUpdateSuggestion = async (challengeId, suggestionId, draft) => {
@@ -373,7 +393,7 @@ export default function App() {
     try {
       await api.deleteSuggestion(suggestion.id);
     } catch (err) {
-      showToast(`Couldn't delete the idea: ${err.message}`);
+      showToast(t('toast.deleteIdeaFailed', { error: err.message }));
       return;
     }
     setChallenges((cs) => mapById(cs, challengeId, (c) => ({
@@ -397,7 +417,7 @@ export default function App() {
     try {
       await api.deleteQuestion(qaId);
     } catch (err) {
-      showToast(`Couldn't delete the question: ${err.message}`);
+      showToast(t('toast.deleteQuestionFailed', { error: err.message }));
       return false;
     }
     setQaItems((qs) => qs.filter((q) => q.id !== qaId));
@@ -444,7 +464,7 @@ export default function App() {
       );
       setChallenges((cs) => mapById(cs, challengeId, () => updated));
     } catch (err) {
-      showToast(`Couldn't ${accept ? 'accept' : 'withdraw'} the solution: ${err.message}`);
+      showToast(t(accept ? 'toast.acceptFailed' : 'toast.withdrawFailed', { error: err.message }));
     }
   };
 
@@ -459,7 +479,7 @@ export default function App() {
       apply((s) => ({ ...s, upvotedByMe: r.upvoted, upvotes: r.upvotes_count }));
     } catch (err) {
       apply(flip);
-      showToast(`Couldn't update upvote: ${err.message}`);
+      showToast(t('toast.upvoteFailed', { error: err.message }));
     }
   };
 
@@ -490,7 +510,7 @@ export default function App() {
       setQaItems((qs) => mapById(qs, qaId, (q) => ({ ...q, upvotedByMe: r.upvoted, upvotes: r.upvotes_count })));
     } catch (err) {
       setQaItems((qs) => mapById(qs, qaId, flip));
-      showToast(`Couldn't update upvote: ${err.message}`);
+      showToast(t('toast.upvoteFailed', { error: err.message }));
     }
   };
 
@@ -539,14 +559,14 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
   useEffect(() => {
     if (currentUser === null) {
-      document.title = 'Log in · Prologue';
+      document.title = `${t('auth.login')} · Prologue`;
       return;
     }
     const extra = route.page === 'profile' && viewingUser?.username === route.username
       ? `${viewingUser.fullName} (@${viewingUser.username})`
       : route.page === 'post' && pagePost?.id === route.postId ? pagePost.title : null;
     document.title = titleForRoute(route, extra);
-  }, [route, viewingUser, pagePost, currentUser]);
+  }, [route, viewingUser, pagePost, currentUser, t]);
 
   const handleOpenUserProfile = (username) => go(paths.profile(username));
 
@@ -572,7 +592,7 @@ export default function App() {
   const applyMyProfile = (u) => {
     const name = u.full_name;
     const avatar = u.avatar_url || DEFAULT_AVATAR;
-    const title = u.profession?.title || 'Explorer';
+    const title = u.profession?.title || t('role.explorer');
     const fixPost = (p) => (p.authorId === u.id ? {
       ...p, authorFullName: name, authorAvatarUrl: avatar, authorProfessionTitle: title,
       authorIndustry: u.profession?.industry || null, isAuthorVerified: !!u.profession?.is_verified_pro,
@@ -611,7 +631,7 @@ export default function App() {
     tokenStore.set(data.access_token);
     setCurrentUser(data.user);
     go(paths.home, { replace: true });
-    showToast("Your new password is saved, and you're logged in.");
+    showToast(t('toast.passwordReset'));
   };
 
   // After confirming an email address, refresh the account if this device is logged in.
@@ -623,7 +643,7 @@ export default function App() {
     await api.deleteMe(data);
     clearSession();
     go(paths.home, { replace: true });
-    showToast('Your account was deleted.');
+    showToast(t('toast.accountDeleted'));
   };
 
   // ---------- Notifications ----------
@@ -656,7 +676,7 @@ export default function App() {
       if (p.taskDetails) setSelectedCaseStudy(p);
       else go(paths.post(postId));
     } catch (err) {
-      showToast(err.status === 404 ? 'That post is no longer available.' : `Couldn't open the post: ${err.message}`);
+      showToast(err.status === 404 ? t('toast.postGone') : t('toast.openPostFailed', { error: err.message }));
     }
   };
 
@@ -675,7 +695,7 @@ export default function App() {
       case 'suggestion':
       case 'accepted':
         if (challenges.some((c) => c.id === n.challengeId)) goToChallenge(n.challengeId);
-        else showToast('That challenge is no longer available.');
+        else showToast(t('toast.challengeGone'));
         break;
       case 'review':
         if (n.postId) openReviewedPost(n.postId);
@@ -686,7 +706,7 @@ export default function App() {
   };
 
   const handleResetDemo = async () => {
-    if (!window.confirm('Reset the demo? Everything you did in this browser is removed and you are signed out.')) return;
+    if (!window.confirm(t('demo.resetConfirm'))) return;
     const { resetDemoData } = await import('./api/demoBackend');
     resetDemoData();
     clearSession();
@@ -702,8 +722,8 @@ export default function App() {
       avatarUrl: viewingUser.avatarUrl,
       professionTitle: viewingUser.professionTitle,
       mediaUrl: highlight.cover,
-      caption: `Pinned Highlight: ${highlight.title}`,
-      timeAgo: 'Pinned',
+      caption: t('profile.pinnedHighlight', { title: highlight.title }),
+      timeAgo: t('profile.pinned'),
       professionTag: viewingUser.industry.split(' ')[0],
     };
     setStories([highlightStory, ...stories]);
@@ -793,23 +813,23 @@ export default function App() {
           <Loading />
         ) : loadState === 'error' ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-slate-200" role="alert">
-            <p className="text-sm font-bold text-slate-700">Couldn't load Prologue</p>
+            <p className="text-sm font-bold text-slate-700">{t('app.loadFailed')}</p>
             <p className="text-xs text-slate-500 mt-1">{loadError}</p>
             <button
               onClick={loadAll}
               className="mt-4 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold"
             >
-              Try again
+              {t('common.tryAgain')}
             </button>
           </div>
         ) : route.page === 'notFound' ? (
           <NotFoundPage />
         ) : route.page === 'profile' && (profileState === 'notfound' || profileState === 'error') ? (
           <NotFoundPage
-            title={profileState === 'notfound' ? 'Profile not found' : "Couldn't load this profile"}
+            title={profileState === 'notfound' ? t('profile.notFound') : t('profile.loadFailed')}
             message={profileState === 'notfound'
-              ? `There is no one called @${route.username} on Prologue.`
-              : 'Please check your connection and try again.'}
+              ? t('profile.notFoundText', { username: route.username })
+              : t('common.checkConnection')}
           />
         ) : route.page === 'profile' && viewingUser?.username !== route.username ? (
           <Loading />
@@ -832,10 +852,10 @@ export default function App() {
         ) : route.page === 'post' ? (
           postState === 'notfound' || postState === 'error' ? (
             <NotFoundPage
-              title={postState === 'notfound' ? 'Post not found' : "Couldn't load this post"}
+              title={postState === 'notfound' ? t('post.notFound') : t('post.loadFailed')}
               message={postState === 'notfound'
-                ? 'It may have been deleted by its author.'
-                : 'Please check your connection and try again.'}
+                ? t('post.notFoundText')
+                : t('common.checkConnection')}
             />
           ) : pagePost?.id !== route.postId ? (
             <Loading />
@@ -884,6 +904,7 @@ export default function App() {
             onLogout={handleLogout}
             onResetDemo={handleResetDemo}
             onBlockChange={() => loadAll({ quiet: true })}
+            onLanguageChange={handleLanguageChange}
           />
         ) : activeTab === 'moderation' ? (
           currentUser.is_admin
@@ -915,8 +936,8 @@ export default function App() {
             {/* FEED TAB CONTENT */}
             {activeTab === 'feed' && (
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-xs font-bold" role="tablist" aria-label="Feed filter">
-                  {[['all', 'For you'], ['following', 'Following'], ['saved', 'Saved']].map(([view, label]) => (
+                <div className="flex items-center gap-2 text-xs font-bold" role="tablist" aria-label={t('feed.filter')}>
+                  {[['all', t('feed.forYou')], ['following', t('feed.following')], ['saved', t('feed.saved')]].map(([view, label]) => (
                     <button
                       key={view}
                       role="tab"
@@ -934,26 +955,26 @@ export default function App() {
                 </div>
 
                 {feedView !== 'all' && feedState === 'loading' ? (
-                  <div className="flex justify-center py-10" role="status" aria-label="Loading">
+                  <div className="flex justify-center py-10" role="status" aria-label={t('common.loading')}>
                     <Loader2 className="w-5 h-5 text-teal-600 animate-spin" />
                   </div>
                 ) : filteredPosts.length === 0 ? (
                   <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
                     <p className="text-sm font-bold text-slate-600">
                       {sourcePosts.length > 0
-                        ? 'No posts matched your search filters.'
+                        ? t('feed.noMatches')
                         : feedView === 'following'
-                          ? 'Nothing here yet — follow some professionals to fill this feed.'
+                          ? t('feed.emptyFollowing')
                           : feedView === 'saved'
-                            ? 'You haven\'t saved anything yet. Tap the bookmark on a post.'
-                            : 'No posts yet — publish the first one.'}
+                            ? t('feed.emptySaved')
+                            : t('feed.empty')}
                     </p>
                     {sourcePosts.length > 0 && (
                       <button
                         onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}
                         className="mt-2 text-xs font-bold text-brand-600 hover:underline"
                       >
-                        Clear all filters
+                        {t('feed.clearFilters')}
                       </button>
                     )}
                   </div>
@@ -982,7 +1003,7 @@ export default function App() {
             {activeTab === 'reels' && (
               <>
                 <p className="text-center text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-3">
-                  Reels are sample content for now — video posting isn't available yet.
+                  {t('reels.sampleNotice')}
                 </p>
                 <ReelsHub
                   reels={reels}

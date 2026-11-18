@@ -8,6 +8,8 @@
 //   /reset-password#token=…  /verify-email#token=…   links from emails (work logged in or out)
 //   /privacy  /terms         the Privacy Policy and Terms of Service (work logged in or out)
 
+import { tNow } from './i18n';
+
 const enc = encodeURIComponent;
 
 export const paths = {
@@ -101,15 +103,15 @@ export function menuKeyForRoute(route, myUsername) {
 export function titleForRoute(route, extra) {
   const base = 'Prologue';
   const names = {
-    challenges: 'Live Work', qa: route.qaView === 'inbox' ? 'Waiting for my answer' : 'Q&A', reels: 'Reels',
-    activity: 'My activity', notifications: 'Notifications', settings: 'Settings', notFound: 'Page not found',
-    resetPassword: 'Choose a new password', verifyEmail: 'Confirm your email', moderation: 'Moderation',
-    privacy: 'Privacy Policy', terms: 'Terms of Service',
+    challenges: 'nav.liveWork', qa: route.qaView === 'inbox' ? 'qa.inboxTitle' : 'nav.qa', reels: 'nav.reels',
+    activity: 'nav.activity', notifications: 'nav.notifications', settings: 'nav.settings', notFound: 'notFound.title',
+    resetPassword: 'reset.title', verifyEmail: 'verify.title', moderation: 'nav.moderation',
+    privacy: 'legal.privacy', terms: 'legal.terms',
   };
   if (route.page === 'feed') {
-    return route.feedView === 'all' ? `${base} — A story behind every profession`
-      : `${route.feedView === 'saved' ? 'Saved' : 'Following'} · ${base}`;
+    return route.feedView === 'all' ? `${base} — ${tNow('brand.tagline')}`
+      : `${tNow(route.feedView === 'saved' ? 'feed.saved' : 'feed.following')} · ${base}`;
   }
   if ((route.page === 'profile' || route.page === 'post') && extra) return `${extra} · ${base}`;
-  return names[route.page] ? `${names[route.page]} · ${base}` : base;
+  return names[route.page] ? `${tNow(names[route.page])} · ${base}` : base;
 }

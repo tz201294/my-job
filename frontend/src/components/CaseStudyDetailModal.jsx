@@ -4,8 +4,10 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { timeAgo } from '../api/mappers';
+import { useI18n } from '../i18n';
 
 export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose, onOpenReviewModal }) {
+  const { t } = useI18n();
   const [activeStepIdx, setActiveStepIdx] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([0]);
   const [reviews, setReviews] = useState(null); // null = loading
@@ -75,7 +77,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/30 text-xs font-bold transition-all"
             >
               <Star className="w-3.5 h-3.5 fill-amber-300" />
-              <span>Rate Technique</span>
+              <span>{t('case.rate')}</span>
             </button>
             <button
               onClick={onClose}
@@ -92,15 +94,15 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-                Difficulty: {task.difficulty}
+                {t('case.difficulty', { level: task.difficulty ? t(`difficulty.${task.difficulty.toLowerCase()}`) : '' })}
               </span>
               {task.estimatedDuration && (
                 <span className="px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 text-xs font-bold">
-                  Duration: {task.estimatedDuration}
+                  {t('case.duration', { time: task.estimatedDuration })}
                 </span>
               )}
               <span className="px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 text-xs font-bold">
-                {post.rating != null ? `⭐ ${post.rating} / 5.0 (${post.reviewsCount} ${post.reviewsCount === 1 ? 'review' : 'reviews'})` : 'Not reviewed yet'}
+                {post.rating != null ? `⭐ ${post.rating} / 5.0 (${t('case.reviews', { count: post.reviewsCount })})` : t('case.notReviewed')}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-snug">
@@ -112,7 +114,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
             <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-brand-600"></span>
-              Real-World Problem Context
+              {t('case.problem')}
             </h4>
             <p className="text-sm text-slate-800 leading-relaxed font-medium">
               {task.problemStatement}
@@ -125,7 +127,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
             <div className="bg-brand-50/50 border border-brand-100 rounded-2xl p-4">
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-brand-900 mb-2.5 flex items-center gap-2">
                 <Wrench className="w-4 h-4 text-brand-600" />
-                Required Tools & References
+                {t('case.tools')}
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {task.toolsUsed?.map((tool, idx) => (
@@ -141,7 +143,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
               <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4">
                 <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-900 mb-2.5 flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-amber-600" />
-                  Compliance & Safety Protocol
+                  {t('case.safety')}
                 </h4>
                 <p className="text-xs text-amber-900 leading-relaxed font-medium">
                   {task.safetyWarnings}
@@ -155,10 +157,10 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
             <div className="p-4 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                  Step-by-Step Execution
+                  {t('case.steps')}
                 </span>
                 <span className="text-xs font-bold text-brand-700 bg-brand-100 px-2 py-0.5 rounded-full">
-                  Step {activeStepIdx + 1} of {steps.length}
+                  {t('case.stepOf', { n: activeStepIdx + 1, total: steps.length })}
                 </span>
               </div>
 
@@ -188,7 +190,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">
-                      Step {currentStep.stepNumber}: {currentStep.title}
+                      {t('case.stepTitle', { n: currentStep.stepNumber, title: currentStep.title })}
                     </h3>
                     <p className="text-sm text-slate-700 mt-2 leading-relaxed">
                       {currentStep.description}
@@ -212,7 +214,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
                   <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200/80 rounded-xl p-3.5 text-xs text-emerald-900">
                     <Lightbulb className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold">Practitioner's Pro Tip: </span>
+                      <span className="font-bold">{t('case.tip')} </span>
                       <span>{currentStep.tip}</span>
                     </div>
                   </div>
@@ -226,7 +228,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
                     className="flex items-center gap-1 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   >
                     <ChevronLeft className="w-4 h-4" />
-                    <span>Previous Step</span>
+                    <span>{t('case.previous')}</span>
                   </button>
 
                   <button
@@ -234,7 +236,7 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
                     disabled={activeStepIdx === steps.length - 1}
                     className="flex items-center gap-1 px-5 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   >
-                    <span>{activeStepIdx === steps.length - 1 ? 'Workflow Completed' : 'Next Step'}</span>
+                    <span>{activeStepIdx === steps.length - 1 ? t('case.completed') : t('case.next')}</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -246,8 +248,8 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
           <div className="border-t border-slate-200 pt-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className="text-base font-bold text-slate-900">Peer Reviews & Community Observations</h4>
-                <p className="text-xs text-slate-500">Feedback from verified practitioners and explorers</p>
+                <h4 className="text-base font-bold text-slate-900">{t('case.reviewsTitle')}</h4>
+                <p className="text-xs text-slate-500">{t('case.reviewsSubtitle')}</p>
               </div>
               <button
                 onClick={() => onOpenReviewModal(post)}
@@ -260,9 +262,9 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
             {/* Reviews List */}
             <div className="space-y-3 mb-4">
               {reviewsError && <p role="alert" className="text-xs font-bold text-rose-600">{reviewsError}</p>}
-              {reviews === null && !reviewsError && <p className="text-xs text-slate-500">Loading reviews…</p>}
+              {reviews === null && !reviewsError && <p className="text-xs text-slate-500">{t('case.loadingReviews')}</p>}
               {reviews?.length === 0 && (
-                <p className="text-xs text-slate-500">No reviews yet — share the first one.</p>
+                <p className="text-xs text-slate-500">{t('case.noReviews')}</p>
               )}
               {reviews?.map((rv) => (
                 <div key={rv.id} className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">

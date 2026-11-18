@@ -3,8 +3,10 @@ import {
   X, ChevronLeft, ChevronRight, Heart, Send, ShieldCheck,
 } from 'lucide-react';
 import OwnerActions from './OwnerActions';
+import { useI18n } from '../i18n';
 
 export default function StoryViewerModal({ stories, initialIndex, currentUserId, onDeleteStory, onClose }) {
+  const { t } = useI18n();
   const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
   const [progress, setProgress] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
@@ -127,7 +129,7 @@ export default function StoryViewerModal({ stories, initialIndex, currentUserId,
                 label="story"
                 tone="dark"
                 onDelete={() => onDeleteStory(story.id)}
-                confirmText="Delete this story now? It won't be shown to anyone anymore."
+                confirmText={t('stories.confirmDelete')}
               />
             )}
             <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider">
@@ -163,7 +165,7 @@ export default function StoryViewerModal({ stories, initialIndex, currentUserId,
             <form onSubmit={handleSendComment} className="flex-1 relative">
               <input
                 type="text"
-                placeholder={`Ask ${story.fullName.split(' ')[0]} about this...`}
+                placeholder={t('stories.askAbout', { name: story.fullName.split(' ')[0] })}
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 className="w-full pl-4 pr-10 py-2.5 bg-white/20 hover:bg-white/25 focus:bg-white/30 text-white placeholder-white/70 text-xs rounded-full border border-white/20 outline-none backdrop-blur-md"

@@ -1,3 +1,5 @@
+import { currentLanguage, tNow } from '../i18n';
+
 // The demo backend (and its sample data) is loaded only in demo mode, so the real app doesn't download it.
 let demoModule = null;
 const demo = () => {
@@ -67,17 +69,17 @@ async function request(endpoint, options = {}) {
   try {
     res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', ...authHeaders(), ...options.headers },
+      headers: { 'Content-Type': 'application/json', 'Accept-Language': currentLanguage(), ...authHeaders(), ...options.headers },
     });
   } catch {
-    throw new Error("Can't reach the Prologue server. Check your connection and try again.");
+    throw new Error(tNow('error.offline'));
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && tokenStore.get() && unauthorizedHandler && !endpoint.startsWith('/auth/login')) {
       unauthorizedHandler();
     }
-    const err = new Error(errorMessage(body, `Request failed (${res.status})`));
+    const err = new Error(errorMessage(body, tNow('error.requestFailed', { status: res.status })));
     err.status = res.status;
     throw err;
   }
@@ -88,14 +90,16 @@ async function request(endpoint, options = {}) {
 async function upload(endpoint, form) {
   let res;
   try {
-    res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', body: form, headers: authHeaders() });
+    res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST', body: form, headers: { 'Accept-Language': currentLanguage(), ...authHeaders() },
+    });
   } catch {
-    throw new Error("Can't reach the Prologue server. Check your connection and try again.");
+    throw new Error(tNow('error.offline'));
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && tokenStore.get() && unauthorizedHandler) unauthorizedHandler();
-    const err = new Error(errorMessage(body, `Upload failed (${res.status})`));
+    const err = new Error(errorMessage(body, tNow('error.uploadFailed', { status: res.status })));
     err.status = res.status;
     throw err;
   }

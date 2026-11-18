@@ -32,6 +32,8 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Privacy Policy and Terms of Service pages, accepted at sign-up (version recorded), Download my data (JSON), and
   the font served from the site instead of Google Fonts. Before launch: set VITE_CONTACT_EMAIL and have the text
   checked by someone who knows the law (docs/DEPLOY.md step 6).
+- Languages, round 1: English, Spanish, French, German, Japanese (device language by default; Settings; saved on
+  the account; server messages and emails too). Translations should be checked by native speakers before launch.
 - Photo uploads for post covers, step photos, stories and profile photos (checked, turned upright, resized,
   stripped of GPS and other hidden data, stored on Cloudinary). Setup: docs/DEPLOY.md step 8.
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
@@ -46,6 +48,11 @@ without code changes. Everything is in the repo (`render.yaml`, deploy workflow 
 [docs/DEPLOY.md](docs/DEPLOY.md). Rehearsed locally in production mode (sign-up, posts, comments, reactions,
 settings, deep links). CI runs every backend test and the migrations on Postgres 17 (Neon's default), checks
 the migrations match the models and can be undone, and Render only deploys once CI passes.
+
+### 1b. Languages, round 2
+Hebrew and Arabic (right-to-left: mirror the layout, mostly swapping left/right classes for start/end ones; the
+`dir` attribute is already set), plus Russian. The demo's sample posts and categories are English content and stay so.
+The Privacy Policy and Terms are English only for now (a notice says so in other languages).
 
 ### 2. More on uploads
 Photo uploads are done (Cloudinary). Still open: video uploads, deleting a photo from Cloudinary when its post,

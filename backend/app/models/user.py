@@ -25,6 +25,8 @@ class User(Base):
     # When this person agreed to the Terms and Privacy Policy, and which version (app/core/legal.py).
     terms_accepted_at = Column(DateTime, nullable=True)
     terms_version = Column(String(32), nullable=True)
+    # The app language chosen on this account (en, es, fr, de, ja); emails are written in it.
+    language = Column(String(8), nullable=True)
 
     # Relationships
     profession = relationship(

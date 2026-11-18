@@ -68,6 +68,7 @@ async def user_me_out(db: AsyncSession, user: User) -> dict:
     data["email"] = user.email
     data["email_verified"] = bool(user.email and user.email_verified_at)
     data["is_admin"] = user.username in settings.ADMIN_USERNAMES
+    data["language"] = user.language
     data["survey"] = SurveyResponse.model_validate(survey) if survey else None
     data["interests"] = sorted(interests)
     return data

@@ -8,13 +8,14 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.api.rate_limits import limit
+from app.core.i18n import pick_language, translate
 from app.core.time import utcnow
 from app.db.session import get_db
 from app.models import ChallengeSuggestion, Post, PostComment, QAQuestion, Report, User, WorkChallenge
@@ -73,7 +74,9 @@ REMOVERS = {
 # ---------- reporting (everyone) ----------
 
 @router.post("/reports", status_code=status.HTTP_201_CREATED, dependencies=[Depends(limit("report"))])
-async def create_report(body: ReportCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def create_report(
+    body: ReportCreate, request: Request, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user),
+):
     """Report something to the moderators. The person reported isn't told who reported them."""
     target, owner_id, _ = await _load_target(db, body.target_type, body.target_id)
     if target is None or await is_hidden_from(db, user, owner_id):
@@ -91,7 +94,8 @@ async def create_report(body: ReportCreate, db: AsyncSession = Depends(get_db), 
         db.add(Report(reporter_id=user.id, target_type=body.target_type, target_id=body.target_id,
                       target_user_id=owner_id, reason=body.reason, details=details))
         await db.commit()
-    return {"detail": "Thanks for letting us know. A moderator will look at it."}
+    return {"detail": translate("Thanks for letting us know. A moderator will look at it.",
+                                pick_language(request.headers.get("accept-language")))}
 
 
 # ---------- moderators ----------

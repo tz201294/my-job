@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { useI18n } from '../i18n';
 
 // Small Edit / Delete buttons shown on content the signed-in user owns.
 // onDelete may return a promise; the delete button shows a spinner until it settles.
@@ -7,11 +8,12 @@ import { Pencil, Trash2, Loader2 } from 'lucide-react';
 export default function OwnerActions({
   onEdit,
   onDelete,
-  confirmText = 'Delete this? This cannot be undone.',
-  label = 'item',
+  confirmText,
+  label = 'item', // what it is: post, comment, question, challenge, idea, story
   tone = 'light', // 'light' on white cards, 'dark' on photos/dark backgrounds
   className = '',
 }) {
+  const { t } = useI18n();
   const [deleting, setDeleting] = useState(false);
 
   const stop = (fn) => async (e) => {
@@ -21,7 +23,7 @@ export default function OwnerActions({
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(confirmText)) return;
+    if (!window.confirm(confirmText || t('owner.confirmDelete'))) return;
     setDeleting(true);
     try {
       await onDelete();
@@ -40,8 +42,8 @@ export default function OwnerActions({
         <button
           type="button"
           onClick={stop(onEdit)}
-          aria-label={`Edit ${label}`}
-          title={`Edit ${label}`}
+          aria-label={t('owner.edit', { item: t(`item.${label}`) })}
+          title={t('owner.edit', { item: t(`item.${label}`) })}
           className={`p-1.5 rounded-lg transition-colors ${btn}`}
         >
           <Pencil className="w-3.5 h-3.5" />
@@ -52,8 +54,8 @@ export default function OwnerActions({
           type="button"
           onClick={stop(handleDelete)}
           disabled={deleting}
-          aria-label={`Delete ${label}`}
-          title={`Delete ${label}`}
+          aria-label={t('owner.delete', { item: t(`item.${label}`) })}
+          title={t('owner.delete', { item: t(`item.${label}`) })}
           className={`p-1.5 rounded-lg transition-colors disabled:opacity-60 ${
             tone === 'dark' ? btn : 'bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700'
           }`}

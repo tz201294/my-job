@@ -4,12 +4,14 @@ import { api } from '../api/client';
 import { REACTION_EMOJIS, toComment } from '../api/mappers';
 import OwnerActions from './OwnerActions';
 import ReportButton from './ReportButton';
+import { useI18n } from '../i18n';
 
 const PAGE_SIZE = 20;
 const MAX_LENGTH = 2000;
 
 // Reaction counts under a comment, plus a picker. Tapping your current emoji removes it; another one replaces it.
 function Reactions({ comment, onReact }) {
+  const { t } = useI18n();
   const [picking, setPicking] = useState(false);
   const boxRef = useRef(null);
 
@@ -48,16 +50,16 @@ function Reactions({ comment, onReact }) {
         </button>
       ))}
       <button type="button" onClick={() => setPicking((v) => !v)} aria-expanded={picking}
-        aria-label="React to this comment"
+        aria-label={t('comments.react')}
         className="inline-flex items-center justify-center w-7 h-6 rounded-full text-slate-400 hover:text-teal-700 hover:bg-teal-50">
         <SmilePlus className="w-4 h-4" />
       </button>
       {picking && (
-        <div role="menu" aria-label="Pick a reaction"
+        <div role="menu" aria-label={t('comments.pickReaction')}
           className="absolute z-20 bottom-full mb-1 left-0 flex gap-0.5 p-1 bg-white border border-slate-200 rounded-full shadow-lg">
           {REACTION_EMOJIS.map((emoji) => (
             <button key={emoji} type="button" role="menuitemradio" aria-checked={comment.myReaction === emoji}
-              aria-label={`React with ${emoji}`} onClick={() => choose(emoji)}
+              aria-label={t('comments.reactWith', { emoji })} onClick={() => choose(emoji)}
               className={`w-8 h-8 rounded-full text-lg leading-none hover:scale-125 hover:bg-slate-100 transition-transform ${
                 comment.myReaction === emoji ? 'bg-teal-50 ring-2 ring-teal-300' : ''
               }`}>
@@ -71,6 +73,7 @@ function Reactions({ comment, onReact }) {
 }
 
 function CommentItem({ comment, canEdit, canDelete, canReact, canReport, onSave, onDelete, onReact }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(comment.body);
   const [busy, setBusy] = useState(false);
@@ -108,14 +111,14 @@ function CommentItem({ comment, canEdit, canDelete, canReact, canReport, onSave,
                 label="comment"
                 onEdit={canEdit ? () => { setText(comment.body); setEditing(true); } : undefined}
                 onDelete={canDelete ? () => onDelete(comment.id) : undefined}
-                confirmText="Delete this comment?"
+                confirmText={t('comments.confirmDelete')}
               />
             )}
             {canReport && !editing && <ReportButton targetType="comment" targetId={comment.id} label="comment" />}
           </div>
           {editing ? (
             <form onSubmit={save} className="mt-1.5 space-y-1.5">
-              <label htmlFor={`comment-edit-${comment.id}`} className="sr-only">Edit your comment</label>
+              <label htmlFor={`comment-edit-${comment.id}`} className="sr-only">{t('comments.editLabel')}</label>
               <textarea
                 id={`comment-edit-${comment.id}`}
                 rows={2}
@@ -128,11 +131,11 @@ function CommentItem({ comment, canEdit, canDelete, canReact, canReport, onSave,
                 <span role="alert" className="mr-auto text-[11px] font-bold text-rose-600">{error}</span>
                 <button type="button" onClick={() => setEditing(false)} disabled={busy}
                   className="px-3 py-1 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-slate-200">
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button type="submit" disabled={busy || !text.trim()}
                   className="px-3 py-1 rounded-lg text-[11px] font-extrabold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60">
-                  {busy ? 'Saving…' : 'Save'}
+                  {busy ? t('common.saving') : t('common.save')}
                 </button>
               </div>
             </form>
@@ -157,6 +160,7 @@ function CommentItem({ comment, canEdit, canDelete, canReact, canReport, onSave,
 // The commenter can edit/delete their comment; the post's author can delete any comment on it.
 // onCountChange(postId, total) keeps the post's comment count in step.
 export default function CommentsSection({ post, currentUserId, onCountChange }) {
+  const { t } = useI18n();
   const [comments, setComments] = useState([]);
   const [total, setTotal] = useState(0);
   const [state, setState] = useState('loading'); // 'loading' | 'ready' | 'error'
@@ -248,7 +252,7 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
       set(r.reactions, r.my_reaction ?? r.myReaction ?? null);
     } catch (err) {
       set(c.reactions, c.myReaction);
-      setPostError(`Couldn't save your reaction: ${err.message}`);
+      setPostError(t('comments.reactFailed', { error: err.message }));
     }
   };
 
@@ -256,7 +260,7 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
     try {
       await api.deleteComment(post.id, commentId);
     } catch (err) {
-      setPostError(`Couldn't delete the comment: ${err.message}`);
+      setPostError(t('comments.deleteFailed', { error: err.message }));
       return;
     }
     setComments((cs) => cs.filter((c) => c.id !== commentId));
@@ -264,15 +268,15 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
   };
 
   return (
-    <section aria-label="Comments" className="pt-3.5 mt-3.5 border-t border-teal-100/70 space-y-3">
+    <section aria-label={t('comments.title')} className="pt-3.5 mt-3.5 border-t border-teal-100/70 space-y-3">
       {state === 'loading' && (
-        <p className="flex items-center gap-1.5 text-xs text-slate-500"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading comments…</p>
+        <p className="flex items-center gap-1.5 text-xs text-slate-500"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('comments.loading')}</p>
       )}
       {state === 'error' && (
         <p role="alert" className="text-xs font-bold text-rose-600">Couldn't load comments: {loadError}</p>
       )}
       {state === 'ready' && comments.length === 0 && (
-        <p className="text-xs text-slate-500">No comments yet. Start the conversation.</p>
+        <p className="text-xs text-slate-500">{t('comments.empty')}</p>
       )}
 
       {comments.length > 0 && (
@@ -296,12 +300,12 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
       {state === 'ready' && comments.length < total && (
         <button onClick={loadMore} disabled={loadingMore}
           className="text-xs font-bold text-teal-700 hover:underline disabled:opacity-60">
-          {loadingMore ? 'Loading…' : `Show more comments (${total - comments.length})`}
+          {loadingMore ? t('common.loading') : t('comments.showMore', { n: total - comments.length })}
         </button>
       )}
 
       <form onSubmit={submit} className="flex items-end gap-2">
-        <label htmlFor={`comment-new-${post.id}`} className="sr-only">Add a comment</label>
+        <label htmlFor={`comment-new-${post.id}`} className="sr-only">{t('comments.add')}</label>
         <textarea
           id={`comment-new-${post.id}`}
           rows={1}
@@ -309,10 +313,10 @@ export default function CommentsSection({ post, currentUserId, onCountChange }) 
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) submit(e); }}
-          placeholder="Add a comment…"
+          placeholder={t('comments.addPlaceholder')}
           className="flex-1 min-w-0 px-3.5 py-2 bg-white border border-teal-200 rounded-2xl text-xs sm:text-sm text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 resize-none"
         />
-        <button type="submit" disabled={posting || !draft.trim()} aria-label="Post comment"
+        <button type="submit" disabled={posting || !draft.trim()} aria-label={t('comments.post')}
           className="p-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white">
           {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { BrandMark, Wordmark } from './Brand';
 import { paths } from '../routes';
+import { useI18n } from '../i18n';
 
 // The Privacy Policy and Terms of Service. Readable without an account (/privacy, /terms).
 //
@@ -19,6 +20,7 @@ function Contact() {
 }
 
 function Shell({ title, children }) {
+  const { t, lang } = useI18n();
   const location = useLocation();
   const go = useNavigate();
   const back = () => (location.key !== 'default' ? go(-1) : go(paths.home));
@@ -28,19 +30,24 @@ function Shell({ title, children }) {
         <div className="flex items-center justify-between mb-6">
           <button type="button" onClick={back}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100">
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> {t('common.back')}
           </button>
           <span className="flex items-center gap-2"><BrandMark size={32} title="Prologue" /><Wordmark className="text-xl" /></span>
         </div>
         <article className="legal bg-white border border-slate-200 rounded-3xl shadow-sm p-6 sm:p-8 text-sm leading-relaxed text-slate-700">
           <h1 className="text-2xl font-black text-slate-900">{title}</h1>
           <p className="text-xs text-slate-500 mt-1 mb-6">Last updated {LAST_UPDATED}</p>
+          {lang !== 'en' && (
+            <p lang={lang} className="mb-6 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold">
+              {t('legal.englishOnly')}
+            </p>
+          )}
           {children}
         </article>
         <p className="text-center text-xs text-slate-500 mt-6">
-          <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:underline">Privacy Policy</a>
+          <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:underline">{t('legal.privacy')}</a>
           {' · '}
-          <a href={`${import.meta.env.BASE_URL}terms`} className="hover:underline">Terms of Service</a>
+          <a href={`${import.meta.env.BASE_URL}terms`} className="hover:underline">{t('legal.terms')}</a>
         </p>
       </div>
     </div>

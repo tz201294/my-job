@@ -1,4 +1,21 @@
 // Translates between the API's snake_case payloads and the camelCase shapes the UI components use.
+import { timeAgoNow, tNow } from '../i18n';
+
+// A Q&A topic ("Daily Routine & Worklife", stored in English) in the current language.
+export function topicName(value) {
+  if (!value) return value;
+  const key = `topic.${value}`;
+  const text = tNow(key);
+  return text === key ? value : text;
+}
+
+// A field of work ("Trades & Craftsmanship", stored in English) in the current language.
+export function fieldName(value) {
+  if (!value) return value;
+  const key = `field.${value}`;
+  const text = tNow(key);
+  return text === key ? value : text;
+}
 
 // Neutral silhouette for people without a profile photo (never a real person's picture).
 export const DEFAULT_AVATAR =
@@ -21,27 +38,15 @@ export const PLACEHOLDER_IMAGE =
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
-// The API sends naive UTC timestamps without a zone suffix; treat them as UTC.
-export function timeAgo(iso) {
-  if (!iso) return '';
-  const d = new Date(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`);
-  const secs = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
-  if (secs < 60) return 'Just now';
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString();
-}
+// "5 min ago" in the current language (the app reloads its data when the language changes).
+export const timeAgo = (iso) => timeAgoNow(iso);
 
 export function formatDuration(mins) {
   if (!mins) return null;
-  if (mins < 60) return `${mins} min`;
+  if (mins < 60) return tNow('duration.minutes', { count: mins });
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return m ? `${h} hr ${m} min` : `${h} hr`;
+  return m ? tNow('duration.hoursMinutes', { h, m }) : tNow('duration.hours', { count: h });
 }
 
 // ---------- API -> UI ----------
@@ -55,7 +60,7 @@ export function toPost(p) {
     authorUsername: p.author_username,
     authorFullName: p.author_full_name,
     authorAvatarUrl: p.author_avatar_url || DEFAULT_AVATAR,
-    authorProfessionTitle: p.author_profession_title || 'Explorer',
+    authorProfessionTitle: p.author_profession_title || tNow('role.explorer'),
     authorIndustry: p.author_industry || null,
     isAuthorVerified: p.is_author_verified,
     postType: p.post_type,
@@ -99,11 +104,11 @@ export function toStory(s) {
     username: s.author_username,
     fullName: s.author_full_name || s.author_username,
     avatarUrl: s.author_avatar_url || DEFAULT_AVATAR,
-    professionTitle: s.author_profession_title || 'Explorer',
+    professionTitle: s.author_profession_title || tNow('role.explorer'),
     mediaUrl: s.media_url,
     caption: s.caption || '',
     timeAgo: timeAgo(s.created_at),
-    professionTag: s.profession_tag || s.author_profession_title || 'Story',
+    professionTag: s.profession_tag || s.author_profession_title || tNow('stories.tag'),
   };
 }
 
@@ -116,7 +121,7 @@ export function toSuggestion(s) {
     id: s.id,
     suggesterId: s.suggester_id,
     suggesterUsername: s.suggester_username,
-    suggesterProfession: s.suggester_profession || 'Explorer',
+    suggesterProfession: s.suggester_profession || tNow('role.explorer'),
     suggestionText: s.suggestion_text,
     suggestedTool: s.suggested_tool_or_reference || undefined,
     upvotes: s.upvotes_count,
@@ -151,13 +156,13 @@ export function toQuestion(q) {
     workerId: q.worker_id,
     workerUsername: q.worker_username,
     workerFullName: q.worker_full_name || q.worker_username,
-    workerProfessionTitle: q.worker_profession_title || 'Professional',
+    workerProfessionTitle: q.worker_profession_title || tNow('role.professional'),
     workerAvatarUrl: q.worker_avatar_url || DEFAULT_AVATAR,
     askerId: q.asker_id,
     askerUsername: q.asker_username,
     askerAvatarUrl: q.asker_avatar_url || DEFAULT_AVATAR,
     questionText: q.question_text,
-    topicTag: q.topic_tag || 'General Inquiry',
+    topicTag: q.topic_tag || tNow('qa.generalTopic'),
     answerText: q.answer_text,
     videoResponseUrl: q.video_response_url || null,
     answeredTimeAgo: q.answered_at ? timeAgo(q.answered_at) : null,
@@ -209,17 +214,17 @@ export function toNotification(n) {
 }
 
 export function toCategories(list) {
-  if (!Array.isArray(list)) return [{ id: 'cat_all', name: 'All Professions', slug: 'all', icon: 'briefcase' }];
+  const all = { id: 'cat_all', name: tNow('discover.allProfessions'), slug: 'all', icon: 'briefcase' };
+  if (!Array.isArray(list)) return [all];
   if (list.some((c) => c.slug === 'all')) return list;
-  const all = { id: 'cat_all', name: 'All Professions', slug: 'all', icon: 'briefcase' };
   return [
     all,
     ...list.map((c) => ({
       id: c.id,
-      name: c.name,
+      name: c.name, // the field's English name (what the API uses); shown with fieldName()
       slug: c.slug,
       icon: c.icon,
-      activePros: c.activePros || (c.professions_count ? `${c.professions_count} ${c.professions_count === 1 ? 'Pro' : 'Pros'}` : null),
+      activePros: c.activePros || (c.professions_count ? tNow('discover.prosCount', { count: c.professions_count }) : null),
       popularRoles: c.popularRoles || c.popular_roles,
     })),
   ];
@@ -233,8 +238,8 @@ export function toProfileUser(u) {
     username: u.username,
     fullName: u.full_name,
     avatarUrl: u.avatar_url || DEFAULT_AVATAR,
-    professionTitle: p?.title || 'Explorer',
-    industry: p?.industry || 'Exploring professions',
+    professionTitle: p?.title || tNow('role.explorer'),
+    industry: p?.industry || tNow('role.exploring'),
     specialization: p?.specialization || '',
     yearsExp: p?.years_of_experience ?? 0,
     isVerified: !!p?.is_verified_pro,
@@ -242,7 +247,7 @@ export function toProfileUser(u) {
       u.bio ||
       (p
         ? `${p.title}${p.company_or_freelance ? ` @ ${p.company_or_freelance}` : ''}`
-        : 'Curious about how every profession works.'),
+        : tNow('profile.defaultBio')),
     followersCount: u.followers_count,
     isFollowing: u.is_following,
     isBlocked: !!u.is_blocked,
