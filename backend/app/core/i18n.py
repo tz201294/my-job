@@ -34,6 +34,8 @@ MESSAGES = {
     "Question not found": dict(es="Pregunta no encontrada", fr="Question introuvable", de="Frage nicht gefunden", ja="質問が見つかりません"),
     "Challenge not found": dict(es="Reto no encontrado", fr="Défi introuvable", de="Challenge nicht gefunden", ja="チャレンジが見つかりません"),
     "Story not found": dict(es="Historia no encontrada", fr="Story introuvable", de="Story nicht gefunden", ja="ストーリーが見つかりません"),
+    "This account is private.": dict(es="Esta cuenta es privada.", fr="Ce compte est privé.", de="Dieses Konto ist privat.", ja="このアカウントは非公開です。"),
+    "No follow request from this account": dict(es="Esta cuenta no te ha enviado ninguna solicitud", fr="Ce compte ne vous a envoyé aucune demande", de="Von diesem Konto gibt es keine Anfrage", ja="このアカウントからのフォローリクエストはありません"),
     "Profession not found": dict(es="Profesión no encontrada", fr="Métier introuvable", de="Beruf nicht gefunden", ja="職業が見つかりません"),
     "Unknown profession": dict(es="Profesión desconocida", fr="Métier inconnu", de="Unbekannter Beruf", ja="不明な職業です"),
     "Comment not found": dict(es="Comentario no encontrado", fr="Commentaire introuvable", de="Kommentar nicht gefunden", ja="コメントが見つかりません"),

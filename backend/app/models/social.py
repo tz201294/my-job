@@ -13,6 +13,15 @@ class Follow(Base):
     created_at = Column(DateTime, default=utcnow)
 
 
+class FollowRequest(Base):
+    """`requester_id` asked to follow the private account `target_id`; waiting for the owner to accept."""
+    __tablename__ = "follow_requests"
+
+    requester_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    target_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True)
+    created_at = Column(DateTime, default=utcnow)
+
+
 class Bookmark(Base):
     """A post saved by a user (private to that user)."""
     __tablename__ = "bookmarks"

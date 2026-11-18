@@ -130,6 +130,9 @@ export const api = {
   blockUser: (username) => post(`/auth/users/${encodeURIComponent(username)}/block`),
   unblockUser: (username) => del(`/auth/users/${encodeURIComponent(username)}/block`),
   getBlocked: () => request('/auth/me/blocked'),
+  getFollowRequests: () => request('/auth/me/follow-requests'),
+  acceptFollowRequest: (username) => post(`/auth/me/follow-requests/${encodeURIComponent(username)}/accept`),
+  declineFollowRequest: (username) => post(`/auth/me/follow-requests/${encodeURIComponent(username)}/decline`),
   exportMyData: () => request('/auth/me/export'),
 
   // Photos: uploads one and answers { url, width, height }.

@@ -103,6 +103,8 @@ shows only the link box. The demo shrinks photos in the browser instead.
 Moderation: anyone can report content or accounts and block accounts; the usernames in `ADMIN_USERNAMES` get a
 Moderation page (remove content, suspend or reinstate accounts). Suspended accounts can't log in and their content is
 hidden; blocking hides content both ways and stops follows, comments, questions and notifications between the two.
+Private accounts (Settings > Privacy & data, off by default): posts and stories are shown only to followers the owner
+approves in Notifications; the profile card, AMAs and Live Work stay public. Going public lets waiting requests in.
 Error reporting (Sentry) is off unless `SENTRY_DSN` (API) / `VITE_SENTRY_DSN` (website) is set; `/health` is a
 database-free liveness check, `/health/db` also checks the database.
 

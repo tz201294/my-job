@@ -1,5 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey, JSON
+from sqlalchemy import false
 from sqlalchemy.orm import relationship
 from app.core.time import utcnow
 from app.db.base import Base
@@ -16,6 +17,8 @@ class User(Base):
     bio = Column(Text, nullable=True)
     avatar_url = Column(String(512), nullable=True)
     is_active = Column(Boolean, default=True)
+    # Private accounts: only approved followers see their posts and stories (follow requests need approval).
+    is_private = Column(Boolean, nullable=False, default=False, server_default=false())
     created_at = Column(DateTime, default=utcnow)
     # Login tokens issued before this moment are rejected (set when the password changes).
     password_changed_at = Column(DateTime, nullable=True)

@@ -11,7 +11,7 @@ from sqlalchemy import and_, or_, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models import Block, User
+from app.models import Block, Follow, User
 
 
 def is_admin(user: Optional[User]) -> bool:
@@ -29,6 +29,24 @@ def hidden_user_ids(viewer: Optional[User]):
         select(Block.blocked_id).where(Block.blocker_id == viewer.id),
         select(Block.blocker_id).where(Block.blocked_id == viewer.id),
     )
+
+
+def private_hidden_ids(viewer: Optional[User]):
+    """A SELECT of private accounts whose posts and stories `viewer` may not see: private, not the viewer, and
+    not followed by the viewer. (Their profile card, Q&A answers and Live Work stay public.)"""
+    stmt = select(User.id).where(User.is_private.is_(True))
+    if viewer is None:
+        return stmt
+    return stmt.where(User.id != viewer.id, User.id.not_in(select(Follow.followee_id).where(Follow.follower_id == viewer.id)))
+
+
+async def ensure_can_see_posts(db: AsyncSession, viewer: Optional[User], author_id: str) -> None:
+    """403 if `author_id` is a private account the viewer doesn't follow."""
+    if viewer is not None and viewer.id == author_id:
+        return
+    row = (await db.execute(select(User.id).where(User.id == author_id, User.id.in_(private_hidden_ids(viewer))))).first()
+    if row is not None:
+        raise HTTPException(status_code=403, detail="This account is private.")
 
 
 async def is_hidden_from(db: AsyncSession, viewer: Optional[User], user_id: Optional[str]) -> bool:

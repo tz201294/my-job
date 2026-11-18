@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Bell, UserPlus, MessageSquareText, CheckCircle2, Star, MessageCircle, Lightbulb, HelpCircle, SmilePlus,
-  Loader2, CheckCheck,
+  Loader2, CheckCheck, UserCheck,
 } from 'lucide-react';
 import { api } from '../api/client';
-import { toNotification } from '../api/mappers';
+import { DEFAULT_AVATAR, toNotification } from '../api/mappers';
 import { useI18n } from '../i18n';
 
 const PAGE_SIZE = 30;
@@ -19,7 +19,61 @@ const KINDS = {
   review: { icon: Star, tone: 'bg-amber-100 text-amber-700', text: 'notif.review' },
   comment: { icon: MessageCircle, tone: 'bg-teal-100 text-teal-700', text: 'notif.comment' },
   reaction: { icon: SmilePlus, tone: 'bg-rose-100 text-rose-600', text: 'notif.reaction' },
+  follow_request: { icon: UserPlus, tone: 'bg-amber-100 text-amber-700', text: 'notif.followRequest' },
+  follow_accepted: { icon: UserCheck, tone: 'bg-emerald-100 text-emerald-700', text: 'notif.followAccepted' },
 };
+
+// People asking to follow your private account, with Accept / Decline.
+function FollowRequests({ onChanged }) {
+  const { t } = useI18n();
+  const [list, setList] = useState(null);
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.getFollowRequests().then(setList).catch(() => setList([]));
+  }, []);
+
+  const answer = async (username, accept) => {
+    setBusy(username); setError('');
+    try {
+      await (accept ? api.acceptFollowRequest(username) : api.declineFollowRequest(username));
+      setList((l) => l.filter((r) => r.username !== username));
+      onChanged?.();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  if (!list?.length) return null;
+  return (
+    <section aria-labelledby="follow-requests" className="bg-white border border-amber-200 rounded-3xl p-3 sm:p-4 shadow-2xs">
+      <h3 id="follow-requests" className="text-sm font-black text-slate-900 mb-2">{t('notif.requestsTitle', { count: list.length })}</h3>
+      {error && <p role="alert" className="text-xs font-bold text-rose-600 mb-2">{error}</p>}
+      <ul className="divide-y divide-slate-100">
+        {list.map((r) => (
+          <li key={r.username} className="flex items-center gap-3 py-2">
+            <img src={r.avatar_url || DEFAULT_AVATAR} alt="" className="w-10 h-10 rounded-full object-cover" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-extrabold text-slate-900 truncate">{r.full_name}</span>
+              <span className="block text-xs text-slate-500 truncate">@{r.username}{r.profession_title ? ` · ${r.profession_title}` : ''}</span>
+            </span>
+            <button type="button" disabled={busy === r.username} onClick={() => answer(r.username, true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60">
+              {t('notif.accept')}
+            </button>
+            <button type="button" disabled={busy === r.username} onClick={() => answer(r.username, false)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-60">
+              {t('notif.decline')}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 function NotificationRow({ n, onOpen }) {
   const { t } = useI18n();
@@ -112,8 +166,10 @@ export default function NotificationsPage({ onOpen, onUnreadChange }) {
         )}
       </div>
 
+      <FollowRequests onChanged={() => load?.()} />
+
       <section className="bg-white border border-teal-100 rounded-3xl p-2 sm:p-3 shadow-2xs">
-        {error && <p role="alert" className="p-4 text-xs font-bold text-rose-600">Couldn't load notifications: {error}</p>}
+        {error && <p role="alert" className="p-4 text-xs font-bold text-rose-600">{t('notif.loadFailed', { error })}</p>}
         {!error && items === null && (
           <p className="flex items-center gap-1.5 p-4 text-xs text-slate-500"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('common.loading')}</p>
         )}

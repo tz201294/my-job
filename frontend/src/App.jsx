@@ -263,14 +263,20 @@ export default function App() {
     }
   };
 
+  // Follow, unfollow, or (for a private account) send / take back a follow request.
   const handleToggleFollow = async (username) => {
     const was = viewingUser?.isFollowing;
-    const apply = (isFollowing, followersCount) =>
-      setViewingUser((u) => (u && u.username === username ? { ...u, isFollowing, followersCount } : u));
-    apply(!was, viewingUser.followersCount + (was ? -1 : 1));
+    const wasRequested = viewingUser?.followRequested;
+    const undo = was || wasRequested;
+    const apply = (isFollowing, followersCount, followRequested = false) =>
+      setViewingUser((u) => (u && u.username === username ? { ...u, isFollowing, followersCount, followRequested } : u));
+    if (!viewingUser.isPrivate || was) apply(!was, viewingUser.followersCount + (was ? -1 : 1));
     try {
-      const r = was ? await api.unfollowUser(username) : await api.followUser(username);
-      apply(r.is_following, r.followers_count);
+      const r = undo ? await api.unfollowUser(username) : await api.followUser(username);
+      apply(r.is_following, r.followers_count, !!r.follow_requested);
+      // A request just accepted elsewhere, or a newly followed private account: show its posts now.
+      if (r.is_following && viewingUser.isPrivate && !was) setViewingPosts((await api.getPostsByAuthor(username)).map(toPost));
+      if (!r.is_following && viewingUser.isPrivate) setViewingPosts([]);
       // The "following" list is now stale; reload it next time it is shown.
       if (feedView === 'following') loadFeedView('following');
     } catch (err) {
@@ -552,7 +558,7 @@ export default function App() {
       .catch((err) => {
         if (cancelled) return;
         setPagePost(null);
-        setPostState(err.status === 404 ? 'notfound' : 'error');
+        setPostState(err.status === 404 ? 'notfound' : err.status === 403 ? 'private' : 'error');
       });
     return () => { cancelled = true; };
   }, [pagePostId, userId]);
@@ -686,6 +692,8 @@ export default function App() {
   const handleOpenNotification = (n) => {
     switch (n.type) {
       case 'follow':
+      case 'follow_request':
+      case 'follow_accepted':
         handleOpenUserProfile(n.actorUsername);
         break;
       case 'question':
@@ -851,12 +859,11 @@ export default function App() {
             onDeletePost={handleDeletePost}
           />
         ) : route.page === 'post' ? (
-          postState === 'notfound' || postState === 'error' ? (
+          postState === 'notfound' || postState === 'error' || postState === 'private' ? (
             <NotFoundPage
-              title={postState === 'notfound' ? t('post.notFound') : t('post.loadFailed')}
-              message={postState === 'notfound'
-                ? t('post.notFoundText')
-                : t('common.checkConnection')}
+              title={{ notfound: t('post.notFound'), private: t('profile.privateTitle') }[postState] || t('post.loadFailed')}
+              message={{ notfound: t('post.notFoundText'), private: t('profile.privateText') }[postState]
+                || t('common.checkConnection')}
             />
           ) : pagePost?.id !== route.postId ? (
             <Loading />

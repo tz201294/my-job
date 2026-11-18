@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Block, Bookmark, ChallengeSuggestion, Follow, Post, PostLike, QAQuestion, QAUpvote, Story, SuggestionUpvote,
+    Block, Bookmark, ChallengeSuggestion, Follow, FollowRequest, Post, PostLike, QAQuestion, QAUpvote, Story, SuggestionUpvote,
     TaskReview, User, UserInterest, UserSurvey, WorkChallenge,
 )
 from app.core.config import settings
@@ -26,7 +26,7 @@ async def user_public_out(db: AsyncSession, user: User, viewer: Optional[User] =
     following_count = (
         await db.execute(select(func.count()).select_from(Follow).where(Follow.follower_id == user.id))
     ).scalar_one()
-    is_following = is_blocked = False
+    is_following = is_blocked = follow_requested = False
     if viewer is not None and viewer.id != user.id:
         is_following = (
             await db.execute(
@@ -35,6 +35,10 @@ async def user_public_out(db: AsyncSession, user: User, viewer: Optional[User] =
         ).first() is not None
         is_blocked = (
             await db.execute(select(Block.blocker_id).where(Block.blocker_id == viewer.id, Block.blocked_id == user.id))
+        ).first() is not None
+        follow_requested = (
+            await db.execute(select(FollowRequest.requester_id).where(
+                FollowRequest.requester_id == viewer.id, FollowRequest.target_id == user.id))
         ).first() is not None
     avg_rating = (
         await db.execute(
@@ -54,6 +58,8 @@ async def user_public_out(db: AsyncSession, user: User, viewer: Optional[User] =
         "following_count": following_count,
         "is_following": is_following,
         "is_blocked": is_blocked,
+        "is_private": bool(user.is_private),
+        "follow_requested": follow_requested,
         "posts_count": posts_count,
         "rating": round(float(avg_rating), 1) if avg_rating is not None else None,
     }

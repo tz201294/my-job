@@ -193,6 +193,8 @@ function publicUser(u) {
     ...u,
     email_verified: !!u.email, // the demo sends no emails, so addresses count as confirmed
     is_blocked: !!s.meUsername && (s.blocked || []).includes(u.username),
+    is_private: !!u.is_private,
+    follow_requested: false,
     is_following: s.following.includes(u.username),
     posts_count: Math.max(u.posts_count || 0, posts),
   };
@@ -858,6 +860,7 @@ function updateMe(body) {
       key_tools: old?.key_tools || [],
     };
   }
+  if ('is_private' in body && body.is_private != null) u.is_private = !!body.is_private;
   if ('data_consent' in body && body.data_consent != null) {
     u.survey = { ...(u.survey || {}), data_consent: !!body.data_consent };
   }
@@ -1078,6 +1081,8 @@ function handle(endpoint, options) {
       blocked: blockedNames(),
     };
   }
+  // The demo's sample accounts are public and nobody else can ask to follow you here.
+  if (route === 'GET /auth/me/follow-requests') { me(); return []; }
   if (route === 'GET /auth/me/blocked') {
     me();
     return blockedNames().map((n) => s.users[n]).filter(Boolean)

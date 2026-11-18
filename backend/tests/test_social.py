@@ -12,7 +12,7 @@ async def test_follow_unfollow_is_idempotent_and_counts_are_real(client, seeded,
 
     r = await client.post(f"{API}/auth/users/sarah_plumber/follow", headers=auth_headers)
     assert r.status_code == 200
-    assert r.json() == {"username": "sarah_plumber", "is_following": True, "followers_count": base + 1}
+    assert r.json() == {"username": "sarah_plumber", "is_following": True, "followers_count": base + 1, "follow_requested": False}
 
     # Following twice does not double count.
     again = await client.post(f"{API}/auth/users/sarah_plumber/follow", headers=auth_headers)
@@ -27,7 +27,7 @@ async def test_follow_unfollow_is_idempotent_and_counts_are_real(client, seeded,
     assert (await _profile(client, "sarah_plumber"))["is_following"] is False
 
     off = await client.delete(f"{API}/auth/users/sarah_plumber/follow", headers=auth_headers)
-    assert off.json() == {"username": "sarah_plumber", "is_following": False, "followers_count": base}
+    assert off.json() == {"username": "sarah_plumber", "is_following": False, "followers_count": base, "follow_requested": False}
     assert (await client.delete(f"{API}/auth/users/sarah_plumber/follow", headers=auth_headers)).status_code == 200
 
 

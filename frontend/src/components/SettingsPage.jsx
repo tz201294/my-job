@@ -391,6 +391,40 @@ function PasswordForm({ onChangePassword }) {
   );
 }
 
+// Private account: only approved followers see your posts and stories.
+function PrivateToggle({ account, onSave }) {
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const on = !!account.is_private;
+  const toggle = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await onSave({ is_private: !on });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mb-4 pb-4 border-b border-slate-100">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p id="private-label" className="text-sm font-semibold text-slate-800">{t('settings.privateAccount')}</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">{t(on ? 'settings.privateOnHint' : 'settings.privateOffHint')}</p>
+        </div>
+        <button type="button" role="switch" aria-checked={on} aria-labelledby="private-label" onClick={toggle} disabled={busy}
+          className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-60 ${on ? 'bg-teal-600' : 'bg-slate-300'}`}>
+          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
+        </button>
+      </div>
+      {error && <p role="alert" className="mt-2 text-xs font-bold text-rose-600">{error}</p>}
+    </div>
+  );
+}
+
 function ConsentToggle({ survey, onSave }) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
@@ -521,6 +555,7 @@ export default function SettingsPage({
       </Card>
 
       <Card icon={Shield} title={t('settings.privacyData')}>
+        <PrivateToggle account={account} onSave={onSaveProfile} />
         {survey ? (
           <ConsentToggle survey={survey} onSave={onSaveProfile} />
         ) : (

@@ -22,10 +22,10 @@ from app.core.legal import TERMS_VERSION
 from app.services.data_export import export_user_data
 from app.services.email import password_reset_email, send_email, verification_email
 from app.services.moderation import ensure_can_interact, hidden_user_ids, is_admin
-from app.services.notifications import notify
+from app.services.notifications import notify, withdraw
 from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
 from app.db.session import get_db
-from app.models import Block, Follow, Notification, ProfessionProfile, User, UserInterest, UserSurvey
+from app.models import Block, Follow, FollowRequest, Notification, ProfessionProfile, User, UserInterest, UserSurvey
 from app.schemas.user import (
     AccountDelete, EducationLevel, EmailVerify, ForgotPassword, Gender, NonWorkingStatus, PasswordChange,
     PasswordReset, ProfileUpdate, Token, UserCreate, UserLogin, UserMeResponse, UserResponse,
@@ -217,6 +217,13 @@ async def update_me(
     for field in ("full_name", "bio", "avatar_url", "language"):
         if field in changes:
             setattr(user, field, changes[field])
+    if changes_in.is_private is not None:
+        if user.is_private and not changes_in.is_private:
+            # Going public lets everyone in: waiting requests become follows.
+            waiting = (await db.execute(select(FollowRequest.requester_id).where(FollowRequest.target_id == user.id))).scalars().all()
+            for requester_id in waiting:
+                await _accept_request(db, user, requester_id)
+        user.is_private = changes_in.is_private
 
     if "email" in changes:
         email = changes_in.email.lower() if changes_in.email else None
@@ -447,6 +454,10 @@ async def block_user(username: str, db: AsyncSession = Depends(get_db), me: User
             or_(and_(Follow.follower_id == me.id, Follow.followee_id == target.id),
                 and_(Follow.follower_id == target.id, Follow.followee_id == me.id))
         ))
+        await db.execute(delete(FollowRequest).where(
+            or_(and_(FollowRequest.requester_id == me.id, FollowRequest.target_id == target.id),
+                and_(FollowRequest.requester_id == target.id, FollowRequest.target_id == me.id))
+        ))
         await db.execute(delete(Notification).where(
             or_(and_(Notification.user_id == me.id, Notification.actor_id == target.id),
                 and_(Notification.user_id == target.id, Notification.actor_id == me.id))
@@ -477,6 +488,47 @@ async def export_my_data(db: AsyncSession = Depends(get_db), me: User = Depends(
     })
 
 
+@router.get("/me/follow-requests")
+async def list_follow_requests(db: AsyncSession = Depends(get_db), me: User = Depends(get_current_user)):
+    """People waiting for you to accept their follow request, newest first."""
+    rows = (
+        await db.execute(
+            select(User, FollowRequest.created_at).join(FollowRequest, FollowRequest.requester_id == User.id)
+            .where(FollowRequest.target_id == me.id, User.is_active.is_(True))
+            .order_by(FollowRequest.created_at.desc())
+        )
+    ).all()
+    return [{"username": u.username, "full_name": u.full_name, "avatar_url": u.avatar_url,
+             "profession_title": u.profession.title if u.profession else None, "requested_at": at} for u, at in rows]
+
+
+async def _request_from(db: AsyncSession, me: User, username: str) -> User:
+    requester = await _get_user_or_404(db, username)
+    pending = (await db.execute(select(FollowRequest).where(
+        FollowRequest.requester_id == requester.id, FollowRequest.target_id == me.id))).first()
+    if not pending:
+        raise HTTPException(status_code=404, detail="No follow request from this account")
+    return requester
+
+
+@router.post("/me/follow-requests/{username}/accept", dependencies=[Depends(limit("edit"))])
+async def accept_follow_request(username: str, db: AsyncSession = Depends(get_db), me: User = Depends(get_current_user)):
+    requester = await _request_from(db, me, username)
+    await _accept_request(db, me, requester.id)
+    await db.commit()
+    return {"username": requester.username, "accepted": True}
+
+
+@router.post("/me/follow-requests/{username}/decline", dependencies=[Depends(limit("edit"))])
+async def decline_follow_request(username: str, db: AsyncSession = Depends(get_db), me: User = Depends(get_current_user)):
+    requester = await _request_from(db, me, username)
+    await db.execute(delete(FollowRequest).where(
+        FollowRequest.requester_id == requester.id, FollowRequest.target_id == me.id))
+    await withdraw(db, actor_id=requester.id, type="follow_request")
+    await db.commit()
+    return {"username": requester.username, "accepted": False}
+
+
 @router.get("/me/blocked")
 async def list_blocked(db: AsyncSession = Depends(get_db), me: User = Depends(get_current_user)):
     """The accounts you blocked, most recent first."""
@@ -489,11 +541,24 @@ async def list_blocked(db: AsyncSession = Depends(get_db), me: User = Depends(ge
     return [{"username": u.username, "full_name": u.full_name, "avatar_url": u.avatar_url} for u in rows]
 
 
-async def _follow_state(db: AsyncSession, target: User, is_following: bool) -> dict:
+async def _follow_state(db: AsyncSession, target: User, is_following: bool, requested: bool = False) -> dict:
     followers = (
         await db.execute(select(func.count()).select_from(Follow).where(Follow.followee_id == target.id))
     ).scalar_one()
-    return {"username": target.username, "is_following": is_following, "followers_count": followers}
+    return {"username": target.username, "is_following": is_following, "follow_requested": requested,
+            "followers_count": followers}
+
+
+async def _accept_request(db: AsyncSession, owner: User, requester_id: str) -> None:
+    """Turns a follow request into a follow (in the caller's transaction)."""
+    await db.execute(delete(FollowRequest).where(
+        FollowRequest.requester_id == requester_id, FollowRequest.target_id == owner.id))
+    await withdraw(db, actor_id=requester_id, type="follow_request")
+    already = (await db.execute(select(Follow).where(
+        Follow.follower_id == requester_id, Follow.followee_id == owner.id))).first()
+    if not already:
+        db.add(Follow(follower_id=requester_id, followee_id=owner.id))
+        await notify(db, user_id=requester_id, actor_id=owner.id, type="follow_accepted", collapse=True)
 
 
 @router.post("/users/{username}/follow", dependencies=[Depends(limit("reaction"))])
@@ -510,6 +575,18 @@ async def follow_user(
     exists = (
         await db.execute(select(Follow).where(Follow.follower_id == me.id, Follow.followee_id == target.id))
     ).scalar_one_or_none()
+    if not exists and target.is_private:
+        # A private account decides who follows it: this sends a request instead.
+        pending = (await db.execute(select(FollowRequest).where(
+            FollowRequest.requester_id == me.id, FollowRequest.target_id == target.id))).first()
+        if not pending:
+            db.add(FollowRequest(requester_id=me.id, target_id=target.id))
+            await notify(db, user_id=target.id, actor_id=me.id, type="follow_request", collapse=True)
+            try:
+                await db.commit()
+            except IntegrityError:
+                await db.rollback()
+        return await _follow_state(db, target, False, requested=True)
     if not exists:
         db.add(Follow(follower_id=me.id, followee_id=target.id))
         await notify(db, user_id=target.id, actor_id=me.id, type="follow", collapse=True)
@@ -526,8 +603,10 @@ async def unfollow_user(
     db: AsyncSession = Depends(get_db),
     me: User = Depends(get_current_user),
 ):
-    """Unfollow a user. Idempotent."""
+    """Unfollow a user, or take back a follow request. Idempotent."""
     target = await _get_user_or_404(db, username)
     await db.execute(delete(Follow).where(Follow.follower_id == me.id, Follow.followee_id == target.id))
+    await db.execute(delete(FollowRequest).where(FollowRequest.requester_id == me.id, FollowRequest.target_id == target.id))
+    await withdraw(db, actor_id=me.id, type="follow_request")
     await db.commit()
     return await _follow_state(db, target, False)

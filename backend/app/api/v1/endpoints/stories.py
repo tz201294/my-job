@@ -11,7 +11,7 @@ from app.core.time import utcnow
 from app.db.session import get_db
 from app.models import Story, User
 from app.schemas.story import StoryCreate, StoryResponse, UserStoryGroup
-from app.services.moderation import hidden_user_ids
+from app.services.moderation import hidden_user_ids, private_hidden_ids
 
 router = APIRouter()
 
@@ -21,7 +21,8 @@ async def get_stories_feed(db: AsyncSession = Depends(get_db), user: Optional[Us
     """Returns active 24-hour stories grouped by user for the top story tray."""
     stories = (
         await db.execute(
-            select(Story).where(Story.expires_at > utcnow(), Story.user_id.not_in(hidden_user_ids(user)))
+            select(Story).where(Story.expires_at > utcnow(), Story.user_id.not_in(hidden_user_ids(user)),
+                                Story.user_id.not_in(private_hidden_ids(user)))
             .order_by(Story.created_at.desc())
         )
     ).scalars().all()

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.time import utcnow
 from app.models import (
-    Block, Bookmark, ChallengeSuggestion, CommentReaction, Follow, Notification, Post, PostComment, PostLike,
+    Block, Bookmark, ChallengeSuggestion, CommentReaction, Follow, FollowRequest, Notification, Post, PostComment, PostLike,
     ProfessionProfile, QAQuestion, QAUpvote, Report, Story, SuggestionUpvote, TaskDetails, TaskReview, User,
     UserInterest, UserSurvey, WorkChallenge,
 )
@@ -54,11 +54,13 @@ async def export_user_data(db: AsyncSession, user: User) -> dict:
     following = await _all(db, select(Follow.followee_id).where(Follow.follower_id == uid))
     followers = await _all(db, select(Follow.follower_id).where(Follow.followee_id == uid))
     blocked = await _all(db, select(Block.blocked_id).where(Block.blocker_id == uid))
+    requested = await _all(db, select(FollowRequest.target_id).where(FollowRequest.requester_id == uid))
+    requests_in = await _all(db, select(FollowRequest.requester_id).where(FollowRequest.target_id == uid))
     asked = await _all(db, select(QAQuestion).where(QAQuestion.asker_id == uid).order_by(QAQuestion.created_at))
     received = await _all(db, select(QAQuestion).where(QAQuestion.worker_id == uid).order_by(QAQuestion.created_at))
     notifications = await _all(db, select(Notification).where(Notification.user_id == uid)
                                 .order_by(Notification.created_at))
-    names = await _usernames(db, [*following, *followers, *blocked, *(q.worker_id for q in asked),
+    names = await _usernames(db, [*following, *followers, *blocked, *requested, *requests_in, *(q.worker_id for q in asked),
                                   *(q.asker_id for q in received), *(n.actor_id for n in notifications)])
 
     def with_name(rows, id_field, name_field, drop=()):
@@ -88,6 +90,8 @@ async def export_user_data(db: AsyncSession, user: User) -> dict:
         "following": sorted(names[i] for i in following if i in names),
         "followers": sorted(names[i] for i in followers if i in names),
         "blocked": sorted(names[i] for i in blocked if i in names),
+        "follow_requests_sent": sorted(names[i] for i in requested if i in names),
+        "follow_requests_received": sorted(names[i] for i in requests_in if i in names),
         "reports_made": [_row(r, drop=("reporter_id", "target_user_id", "resolved_by_id"))
                          for r in await _all(db, select(Report).where(Report.reporter_id == uid))],
         "notifications": with_name(notifications, "actor_id", "from"),

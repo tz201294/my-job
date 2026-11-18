@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   ShieldCheck, Star, Wrench, Layers, Image as ImageIcon, HelpCircle, ArrowLeft, UserPlus, Check, MessageSquare, Send, Heart,
-  Ban,
+  Ban, Lock, Clock,
 } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
@@ -39,6 +39,7 @@ export default function UserProfile({
 
   const [profileTab, setProfileTab] = useState('case_studies'); // 'case_studies' | 'posts' | 'qa' | 'challenges'
   const isFollowing = user.isFollowing;
+  const locked = user.isPrivate && !isOwnProfile && !isFollowing;
   const followersCount = user.followersCount || 0;
   const [questionText, setQuestionText] = useState('');
   const [sentNotice, setSentNotice] = useState(false);
@@ -137,9 +138,9 @@ export default function UserProfile({
                 {!isOwnProfile && !user.isBlocked && (
                   <button
                     onClick={() => onToggleFollow(user.username)}
-                    aria-pressed={isFollowing}
+                    aria-pressed={isFollowing || user.followRequested}
                     className={`flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-black transition-all shadow-md active:scale-95 ${
-                      isFollowing
+                      isFollowing || user.followRequested
                         ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300'
                         : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-teal-500/25'
                     }`}
@@ -148,6 +149,11 @@ export default function UserProfile({
                       <>
                         <Check className="w-3.5 h-3.5 stroke-[3]" />
                         <span>{t('profile.following')}</span>
+                      </>
+                    ) : user.followRequested ? (
+                      <>
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{t('profile.requested')}</span>
                       </>
                     ) : (
                       <>
@@ -211,7 +217,7 @@ export default function UserProfile({
         <div className="mt-6 pt-5 border-t border-teal-100 grid grid-cols-4 gap-2.5 text-center">
           <div className="p-2.5 rounded-2xl bg-gradient-to-b from-teal-50/70 to-slate-50 border border-teal-100">
             <span className="block font-black text-base sm:text-lg text-slate-900">
-              {userCaseStudies.length + userGeneralPosts.length}
+              {locked ? user.postsCount ?? 0 : userCaseStudies.length + userGeneralPosts.length}
             </span>
             <span className="text-[11px] text-teal-600 font-bold">{t('profile.posts')}</span>
           </div>
@@ -308,8 +314,17 @@ export default function UserProfile({
         </button>
       </div>
 
+      {/* A private account's posts are for approved followers only. */}
+      {locked && profileTab !== 'qa' && (
+        <div className="bg-white rounded-3xl p-8 text-center border border-teal-100">
+          <Lock className="w-10 h-10 mx-auto text-teal-300 mb-3" aria-hidden="true" />
+          <p className="text-sm font-extrabold text-slate-800">{t('profile.privateTitle')}</p>
+          <p className="text-xs text-slate-500 mt-1">{t(user.followRequested ? 'profile.privateRequested' : 'profile.privateText')}</p>
+        </div>
+      )}
+
       {/* TAB CONTENT: CASE STUDIES GRID */}
-      {profileTab === 'case_studies' && (
+      {!locked && profileTab === 'case_studies' && (
         <div className="space-y-4">
           {userCaseStudies.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 text-center border border-teal-100 text-xs text-slate-500 font-medium">
@@ -365,7 +380,7 @@ export default function UserProfile({
       )}
 
       {/* TAB CONTENT: GENERAL POSTS / PHOTO GRID */}
-      {profileTab === 'posts' && (
+      {!locked && profileTab === 'posts' && (
         <div className="space-y-4">
           {userGeneralPosts.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 text-center border border-teal-100 text-xs text-slate-500 font-medium">

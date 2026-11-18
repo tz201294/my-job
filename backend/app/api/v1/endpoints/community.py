@@ -14,7 +14,7 @@ from app.core.time import utcnow
 from app.db.session import get_db
 from app.services.content import remove_challenge, remove_question, remove_suggestion
 from app.services.notifications import notify
-from app.services.moderation import ensure_can_interact, hidden_user_ids, is_hidden_from
+from app.services.moderation import ensure_can_interact, ensure_can_see_posts, hidden_user_ids, is_hidden_from
 from app.models import (
     ChallengeSuggestion, Post, QAQuestion, QAUpvote, SuggestionUpvote, TaskReview, User, WorkChallenge,
 )
@@ -32,6 +32,9 @@ router = APIRouter()
 async def get_task_reviews(
     post_id: str, db: AsyncSession = Depends(get_db), user: Optional[User] = Depends(get_optional_user),
 ):
+    post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
+    if post is not None:
+        await ensure_can_see_posts(db, user, post.author_id)
     rows = (
         await db.execute(
             select(TaskReview)
@@ -54,6 +57,7 @@ async def create_task_review(
     if post.author_id == user.id:
         raise HTTPException(status_code=400, detail="You can't review your own post")
     await ensure_can_interact(db, user, post.author_id)
+    await ensure_can_see_posts(db, user, post.author_id)
     already = (
         await db.execute(
             select(TaskReview.id).where(TaskReview.post_id == post.id, TaskReview.user_id == user.id)

@@ -18,7 +18,9 @@ from app.schemas.comment import (
 )
 from app.services.content import remove_comment, remove_post, sync_comments_count
 from app.services.notifications import notify, withdraw
-from app.services.moderation import ensure_can_interact, hidden_user_ids, is_hidden_from
+from app.services.moderation import (
+    ensure_can_interact, ensure_can_see_posts, hidden_user_ids, is_hidden_from, private_hidden_ids,
+)
 from app.schemas.post import PostCreate, PostResponse, PostType, PostUpdate
 
 router = APIRouter()
@@ -43,7 +45,7 @@ async def get_feed(
     if following and user is None:
         raise HTTPException(status_code=401, detail="Sign in to see your following feed")
     stmt = (
-        select(Post).where(Post.author_id.not_in(hidden_user_ids(user)))
+        select(Post).where(Post.author_id.not_in(hidden_user_ids(user)), Post.author_id.not_in(private_hidden_ids(user)))
         .order_by(Post.created_at.desc()).limit(limit).offset(offset)
     )
     if following:
@@ -79,7 +81,8 @@ async def list_bookmarks(
         await db.execute(
             select(Post)
             .join(Bookmark, Bookmark.post_id == Post.id)
-            .where(Bookmark.user_id == user.id, Post.author_id.not_in(hidden_user_ids(user)))
+            .where(Bookmark.user_id == user.id, Post.author_id.not_in(hidden_user_ids(user)),
+                   Post.author_id.not_in(private_hidden_ids(user)))
             .order_by(Bookmark.created_at.desc())
             .limit(limit)
             .offset(offset)
@@ -123,6 +126,7 @@ async def get_post_by_id(
     post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
     if not post or await is_hidden_from(db, user, post.author_id):
         raise HTTPException(status_code=404, detail="Post not found")
+    await ensure_can_see_posts(db, user, post.author_id)
     liked = await liked_ids_for(db, user, [post])
     saved = await bookmarked_ids_for(db, user, [post])
     return post_out(post, liked, saved)
@@ -216,6 +220,7 @@ async def list_comments(
     post = await _post_or_404(db, post_id)
     if await is_hidden_from(db, user, post.author_id):
         raise HTTPException(status_code=404, detail="Post not found")
+    await ensure_can_see_posts(db, user, post.author_id)
     visible = (PostComment.post_id == post_id, PostComment.user_id.not_in(hidden_user_ids(user)))
     total = (
         await db.execute(select(func.count()).select_from(PostComment).where(*visible))
@@ -242,6 +247,7 @@ async def add_comment(
 ):
     post = await _post_or_404(db, post_id)
     await ensure_can_interact(db, user, post.author_id)
+    await ensure_can_see_posts(db, user, post.author_id)
     comment = PostComment(post_id=post_id, user_id=user.id, body=c_in.body)
     db.add(comment)
     await db.flush()
@@ -305,6 +311,7 @@ async def react_to_comment(
     """Sets your emoji reaction on a comment, replacing any earlier one (one reaction per person)."""
     comment = await _comment_or_404(db, post_id, comment_id)
     await ensure_can_interact(db, user, comment.user_id)
+    await ensure_can_see_posts(db, user, (await _post_or_404(db, post_id)).author_id)
     existing = (
         await db.execute(
             select(CommentReaction).where(CommentReaction.comment_id == comment_id, CommentReaction.user_id == user.id)
@@ -350,6 +357,7 @@ async def toggle_like(
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     await ensure_can_interact(db, user, post.author_id)
+    await ensure_can_see_posts(db, user, post.author_id)
 
     existing = (
         await db.execute(select(PostLike).where(PostLike.user_id == user.id, PostLike.post_id == post_id))
@@ -382,8 +390,10 @@ async def toggle_bookmark(
     user: User = Depends(get_current_user),
 ):
     """Saves the post for the signed-in user, or removes it if already saved."""
-    if (await db.execute(select(Post.id).where(Post.id == post_id))).first() is None:
+    author_id = (await db.execute(select(Post.author_id).where(Post.id == post_id))).scalar_one_or_none()
+    if author_id is None:
         raise HTTPException(status_code=404, detail="Post not found")
+    await ensure_can_see_posts(db, user, author_id)
 
     existing = (
         await db.execute(select(Bookmark).where(Bookmark.user_id == user.id, Bookmark.post_id == post_id))

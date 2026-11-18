@@ -163,6 +163,8 @@ class UserResponse(BaseModel):
     following_count: int = 0
     is_following: bool = False  # whether the signed-in viewer follows this user
     is_blocked: bool = False  # whether the signed-in viewer blocked this user
+    is_private: bool = False  # only approved followers see this account's posts and stories
+    follow_requested: bool = False  # the viewer asked to follow this private account; waiting for approval
     posts_count: int = 0
     rating: Optional[float] = None  # average of this user's reviewed posts
 
@@ -220,6 +222,7 @@ class ProfileUpdate(PartialUpdate):
     profession: Optional[SignupProfession] = None
     data_consent: Optional[bool] = None
     language: Optional[Literal["en", "es", "fr", "de", "ja"]] = None
+    is_private: Optional[bool] = None
 
     @field_validator("avatar_url")
     @classmethod

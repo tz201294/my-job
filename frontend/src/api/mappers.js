@@ -252,6 +252,8 @@ export function toProfileUser(u) {
     followersCount: u.followers_count,
     isFollowing: u.is_following,
     isBlocked: !!u.is_blocked,
+    isPrivate: !!u.is_private,
+    followRequested: !!u.follow_requested,
     followingCount: u.following_count,
     postsCount: u.posts_count,
     rating: u.rating, // null until one of their posts is reviewed

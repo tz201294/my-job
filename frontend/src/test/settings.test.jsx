@@ -35,7 +35,7 @@ describe('settings', () => {
     const sw = screen.getByRole('switch', { name: /Share my anonymous survey answers/ });
     expect(sw.getAttribute('aria-checked')).toBe('true');
     await click(sw);
-    await waitFor(() => expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false'));
+    await waitFor(() => expect(screen.getByRole('switch', { name: /Share my anonymous/ }).getAttribute('aria-checked')).toBe('false'));
 
     // Password: wrong current password shows the server message; then a real change
     await type(screen.getByLabelText('Current password'), 'wrong-one');
