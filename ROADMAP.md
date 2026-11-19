@@ -41,7 +41,8 @@ What is done, what is next, and decisions still open. Update this file when a st
 - Languages, round 1: English, Spanish, French, German, Japanese (device language by default; Settings; saved on
   the account; server messages and emails too). Translations should be checked by native speakers before launch.
 - Photo uploads for post covers, step photos, stories and profile photos (checked, turned upright, resized,
-  stripped of GPS and other hidden data, stored on Cloudinary). Setup: docs/DEPLOY.md step 8.
+  stripped of GPS and other hidden data, stored on Cloudinary). Setup: docs/DEPLOY.md step 8. Photos are deleted
+  from storage once nothing uses them (post, story or account removed, or a photo replaced).
 - Frontend production readiness: page addresses (deep links, back button, 404, tab titles, GitHub Pages
   fallback), crash screen, permanent lint + UI tests in CI, demo code split out of the real build, lazy images,
   Content Security Policy, manifest/icons/link previews.
@@ -61,8 +62,8 @@ Hebrew and Arabic (right-to-left: mirror the layout, mostly swapping left/right 
 The Privacy Policy and Terms are English only for now (a notice says so in other languages).
 
 ### 2. More on uploads
-Photo uploads are done (Cloudinary). Still open: video uploads, deleting a photo from Cloudinary when its post,
-story or profile photo is removed, and an image on Live Work challenges.
+Photo uploads are done (Cloudinary), including deleting photos nothing uses any more. Still open: video uploads,
+the photo of a story that simply expired, and an image on Live Work challenges.
 
 ### 3. Frontend: what's left before real users
 The frontend itself is ready; these depend on the backend steps above or are polish:

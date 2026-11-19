@@ -177,3 +177,10 @@ async def test_step_images_stories_and_challenges_reject_other_schemes(client, a
 ])
 def test_database_url_is_normalized(given, expected):
     assert make_settings(ENVIRONMENT="development", DATABASE_URL=given).DATABASE_URL == expected
+
+
+async def test_api_docs_are_off_in_production(client):
+    """The tests run with production settings: the interactive docs and the OpenAPI schema aren't served."""
+    for path in (f"{API}/docs", f"{API}/redoc", f"{API}/openapi.json"):
+        assert (await client.get(path)).status_code == 404, path
+    assert (await client.get("/health")).status_code == 200

@@ -26,7 +26,10 @@ workflow reads the API address from a GitHub setting. The steps below take about
    - **Postgres version:** leave the default.
 3. On the project dashboard, open **Connect** (or **Connection details**).
    - Turn **Connection pooling off**. The app needs the *direct* address, the one *without* `-pooler` in the
-     host name.
+     host name. This is on purpose: Neon's pooler (PgBouncer in transaction mode) doesn't keep *prepared
+     statements* between transactions, and the app's database driver (asyncpg) relies on them, so with pooling on,
+     requests fail with errors like `prepared statement "..." does not exist`. The app keeps its own small pool
+     instead (5 connections, up to 10 under load), well within the free plan.
    - Copy the connection string. It looks like:
      `postgresql://neondb_owner:xxxx@ep-something-123456.eu-central-1.aws.neon.tech/neondb?sslmode=require`
 4. Keep it somewhere safe for the next step. **It contains the database password; never put it in the repo.**
@@ -50,7 +53,10 @@ You don't need to create any tables: the API creates them itself on its first st
    `https://prologue-api.onrender.com`. If that name was taken, Render adds a suffix; use whatever it shows.
 7. Check it works by opening these in your browser:
    - `https://<your-address>/health` should show `{"status":"healthy", ...}`.
-   - `https://<your-address>/api/v1/docs` shows the API documentation page.
+   - `https://<your-address>/health/db` should show that the database answers.
+
+   The interactive API documentation (`/api/v1/docs`) is switched off on the live server, so it doesn't list every
+   endpoint to strangers. Run the API locally (README) to browse it.
 
 Render also created a random `SECRET_KEY` for you and keeps it. If anything is missing or unsafe, the API refuses
 to start and the **Logs** tab says exactly what to fix.
@@ -122,7 +128,14 @@ UptimeRobot checks the API every few minutes and emails you when it stops answer
    every 5 minutes is fine.
 
 Side effect of the 5-minute check: Render's free service never goes to sleep, so visitors don't wait for it to wake
-up. Render's free plan includes 750 hours a month, enough for one service running all month.
+up.
+
+**Watch the free hours.** Render's free plan gives **750 instance hours a month per workspace, shared by all its
+free services**. A service kept awake all month uses 720–744 of them, nearly all. That's fine with this one
+service, but if you add a second free service to the same workspace (a staging copy, say), the hours run out
+before the month ends and Render suspends the free services until the next month. Then either upgrade the API to
+a paid instance (it no longer counts against free hours) or set this check to **30 minutes or more**, so the
+service may sleep after 15 quiet minutes (the first visit after that waits for it to wake up).
 
 ## 5. Send emails: password reset and email confirmation (free, about 15 minutes)
 
@@ -155,9 +168,12 @@ If no email arrives: Render → **prologue-api** → **Logs** shows what Brevo a
 valid"). Brevo's dashboard also lists every email it sent under **Transactional** → **Logs**.
 
 **Good to know:**
-- Emails sent from a Gmail address through another service sometimes land in spam. A domain of your own fixes
-  that later: add it in Brevo (**Senders, domains** → **Domains**), add the DNS records Brevo shows, then change
-  **EMAIL_FROM** to an address at that domain.
+- **A Gmail sender is for testing only.** Gmail and other big providers check DMARC: an email that says it's from
+  an `@gmail.com` address but is sent by Brevo fails that check, so it often lands in spam or is rejected. **Before
+  real users sign up**, send from a domain you own: in Brevo, **Senders, domains** → **Domains** → add your domain,
+  add the DNS records Brevo shows (**SPF** and **DKIM**, plus a **DMARC** record, at your domain registrar), wait for
+  Brevo to show them as verified, then change **EMAIL_FROM** in Render to an address at that domain (for example
+  `no-reply@your-domain.com`).
 - Links in the emails point to `FRONTEND_URL` (set in `render.yaml` to `https://tz201294.github.io/my-job`). If
   the website moves to its own domain, change it there.
 - How it works: a reset link works for 60 minutes and only once. A confirmation link works for 7 days.
@@ -219,8 +235,9 @@ taken. Uploads are limited to 10 MB and 30 an hour per person.
 4. Try it: on the site, **Post** → **Upload photo**. The photo appears in **Media Library** → folder **prologue** on
    Cloudinary.
 
-Good to know: photos stay on Cloudinary when a post is deleted (they're unlisted, so nobody finds them without the
-address). Cleaning those up is on the roadmap.
+Good to know: photos are deleted from Cloudinary when nothing uses them any more: when the post, story or account
+they belong to is deleted (by its owner or a moderator), or when a cover, step photo or profile photo is replaced.
+Links to photos on other sites are never touched. Stories that simply expired after 24 hours keep their photo.
 
 ---
 

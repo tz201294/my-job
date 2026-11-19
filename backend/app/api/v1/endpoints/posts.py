@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,7 @@ from app.schemas.comment import (
 )
 from app.services.content import remove_comment, remove_post, sync_comments_count
 from app.services.feed import rank_posts
+from app.services.images import forget_images, post_image_urls
 from app.services.notifications import notify, withdraw
 from app.services.moderation import (
     ensure_can_interact, ensure_can_see_posts, hidden_user_ids, is_hidden_from, private_hidden_ids,
@@ -153,12 +154,14 @@ async def _own_post(db: AsyncSession, user: User, post_id: str) -> Post:
 async def update_post(
     post_id: str,
     post_in: PostUpdate,
+    background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """The author edits their post. Only the fields sent are changed."""
+    """The author edits their post. Only the fields sent are changed. Photos it no longer uses are deleted."""
     post = await _own_post(db, user, post_id)
     changes = post_in.changes()
+    photos_before = await post_image_urls(db, [post_id])
 
     for field in ("title", "caption", "tags"):
         if field in changes:
@@ -176,6 +179,7 @@ async def update_post(
                 for k, v in td.items():
                     setattr(post.task_details, k, v)
     await db.commit()
+    await forget_images(db, background, photos_before - await post_image_urls(db, [post_id]))
 
     db.expire_all()
     post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one()
@@ -187,13 +191,16 @@ async def update_post(
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(
     post_id: str,
+    background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """The author deletes their post, with its likes, saves and reviews."""
+    """The author deletes their post, with its likes, saves, reviews and photos."""
     post = await _own_post(db, user, post_id)
+    photos = await post_image_urls(db, [post_id])
     await remove_post(db, post)
     await db.commit()
+    await forget_images(db, background, photos)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

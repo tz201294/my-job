@@ -32,13 +32,16 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# The interactive API docs are for development. In production they're off: they'd list every endpoint to anyone.
+_docs = not settings.is_production
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Backend API for Prologue — an Instagram-style social platform for real professions, daily workflows, and job task solutions.",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" if _docs else None,
+    docs_url=f"{settings.API_V1_STR}/docs" if _docs else None,
+    redoc_url=f"{settings.API_V1_STR}/redoc" if _docs else None,
     lifespan=lifespan,
 )
 

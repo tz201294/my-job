@@ -11,20 +11,31 @@ Storage:
   production: Render's free plan has no lasting disk.
 - Otherwise, outside production: files go to MEDIA_DIR and the API serves them at /media/ (local development).
 - Production without Cloudinary: uploads are refused (503) with a clear message; links still work.
+
+Cleanup: when a post, story, profile photo or account is removed (or a photo is replaced), `forget_images`
+deletes the stored files that nothing uses any more. Only photos stored by this app are touched (our Cloudinary
+folder or MEDIA_DIR), never pasted links to other sites; a file still used by another post, story or profile is
+kept. Deleting is best effort, after the response: a failure is logged and never undoes the user's action.
 """
 import hashlib
 import io
 import logging
+import re
 import secrets
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable, Optional, Set
+from urllib.parse import urlparse
 
 import httpx
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException
 from PIL import Image, ImageOps, UnidentifiedImageError
+from sqlalchemy import String, cast, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models import Post, Story, TaskDetails, User
 
 logger = logging.getLogger(__name__)
 
@@ -126,3 +137,103 @@ async def store_image(data: bytes, purpose: str, base_url: str) -> StoredImage:
     else:
         url = _store_local(cleaned, base_url)
     return StoredImage(url=url, width=width, height=height)
+
+
+# ---------- removing photos nobody uses any more ----------
+
+_LOCAL_NAME = re.compile(r"^[A-Za-z0-9_-]{8,64}\.webp$")
+
+
+def cloudinary_public_id(url: str) -> Optional[str]:
+    """The Cloudinary id of a photo this app uploaded ("prologue/post/<name>"), or None for anything else."""
+    if not settings.CLOUDINARY_URL or not url:
+        return None
+    cloud = _parse_cloudinary_url(settings.CLOUDINARY_URL)[0]
+    prefix = f"https://res.cloudinary.com/{cloud}/image/upload/"
+    if not url.startswith(prefix):
+        return None
+    path = re.sub(r"^v\d+/", "", url[len(prefix):].split("?", 1)[0])
+    if not path.startswith("prologue/") or ".." in path:
+        return None
+    return path.rsplit(".", 1)[0]
+
+
+def _local_file(url: str) -> Optional[Path]:
+    """The file in MEDIA_DIR behind a /media/<name>.webp address, or None."""
+    path = urlparse(url or "").path
+    if not path.startswith("/media/"):
+        return None
+    name = path[len("/media/"):]
+    if not _LOCAL_NAME.match(name):
+        return None
+    f = Path(settings.MEDIA_DIR) / name
+    return f if f.is_file() else None
+
+
+def _ours(url: str) -> bool:
+    return bool(cloudinary_public_id(url) or _local_file(url))
+
+
+async def _still_used(db: AsyncSession, url: str) -> bool:
+    checks = (
+        select(Post.id).where(cast(Post.media, String).contains(url, autoescape=True)),
+        select(TaskDetails.id).where(cast(TaskDetails.steps, String).contains(url, autoescape=True)),
+        select(Story.id).where(Story.media_url == url),
+        select(User.id).where(User.avatar_url == url),
+    )
+    for stmt in checks:
+        if (await db.execute(stmt.limit(1))).first() is not None:
+            return True
+    return False
+
+
+async def post_image_urls(db: AsyncSession, post_ids) -> Set[str]:
+    """Every photo address on these posts: covers and step images. `post_ids` is a list or a SELECT of ids."""
+    urls: Set[str] = set()
+    for media in (await db.execute(select(Post.media).where(Post.id.in_(post_ids)))).scalars():
+        urls.update(m["url"] for m in media or [] if isinstance(m, dict) and m.get("url"))
+    for steps in (await db.execute(select(TaskDetails.steps).where(TaskDetails.post_id.in_(post_ids)))).scalars():
+        urls.update(s["image_url"] for s in steps or [] if isinstance(s, dict) and s.get("image_url"))
+    return urls
+
+
+async def user_image_urls(db: AsyncSession, user_id: str) -> Set[str]:
+    """Every photo of one account: its posts, stories and profile photo."""
+    urls = await post_image_urls(db, select(Post.id).where(Post.author_id == user_id))
+    urls.update((await db.execute(select(Story.media_url).where(Story.user_id == user_id))).scalars())
+    avatar = (await db.execute(select(User.avatar_url).where(User.id == user_id))).scalar_one_or_none()
+    if avatar:
+        urls.add(avatar)
+    return urls
+
+
+async def _delete_cloudinary(public_id: str) -> None:
+    cloud, key, secret = _parse_cloudinary_url(settings.CLOUDINARY_URL)
+    params = {"public_id": public_id, "timestamp": str(int(time.time()))}
+    form = {**params, "api_key": key, "signature": cloudinary_signature(params, secret)}
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.post(f"https://api.cloudinary.com/v1_1/{cloud}/image/destroy", data=form)
+    if r.status_code >= 300 or r.json().get("result") not in ("ok", "not found"):
+        raise RuntimeError(f"Cloudinary answered {r.status_code}: {r.text[:300]}")
+
+
+async def delete_stored_images(urls: Iterable[str]) -> None:
+    """Deletes the files behind these addresses (already checked to be ours and unused). Never raises."""
+    for url in urls:
+        try:
+            public_id = cloudinary_public_id(url)
+            if public_id:
+                await _delete_cloudinary(public_id)
+            else:
+                f = _local_file(url)
+                if f:
+                    f.unlink(missing_ok=True)
+        except Exception as e:  # noqa: BLE001 - cleanup must never break anything
+            logger.warning("Could not delete the stored photo %s: %s", url, e)
+
+
+async def forget_images(db: AsyncSession, background: BackgroundTasks, urls: Iterable[str]) -> None:
+    """After a commit: schedule deleting the photos among `urls` that this app stored and nothing uses now."""
+    unused = [u for u in set(urls) if u and _ours(u) and not await _still_used(db, u)]
+    if unused:
+        background.add_task(delete_stored_images, unused)

@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +20,7 @@ from app.core.time import utcnow
 from app.db.session import get_db
 from app.models import ChallengeSuggestion, Post, PostComment, QAQuestion, Report, User, WorkChallenge
 from app.services.content import remove_challenge, remove_comment, remove_post, remove_question, remove_suggestion
+from app.services.images import forget_images, post_image_urls
 from app.services.moderation import is_admin, is_hidden_from
 
 router = APIRouter()
@@ -167,9 +168,12 @@ async def _suspend(db: AsyncSession, admin: User, target: User) -> int:
 
 
 @router.post("/reports/resolve", dependencies=[Depends(limit("edit"))])
-async def resolve_reports(body: Resolve, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin)):
+async def resolve_reports(
+    body: Resolve, background: BackgroundTasks, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin),
+):
     """Deal with every open report about one thing: dismiss them, remove the content, or suspend its author."""
     target, owner_id, _ = await _load_target(db, body.target_type, body.target_id)
+    photos = set()
     about_target = (Report.target_type == body.target_type, Report.target_id == body.target_id)
 
     if body.action == "dismiss":
@@ -178,6 +182,8 @@ async def resolve_reports(body: Resolve, db: AsyncSession = Depends(get_db), adm
         if body.target_type == "user":
             raise HTTPException(status_code=400, detail="An account can't be removed; suspend it instead")
         if target is not None:
+            if body.target_type == "post":
+                photos = await post_image_urls(db, [target.id])
             await REMOVERS[body.target_type](db, target)
         n = await _close(db, admin, "removed", *about_target)
     else:
@@ -188,6 +194,7 @@ async def resolve_reports(body: Resolve, db: AsyncSession = Depends(get_db), adm
             raise HTTPException(status_code=404, detail="That account no longer exists")
         n = await _suspend(db, admin, owner)
     await db.commit()
+    await forget_images(db, background, photos)
     return {"resolved": n}
 
 

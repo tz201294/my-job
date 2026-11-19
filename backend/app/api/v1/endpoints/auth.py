@@ -17,6 +17,7 @@ from app.core.security import (
 )
 from app.core.time import utcnow
 from app.services.account import delete_account
+from app.services.images import forget_images, user_image_urls
 from app.core.i18n import pick_language, translate
 from app.core.legal import TERMS_VERSION
 from app.services.data_export import export_user_data
@@ -214,6 +215,7 @@ async def update_me(
     changes = changes_in.changes()
     user = current_user
     user_id = user.id  # read now: attributes are expired (and can't lazy-load) after expire_all below
+    old_avatar = user.avatar_url
 
     for field in ("full_name", "bio", "avatar_url", "language"):
         if field in changes:
@@ -278,6 +280,8 @@ async def update_me(
 
     db.expire_all()
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one()
+    if "avatar_url" in changes and old_avatar != user.avatar_url:
+        await forget_images(db, background, [old_avatar])  # the replaced profile photo
     if "email" in changes:
         _send_verification(background, user)  # only if the address is new (unconfirmed)
     return await user_me_out(db, user)
@@ -394,6 +398,7 @@ async def resend_verification(
 @router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_me(
     body: AccountDelete,
+    background: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -406,9 +411,11 @@ async def delete_me(
         username_limiter.record_failure(key)
         raise HTTPException(status_code=400, detail="Password is incorrect")
     user_id = current_user.id
+    photos = await user_image_urls(db, user_id)
     db.expunge(current_user)  # removed with bulk statements below; keep the ORM from touching it again
     await delete_account(db, user_id)
     await db.commit()
+    await forget_images(db, background, photos)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

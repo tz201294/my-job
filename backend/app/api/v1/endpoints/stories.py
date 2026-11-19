@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,7 @@ from app.core.time import utcnow
 from app.db.session import get_db
 from app.models import Story, User
 from app.schemas.story import StoryCreate, StoryResponse, UserStoryGroup
+from app.services.images import forget_images
 from app.services.moderation import hidden_user_ids, private_hidden_ids
 
 router = APIRouter()
@@ -66,15 +67,18 @@ async def create_story(
 @router.delete("/{story_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_story(
     story_id: str,
+    background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """The author deletes their story before it expires."""
+    """The author deletes their story before it expires (and its photo)."""
     story = (await db.execute(select(Story).where(Story.id == story_id))).scalar_one_or_none()
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
     if story.user_id != user.id:
         raise HTTPException(status_code=403, detail="You can only delete your own stories")
+    photo = story.media_url
     await db.delete(story)
     await db.commit()
+    await forget_images(db, background, [photo])
     return Response(status_code=status.HTTP_204_NO_CONTENT)
