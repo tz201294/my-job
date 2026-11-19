@@ -27,11 +27,17 @@ jobs:
         env:
           DB: ${{ secrets.BACKUP_DATABASE_URL }}
           PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        # Repository secrets (Settings > Secrets and variables > Actions > Secrets > Repository secrets), not
+        # environment secrets: this job uses no environment.
         run: |
-          if [ -z "$DB" ] || [ -z "$PASS" ]; then
-            echo "::error::Add the BACKUP_DATABASE_URL and BACKUP_PASSPHRASE secrets (docs/DEPLOY.md step 9)."
+          missing=""
+          [ -n "$DB" ] || missing="$missing BACKUP_DATABASE_URL"
+          [ -n "$PASS" ] || missing="$missing BACKUP_PASSPHRASE"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing. Add them under Settings > Secrets and variables > Actions > Secrets > Repository secrets (docs/DEPLOY.md step 9)."
             exit 1
           fi
+          echo "Both secrets are set."
 
       - name: Back up, check and encrypt
         id: backup

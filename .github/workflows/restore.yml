@@ -31,8 +31,11 @@ jobs:
           DB: ${{ secrets.RESTORE_DATABASE_URL }}
           PASS: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
-          if [ -z "$DB" ] || [ -z "$PASS" ]; then
-            echo "::error::Add the RESTORE_DATABASE_URL secret (a new, empty database) and BACKUP_PASSPHRASE."
+          missing=""
+          [ -n "$DB" ] || missing="$missing RESTORE_DATABASE_URL"
+          [ -n "$PASS" ] || missing="$missing BACKUP_PASSPHRASE"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing. RESTORE_DATABASE_URL is a new, empty database (docs/DEPLOY.md, Restoring a backup)."
             exit 1
           fi
 
