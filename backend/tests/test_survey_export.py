@@ -34,4 +34,4 @@ async def test_survey_export_hides_identity_and_respects_consent(client, session
     row = next(csv.DictReader(consented.open(encoding="utf-8")))
     assert row["works"] == "True" and row["industry"] == "Technology & Engineering"
     assert row["gender"] == "female" and row["age"] == "29" and row["country"] == "Israel"
-    assert row["interests"] == "Science & Research;Technology & Engineering"
+    assert row["interests"] == "data-scientist;software-developer"

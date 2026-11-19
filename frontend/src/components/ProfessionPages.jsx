@@ -6,17 +6,11 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { fieldName, toPost, toProfileUser } from '../api/mappers';
-import { searchProfessions, useCatalog } from '../catalog';
+import { FIELD_ORDER, searchProfessions, useCatalog } from '../catalog';
 import { useI18n } from '../i18n';
 import { paths } from '../routes';
 import NotFoundPage from './NotFoundPage';
 
-// Field order as on the sign-up form.
-const FIELD_ORDER = [
-  'Trades & Craftsmanship', 'Transportation & Logistics', 'Legal & Finance', 'Technology & Engineering',
-  'Healthcare & Medicine', 'Education & Training', 'Food & Hospitality', 'Arts, Media & Design',
-  'Science & Research', 'Public Service & Safety',
-];
 
 /** /professions: every profession in the catalog, by field, with how many people do it here. */
 export function ProfessionsPage() {

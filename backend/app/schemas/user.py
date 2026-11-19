@@ -6,9 +6,22 @@ from typing import List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.core.professions import FIELD_OF
-from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
+from app.core.taxonomy import INDUSTRY_OPTIONS
 from app.schemas.common import NonEmptyStr, OptionalHttpUrlStr, OptionalStr, PartialUpdate
 from app.schemas.profession import ProfessionResponse
+
+MAX_INTERESTS = 20
+
+
+def _check_interests(v: List[str]) -> List[str]:
+    """Interests are catalog professions (slugs), the kinds of work someone wants to see; no repeats."""
+    unknown = [i for i in v if i not in FIELD_OF]
+    if unknown:
+        raise ValueError(f"Unknown interests: {', '.join(unknown)}")
+    v = list(dict.fromkeys(v))
+    if len(v) > MAX_INTERESTS:
+        raise ValueError(f"Choose at most {MAX_INTERESTS} interests")
+    return v
 
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{3,30}$")
 MAX_PASSWORD_BYTES = 72  # bcrypt limit
@@ -126,10 +139,7 @@ class UserCreate(BaseModel):
     @field_validator("interests")
     @classmethod
     def interests_known_and_unique(cls, v: List[str]) -> List[str]:
-        unknown = [i for i in v if i not in INTEREST_OPTIONS]
-        if unknown:
-            raise ValueError(f"Unknown interests: {', '.join(unknown)}")
-        return list(dict.fromkeys(v))
+        return _check_interests(v)
 
     @model_validator(mode="after")
     def work_status_consistency(self):
@@ -243,10 +253,7 @@ class ProfileUpdate(PartialUpdate):
             return v
         if not v:
             raise ValueError("Choose at least one interest")
-        unknown = [i for i in v if i not in INTEREST_OPTIONS]
-        if unknown:
-            raise ValueError(f"Unknown interests: {', '.join(unknown)}")
-        return list(dict.fromkeys(v))
+        return _check_interests(v)
 
     @model_validator(mode="after")
     def work_fields_consistent(self):

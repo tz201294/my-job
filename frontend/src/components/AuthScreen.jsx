@@ -4,6 +4,7 @@ import { BrandMark, Wordmark } from './Brand';
 import LanguageSelect from './LanguageSelect';
 import ProfessionPicker from './ProfessionPicker';
 import { fieldName } from '../api/mappers';
+import InterestPicker from './InterestPicker';
 import { api, DEMO_URL, IS_DEMO, REAL_APP_URL, tokenStore } from '../api/client';
 import { SlowHint } from './SlowHint';
 import { DEMO_PASSWORD } from '../api/demoConstants';
@@ -15,11 +16,6 @@ const FALLBACK_OPTIONS = {
     'Trades & Craftsmanship', 'Transportation & Logistics', 'Legal & Finance', 'Technology & Engineering',
     'Healthcare & Medicine', 'Education & Training', 'Food & Hospitality', 'Arts, Media & Design',
     'Science & Research', 'Public Service & Safety', 'Other',
-  ],
-  interests: [
-    'Trades & Craftsmanship', 'Transportation & Logistics', 'Legal & Finance', 'Technology & Engineering',
-    'Healthcare & Medicine', 'Education & Training', 'Food & Hospitality', 'Arts, Media & Design',
-    'Science & Research', 'Public Service & Safety',
   ],
   genders: ['female', 'male', 'non_binary', 'prefer_not_to_say'],
   non_working_statuses: ['student', 'unemployed', 'retired', 'other'],
@@ -130,7 +126,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
       if (form.works === null) return t('signup.errWorks');
       if (form.works && (!form.industry || form.title.trim().length < 2)) return t('signup.errProfession');
       if (!form.works && !form.non_working_status) return t('signup.errStatus');
-      if (form.interests.length === 0) return t('signup.errInterests');
+      if (form.interests.length === 0) return t('signup.errInterestsProfessions');
     }
     if (step === 2) {
       const age = Number(form.age);
@@ -188,8 +184,6 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
     }
   };
 
-  const toggleInterest = (i) =>
-    set('interests', form.interests.includes(i) ? form.interests.filter((x) => x !== i) : [...form.interests, i]);
 
   const lastStep = step === STEPS.length - 1;
 
@@ -370,12 +364,9 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
                   )}
 
                   <fieldset>
-                    <legend className={labelCls}>{t('signup.interests')} <span className="font-medium text-slate-500">{t('signup.pickOneOrMore')}</span></legend>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {options.interests.map((i) => (
-                        <Choice key={i} type="checkbox" name="interests" checked={form.interests.includes(i)} onChange={() => toggleInterest(i)}>{fieldName(i)}</Choice>
-                      ))}
-                    </div>
+                    <legend className={labelCls}>{t('signup.interestsProfessions')}</legend>
+                    <p className="text-[11px] text-slate-500 mb-2">{t('signup.interestsHint')}</p>
+                    <InterestPicker id="su-interests" value={form.interests} onChange={(v) => set('interests', v)} />
                   </fieldset>
                 </>
               )}

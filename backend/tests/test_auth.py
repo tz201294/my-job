@@ -1,5 +1,6 @@
 from sqlalchemy import select
 
+from app.core.professions import FIELD_OF
 from app.models import ProfessionProfile, UserInterest, UserSurvey, User
 
 API = "/api/v1"
@@ -9,8 +10,8 @@ async def test_signup_options(client):
     r = await client.get(f"{API}/auth/signup-options")
     assert r.status_code == 200
     body = r.json()
-    assert "Technology & Engineering" in body["interests"]
-    assert "Other" in body["industries"] and "Other" not in body["interests"]
+    assert "nurse" in body["interests"] and len(body["interests"]) == 51  # catalog professions
+    assert "Other" in body["industries"]
     assert "prefer_not_to_say" in body["genders"]
 
 
@@ -24,7 +25,7 @@ async def test_register_stores_account_and_survey(client, session_factory, signu
     assert user["profession"]["title"] == "Backend Developer"
     assert user["profession"]["is_verified_pro"] is False
     assert user["survey"]["gender"] == "female" and user["survey"]["age"] == 29
-    assert user["interests"] == ["Science & Research", "Technology & Engineering"]
+    assert user["interests"] == ["data-scientist", "software-developer"]
     assert "hashed_password" not in user and "password" not in user
 
     async with session_factory() as s:
@@ -35,7 +36,7 @@ async def test_register_stores_account_and_survey(client, session_factory, signu
         prof = (await s.execute(select(ProfessionProfile).where(ProfessionProfile.user_id == u.id))).scalar_one()
         assert prof.industry == "Technology & Engineering" and prof.years_of_experience == 4
         interests = (await s.execute(select(UserInterest.interest).where(UserInterest.user_id == u.id))).scalars().all()
-        assert sorted(interests) == ["Science & Research", "Technology & Engineering"]
+        assert sorted(interests) == ["data-scientist", "software-developer"]
 
 
 async def test_register_non_working_user_has_no_profession(client, signup_payload):
@@ -53,6 +54,8 @@ async def test_register_validation_errors(client, signup_payload):
         "works_without_profession": {"profession": None},
         "no_interests": {"interests": []},
         "unknown_interest": {"interests": ["Underwater Basket Weaving"]},
+        "a_field_not_a_profession": {"interests": ["Healthcare & Medicine"]},
+        "too_many_interests": {"interests": list(FIELD_OF)[:21]},
         "underage": {"age": 9},
         "short_password": {"password": "short"},
         "long_password": {"password": "x" * 80},

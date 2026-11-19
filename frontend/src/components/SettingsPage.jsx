@@ -4,6 +4,8 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { DEFAULT_AVATAR, fieldName } from '../api/mappers';
+import { useCatalog } from '../catalog';
+import InterestPicker from './InterestPicker';
 import LanguageSelect from './LanguageSelect';
 import ProfessionPicker from './ProfessionPicker';
 import ImageField from './ImageField';
@@ -254,8 +256,6 @@ function ProfileForm({ account, options, onSave, onDone }) {
     onDone();
   });
 
-  const toggleInterest = (i) =>
-    setInterests((list) => (list.includes(i) ? list.filter((x) => x !== i) : [...list, i]));
 
   return (
     <form onSubmit={submit} className="space-y-3.5">
@@ -337,14 +337,8 @@ function ProfileForm({ account, options, onSave, onDone }) {
 
       <fieldset>
         <legend className={labelCls}>{t('settings.interests')}</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {options.interests.map((i) => (
-            <button key={i} type="button" aria-pressed={interests.includes(i)} onClick={() => toggleInterest(i)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border ${interests.includes(i) ? 'bg-teal-50 text-teal-800 border-teal-400' : 'bg-white text-slate-600 border-slate-300'}`}>
-              {fieldName(i)}
-            </button>
-          ))}
-        </div>
+        <p className="text-[11px] text-slate-500 mb-2">{t('signup.interestsHint')}</p>
+        <InterestPicker id="settings-interests" value={interests} onChange={setInterests} />
         {interests.length === 0 && <p className="mt-1 text-[11px] font-semibold text-rose-600">{t('settings.chooseOne')}</p>}
       </fieldset>
 
@@ -509,6 +503,7 @@ export default function SettingsPage({
   const [options, setOptions] = useState(null);
   const survey = account.survey;
   const interests = account.interests || [];
+  const { bySlug } = useCatalog();
 
   useEffect(() => {
     api.getSignupOptions().then(setOptions).catch(() => setOptions({ industries: [], interests: [] }));
@@ -540,7 +535,7 @@ export default function SettingsPage({
             {account.bio && <Field label={t('settings.bio')} value={account.bio} />}
             <EmailField account={account} />
             <Field label={t('settings.work')} value={account.profession ? `${me.professionTitle} · ${fieldName(me.industry)}` : t('settings.notWorking')} />
-            {interests.length > 0 && <Field label={t('settings.interests')} value={interests.map(fieldName).join(', ')} />}
+            {interests.length > 0 && <Field label={t('settings.interests')} value={interests.map((i) => bySlug[i]?.name || i).join(', ')} />}
           </dl>
         )}
       </Card>

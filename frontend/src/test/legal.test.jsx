@@ -40,7 +40,7 @@ describe('signing up', () => {
     await click(screen.getByRole('button', { name: 'Continue' }));
     await click(screen.getByText('No, not currently'));
     await click(screen.getByText('Student'));
-    await click(screen.getAllByRole('checkbox')[0]);
+    await click(screen.getByRole('button', { name: 'Nurse' }));
     await click(screen.getByRole('button', { name: 'Continue' }));
     await click(screen.getAllByText('Prefer not to say')[0]); // the gender choice
     await type(screen.getByLabelText('Age'), '30');

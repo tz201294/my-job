@@ -23,7 +23,7 @@ export { DEMO_PASSWORD };
 export const DEMO_TOKEN = 'demo_token';
 
 // Bump the version when the sample data changes so returning visitors get the new data.
-const STORE_KEY = 'myjob_demo_store_v7'; // v7: profession catalog
+const STORE_KEY = 'myjob_demo_store_v8'; // v8: interests are catalog professions
 // undefined (a 204 No Content reply) becomes null, like an empty response body.
 const clone = (x) => (x === undefined ? null : JSON.parse(JSON.stringify(x)));
 
@@ -33,11 +33,7 @@ const SIGNUP_OPTIONS = {
     'Healthcare & Medicine', 'Education & Training', 'Food & Hospitality', 'Arts, Media & Design',
     'Science & Research', 'Public Service & Safety', 'Other',
   ],
-  interests: [
-    'Trades & Craftsmanship', 'Transportation & Logistics', 'Legal & Finance', 'Technology & Engineering',
-    'Healthcare & Medicine', 'Education & Training', 'Food & Hospitality', 'Arts, Media & Design',
-    'Science & Research', 'Public Service & Safety',
-  ],
+  interests: CATALOG.map((p) => p.slug), // catalog professions
   genders: ['female', 'male', 'non_binary', 'prefer_not_to_say'],
   non_working_statuses: ['student', 'unemployed', 'retired', 'other'],
   education_levels: ['high_school', 'vocational', 'bachelors', 'masters', 'doctorate', 'other'],
@@ -162,9 +158,18 @@ function uiUserToApi(u) {
     is_following: false,
     // Private account fields (only returned to the account itself).
     email: null,
-    interests: SIGNUP_OPTIONS.interests.includes(u.industry) ? [u.industry] : ['Trades & Craftsmanship'],
+    interests: u.catalogSlug ? [u.catalogSlug, ...(CATALOG.find((p) => p.slug === u.catalogSlug)?.related || [])] : ['plumber'],
     survey: { works: !!u.professionTitle, data_consent: true },
   };
+}
+
+// Like the server: interests are known catalog professions, no repeats, at most 20.
+function checkInterests(list) {
+  const unknown = list.filter((i) => !SIGNUP_OPTIONS.interests.includes(i));
+  if (unknown.length) fail(422, `interests: Unknown interests: ${unknown.join(', ')}`);
+  const unique = [...new Set(list)];
+  if (unique.length > 20) fail(422, 'interests: Choose at most 20 interests');
+  return unique;
 }
 
 class DemoError extends Error {
@@ -256,7 +261,7 @@ function register(body) {
     is_following: false,
   };
   u.email = body.email ? String(body.email).toLowerCase() : null;
-  u.interests = body.interests || [];
+  u.interests = checkInterests(body.interests || []);
   u.survey = { works: !!body.works, data_consent: !!body.data_consent };
   s.users[username] = u;
   s.passwords[username] = body.password;
@@ -838,7 +843,7 @@ function updateMe(body) {
   }
   if ('interests' in body) {
     if (!body.interests?.length) fail(422, 'interests: Choose at least one interest');
-    u.interests = [...new Set(body.interests)];
+    u.interests = checkInterests(body.interests);
   }
   if (body.works === false) {
     u.profession = null;

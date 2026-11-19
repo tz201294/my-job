@@ -72,7 +72,7 @@ SIGNUP = {
     "password": "s3cretpass",
     "works": True,
     "profession": {"industry": "Technology & Engineering", "title": "Backend Developer", "years_of_experience": 4},
-    "interests": ["Technology & Engineering", "Science & Research"],
+    "interests": ["software-developer", "data-scientist"],
     "gender": "female",
     "age": 29,
     "country": "Israel",

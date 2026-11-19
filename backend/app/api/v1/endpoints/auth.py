@@ -23,7 +23,8 @@ from app.services.data_export import export_user_data
 from app.services.email import password_reset_email, send_email, verification_email
 from app.services.moderation import ensure_can_interact, hidden_user_ids, is_admin
 from app.services.notifications import notify, withdraw
-from app.core.taxonomy import INDUSTRY_OPTIONS, INTEREST_OPTIONS
+from app.core.professions import CATALOG
+from app.core.taxonomy import INDUSTRY_OPTIONS
 from app.db.session import get_db
 from app.models import Block, Follow, FollowRequest, Notification, ProfessionProfile, User, UserInterest, UserSurvey
 from app.schemas.user import (
@@ -76,7 +77,7 @@ async def get_signup_options():
     """Choices shown in the sign-up form (industries, interests, gender, ...)."""
     return {
         "industries": INDUSTRY_OPTIONS,
-        "interests": INTEREST_OPTIONS,
+        "interests": [p["slug"] for p in CATALOG],  # catalog professions
         "genders": [g.value for g in Gender],
         "non_working_statuses": [s.value for s in NonWorkingStatus],
         "education_levels": [e.value for e in EducationLevel],

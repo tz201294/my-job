@@ -18,6 +18,12 @@ const loaders = {
 const loaded = { en };
 
 export const PROFESSIONS = LIST;
+// Field order as on the sign-up form.
+export const FIELD_ORDER = [
+  'Trades & Craftsmanship', 'Transportation & Logistics', 'Legal & Finance', 'Technology & Engineering',
+  'Healthcare & Medicine', 'Education & Training', 'Food & Hospitality', 'Arts, Media & Design',
+  'Science & Research', 'Public Service & Safety',
+];
 export const PROFESSION_SLUGS = new Set(LIST.map((p) => p.slug));
 
 // Lower-case and without accents, so "medico" finds "Médico".

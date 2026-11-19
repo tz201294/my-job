@@ -23,13 +23,13 @@ async def _headers(client, username, password="demo1234"):
 async def test_edit_basic_profile_fields(client, auth_headers):
     r = await client.patch(f"{API}/auth/me", json={
         "full_name": "  New Name ", "bio": " I fix servers. ", "avatar_url": "https://img.example.com/me.jpg",
-        "email": "Me@Example.com", "interests": ["Healthcare & Medicine", "Healthcare & Medicine"],
+        "email": "Me@Example.com", "interests": ["nurse", "nurse", "paramedic"],
     }, headers=auth_headers)
     assert r.status_code == 200, r.text
     me = r.json()
     assert me["full_name"] == "New Name" and me["bio"] == "I fix servers."
     assert me["avatar_url"] == "https://img.example.com/me.jpg" and me["email"] == "me@example.com"
-    assert me["interests"] == ["Healthcare & Medicine"]
+    assert me["interests"] == ["nurse", "paramedic"]
     assert me["profession"]["title"] == "Backend Developer"  # untouched
 
     # Clearing optional fields

@@ -287,6 +287,7 @@ describe('demo backend', () => {
     await req('/auth/login', 'POST', { username_or_email: 'alex_driver', password: 'demo1234' });
     let meA = await req('/auth/me');
     assert.ok(meA.survey && meA.interests.length > 0, 'demo accounts have settings data');
+    assert.ok(meA.interests.includes('bus-driver'), 'interests are catalog professions');
     assert.equal((await req('/auth/users/alex_driver')).email, undefined, 'public profile hides private fields');
     meA = await req('/auth/me', 'PATCH', { full_name: '  Alex R.  ', bio: 'Night routes', email: 'Alex@Example.com' });
     assert.equal(meA.full_name, 'Alex R.');
@@ -295,6 +296,8 @@ describe('demo backend', () => {
     await rejects(req('/auth/me', 'PATCH', { full_name: '' }), 422);
     await rejects(req('/auth/me', 'PATCH', { avatar_url: 'javascript:x' }), 422);
     await rejects(req('/auth/me', 'PATCH', { interests: [] }), 422);
+    await rejects(req('/auth/me', 'PATCH', { interests: ['Healthcare & Medicine'] }), 422); // a field, not a profession
+    assert.deepEqual((await req('/auth/me', 'PATCH', { interests: ['nurse', 'nurse', 'paramedic'] })).interests, ['nurse', 'paramedic']);
     await rejects(req('/auth/me', 'PATCH', { email: 'bad' }), 422);
     // Verified badge drops when the profession changes, not for small edits
     const verifiedBefore = meA.profession.is_verified_pro;

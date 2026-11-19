@@ -23,7 +23,7 @@ DEMO_USERS = [
         prof=dict(industry="Trades & Craftsmanship", title="Master Plumber", slug="plumber",
                   specialization="Commercial & Residential Diagnostics", years=10, company="Jenkins Plumbing LLC",
                   tools=["Pipe Wrench", "Drain Snake", "Infrared Thermal Camera", "PEX Crimper"]),
-        interests=["Trades & Craftsmanship", "Technology & Engineering"],
+        interests=["plumber", "electrician", "civil-engineer"],
     ),
     dict(
         username="alex_driver", email="alex@citytransit.org", full_name="Alex Rivera",
@@ -33,7 +33,7 @@ DEMO_USERS = [
         prof=dict(industry="Transportation & Logistics", title="Transit Bus Operator", slug="bus-driver",
                   specialization="Articulated & Electric Fleet", years=6, company="Metro Express Transit",
                   tools=["Fleet Telematics", "Route Dispatch System", "Defensive Driving Radar"]),
-        interests=["Transportation & Logistics", "Public Service & Safety"],
+        interests=["bus-driver", "train-driver", "firefighter"],
     ),
     dict(
         username="elena_lawyer", email="elena@vancelegal.com", full_name="Elena Vance, Esq.",
@@ -43,17 +43,17 @@ DEMO_USERS = [
         prof=dict(industry="Legal & Finance", title="Commercial Litigation Attorney", slug="lawyer",
                   specialization="IP & Breach of Contract Disputes", years=12, company="Vance & Associates Law",
                   tools=["Westlaw", "LexisNexis", "Clio Litigation Suite", "Adobe Pro Redaction"]),
-        interests=["Legal & Finance", "Technology & Engineering"],
+        interests=["lawyer", "paralegal", "cybersecurity-analyst"],
     ),
 ]
 
 EXPLORERS = [
     dict(username="law_student_sam", full_name="Sam Okafor", gender="male", age=24,
          avatar=U + "photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
-         status="student", interests=["Legal & Finance"]),
+         status="student", interests=["lawyer", "accountant"]),
     dict(username="homeowner_dave", full_name="Dave Miller", gender="male", age=52,
          avatar=U + "photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=400&q=80",
-         status="other", interests=["Trades & Craftsmanship"]),
+         status="other", interests=["plumber", "carpenter"]),
 ]
 
 POSTS = [
