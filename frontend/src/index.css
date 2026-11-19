@@ -17,6 +17,8 @@
   .btn-secondary { @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300; }
   .btn-quiet { @apply bg-slate-100 text-slate-700 hover:bg-slate-200; }
   .btn-danger { @apply bg-rose-600 text-white hover:bg-rose-700; }
+  .btn-danger-soft { @apply bg-rose-50 text-rose-700 hover:bg-rose-100; }
+  .btn-ghost { @apply text-slate-600 hover:bg-slate-100; }
 
   .chip {
     @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap

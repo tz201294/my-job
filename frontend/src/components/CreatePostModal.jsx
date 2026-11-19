@@ -490,14 +490,14 @@ export default function CreatePostModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+              className="btn btn-ghost"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="px-6 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white shadow-sm transition-all"
+              className="btn btn-primary px-6"
             >
               {isEditing ? (busy ? t('common.saving') : t('create.saveChanges')) : (busy ? t('common.publishing') : t('create.publish'))}
             </button>

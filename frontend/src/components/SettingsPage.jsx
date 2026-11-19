@@ -115,7 +115,7 @@ function DownloadMyData({ username }) {
         {error && <p role="alert" className="text-xs font-bold text-rose-600 mt-1">{error}</p>}
       </div>
       <button type="button" onClick={download} disabled={busy}
-        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-60">
+        className="btn btn-secondary">
         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} {t('settings.download')}
       </button>
     </div>
@@ -153,7 +153,7 @@ function BlockedAccounts({ onChange }) {
         <li key={u.username} className="flex items-center justify-between gap-3 py-2">
           <span className="text-sm text-slate-800"><strong>{u.full_name}</strong> <span className="text-slate-500">@{u.username}</span></span>
           <button type="button" onClick={() => unblock(u.username)}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100">{t('profile.unblock')}</button>
+            className="btn btn-sm btn-secondary">{t('profile.unblock')}</button>
         </li>
       ))}
     </ul>
@@ -199,10 +199,10 @@ function SaveRow({ busy, error, done, label, onCancel, disabled }) {
       {done && !error && <p className="mr-auto flex items-center gap-1 text-xs font-bold text-emerald-700"><Check className="w-3.5 h-3.5" /> {t('common.saved')}</p>}
       {onCancel && (
         <button type="button" onClick={onCancel} disabled={busy}
-          className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">{t('common.cancel')}</button>
+          className="btn btn-ghost">{t('common.cancel')}</button>
       )}
       <button type="submit" disabled={busy || disabled}
-        className="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60 inline-flex items-center gap-1.5">
+        className="btn btn-primary">
         {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
         {busy ? t('common.saving') : (label || t('common.save'))}
       </button>
@@ -291,7 +291,7 @@ function ProfileForm({ account, options, onSave, onDone }) {
         <div className="flex gap-2" role="radiogroup" aria-label={t('signup.doYouWork')}>
           {[[true, t('settings.iWork')], [false, t('settings.iDontWork')]].map(([val, text]) => (
             <button key={text} type="button" role="radio" aria-checked={works === val} onClick={() => setWorks(val)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold border ${works === val ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-700 border-slate-300'}`}>
+              className={`chip ${works === val ? 'chip-on' : ''}`}>
               {text}
             </button>
           ))}
@@ -467,7 +467,7 @@ function DeleteAccount({ username, onDeleteAccount }) {
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}
-        className="px-4 py-2 rounded-xl text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200">
+        className="btn btn-danger-soft">
         {t('settings.deleteAccountOpen')}
       </button>
     );
@@ -489,9 +489,9 @@ function DeleteAccount({ username, onDeleteAccount }) {
       <div className="flex flex-wrap items-center justify-end gap-2">
         {error && <p role="alert" className="mr-auto text-xs font-bold text-rose-600">{error}</p>}
         <button type="button" onClick={() => { setOpen(false); setPassword(''); setTyped(''); }} disabled={busy}
-          className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">{t('common.cancel')}</button>
+          className="btn btn-ghost">{t('common.cancel')}</button>
         <button type="submit" disabled={busy || !password || typed.trim().toLowerCase() !== username}
-          className="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50">
+          className="btn btn-danger">
           {busy ? t('common.deleting') : t('settings.deleteForever')}
         </button>
       </div>
@@ -526,7 +526,7 @@ export default function SettingsPage({
         title={t('settings.profile')}
         action={!editing && (
           <button type="button" onClick={() => setEditing(true)} disabled={!options}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-50">
+            className="btn btn-sm btn-secondary">
             <Pencil className="w-3.5 h-3.5" /> {t('common.edit')}
           </button>
         )}
@@ -572,7 +572,7 @@ export default function SettingsPage({
         <Card icon={RotateCcw} title={t('settings.demoData')}>
           <p className="text-xs text-slate-600 mb-3">{t('settings.demoDataHint')}</p>
           <button type="button" onClick={onResetDemo}
-            className="px-4 py-2 rounded-xl text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200">
+            className="btn btn-danger-soft">
             {t('settings.resetDemo')}
           </button>
         </Card>
@@ -590,7 +590,7 @@ export default function SettingsPage({
       </Card>
 
       <button type="button" onClick={onLogout}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200">
+        className="btn btn-secondary w-full py-3 text-sm hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200">
         <LogOut className="w-4 h-4" /> {t('nav.logout')}
       </button>
 

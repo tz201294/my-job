@@ -296,7 +296,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
               <ol className="flex items-center gap-2 mb-1" aria-label={t('signup.progress')}>
                 {STEPS.map((s, i) => (
                   <li key={s} className="flex-1" aria-current={i === step ? 'step' : undefined}>
-                    <div className={`h-1.5 rounded-full ${i <= step ? 'bg-gradient-to-r from-teal-600 to-cyan-500' : 'bg-slate-200'}`} />
+                    <div className={`h-1.5 rounded-full ${i <= step ? 'bg-teal-600' : 'bg-slate-200'}`} />
                     <span className={`block mt-1 text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-teal-700' : 'text-slate-400'}`}>{t(s)}</span>
                   </li>
                 ))}
@@ -427,7 +427,7 @@ export default function AuthScreen({ onAuthenticated, notice = '' }) {
               <div className="flex gap-2 pt-1">
                 {step > 0 && (
                   <button type="button" onClick={() => { setError(''); setStep(step - 1); }}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
+                    className="btn btn-secondary py-2.5 text-sm">
                     <ArrowLeft className="w-4 h-4" /> {t('common.back')}
                   </button>
                 )}
@@ -454,7 +454,7 @@ function SubmitButton({ busy, children }) {
     <button
       type="submit"
       disabled={busy}
-      className="flex-1 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-600 via-cyan-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 disabled:opacity-60 text-white rounded-xl text-sm font-extrabold shadow-md shadow-teal-500/25 transition-all"
+      className="flex-1 w-full btn btn-primary py-2.5 text-sm"
     >
       {busy && <Loader2 className="w-4 h-4 animate-spin" />}
       {children}
