@@ -248,7 +248,8 @@ encryption matters: this repository is public, and anyone signed in to GitHub ca
 1. **Make up a long passphrase** (a few unrelated words is good) and keep it in your password manager. Without it
    nobody can open the backups, including you; GitHub can't recover it.
 2. GitHub → **Settings** → **Secrets and variables** → **Actions** → the **Secrets** tab (not Variables) →
-   **New repository secret**, twice:
+   **New repository secret**, twice. They must appear under **Repository secrets** (not environment secrets, and
+   not on the Variables tab), with exactly these names:
    - **BACKUP_DATABASE_URL:** the Neon connection string, the same one Render has as `DATABASE_URL`;
    - **BACKUP_PASSPHRASE:** the passphrase from step 1.
 3. Try it: **Actions** → **Database backup** → **Run workflow**. After a minute or two the run turns green, and at
