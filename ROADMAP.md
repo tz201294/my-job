@@ -31,6 +31,8 @@ What is done, what is next, and decisions still open. Update this file when a st
   reinstate accounts. Setup: docs/DEPLOY.md step 7.
 - Private accounts: public by default; a private account's posts and stories are for approved followers only
   (follow requests, accepted or declined in Notifications).
+- Nightly encrypted database backups (GitHub Actions, kept 30 days), a restore workflow, and a CI check that a
+  backup really restores. Setup: docs/DEPLOY.md step 9.
 - Interests are catalog professions (picked at sign-up and in Settings), and a personal "For you" feed and AMA order
   learned from interests, actions and what people open, with about one post in five for discovery.
 - Privacy Policy and Terms of Service pages, accepted at sign-up (version recorded), Download my data (JSON), and

@@ -239,6 +239,52 @@ Good to know: photos are deleted from Cloudinary when nothing uses them any more
 they belong to is deleted (by its owner or a moderator), or when a cover, step photo or profile photo is replaced.
 Links to photos on other sites are never touched. Stories that simply expired after 24 hours keep their photo.
 
+## 9. Nightly backups (free, about 5 minutes)
+
+Neon's free plan can only roll the database back a short way. So every night GitHub makes a full copy of the
+database, checks it can be read, **encrypts it with a passphrase only you know** and keeps it for 30 days. The
+encryption matters: this repository is public, and anyone signed in to GitHub can download its stored files.
+
+1. **Make up a long passphrase** (a few unrelated words is good) and keep it in your password manager. Without it
+   nobody can open the backups, including you; GitHub can't recover it.
+2. GitHub → **Settings** → **Secrets and variables** → **Actions** → the **Secrets** tab (not Variables) →
+   **New repository secret**, twice:
+   - **BACKUP_DATABASE_URL:** the Neon connection string, the same one Render has as `DATABASE_URL`;
+   - **BACKUP_PASSPHRASE:** the passphrase from step 1.
+3. Try it: **Actions** → **Database backup** → **Run workflow**. After a minute or two the run turns green, and at
+   the bottom of its page, under **Artifacts**, there is a file named `prologue-backup-<date>`.
+
+From then on it runs by itself every night at 01:30 UTC. Run it by hand before anything risky (a big change, a
+migration you're unsure about).
+
+**Good to know:**
+- If a backup fails, GitHub emails you. The log says why (for example, a changed database password: update
+  **BACKUP_DATABASE_URL**).
+- GitHub pauses scheduled workflows in public repositories after 60 days without any commit. It emails you first;
+  re-enable it under **Actions** → **Database backup**.
+- Each backup wakes the Neon database for a minute or two: a small part of the free plan's monthly allowance.
+- Every push also tests the whole round trip (back up, restore into an empty database, compare) in CI, so you know
+  the backups really restore.
+
+### Restoring a backup
+
+A restore goes into a **new, empty database**, never over the live one (the restore refuses a database that already
+has tables). You check it, then point the API at it.
+
+1. Neon → your project → **Databases** → **New database**, named for example `restored`. Then **Connect**, choose
+   that database, keep pooling off, and copy its connection string.
+2. GitHub → **Settings** → **Secrets and variables** → **Actions** → **Secrets** → **New repository secret**:
+   **RESTORE_DATABASE_URL** = that connection string.
+3. Find the backup: **Actions** → **Database backup** → open the run from the day you want. The number at the end of
+   the page address (`.../actions/runs/1234567890`) is its **run ID**.
+4. **Actions** → **Restore a backup** → **Run workflow**: paste the run ID, type `RESTORE` to confirm, and run. The
+   log ends with how many users and posts were restored.
+5. Switch over: Render → **prologue-api** → **Environment** → **DATABASE_URL** = the restored database's connection
+   string → **Save**. Check the site. To go back, put the old string back.
+
+For a mistake in the last few hours, Neon's own **Restore** (on the branch page) can be quicker: it rolls the whole
+database back to a moment you pick, within the free plan's short history.
+
 ---
 
 ## Good to know

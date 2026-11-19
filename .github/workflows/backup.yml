@@ -1,0 +1,50 @@
+name: Database backup
+
+# Every night, and whenever you start it by hand (Actions -> Database backup -> Run workflow), e.g. before a risky
+# change. The backup is encrypted with BACKUP_PASSPHRASE before it is stored: this repository is public, and anyone
+# signed in to GitHub can download a public repository's artifacts. Kept 30 days. Setup: docs/DEPLOY.md step 9.
+on:
+  schedule:
+    - cron: '30 1 * * *'  # 01:30 UTC (03:30 / 04:30 in Israel)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: github.repository == 'tz201294/my-job'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the secrets are set
+        env:
+          DB: ${{ secrets.BACKUP_DATABASE_URL }}
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB" ] || [ -z "$PASS" ]; then
+            echo "::error::Add the BACKUP_DATABASE_URL and BACKUP_PASSPHRASE secrets (docs/DEPLOY.md step 9)."
+            exit 1
+          fi
+
+      - name: Back up, check and encrypt
+        id: backup
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: bash ops/backup.sh "$RUNNER_TEMP/backup"
+
+      - name: Store the encrypted backup (30 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: prologue-backup-${{ steps.backup.outputs.stamp }}
+          path: ${{ steps.backup.outputs.file }}
+          retention-days: 30
+          if-no-files-found: error
+          compression-level: 0  # already compressed and encrypted

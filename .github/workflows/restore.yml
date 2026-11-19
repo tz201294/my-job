@@ -1,0 +1,54 @@
+name: Restore a backup
+
+# Restores one nightly backup into an EMPTY database given by the RESTORE_DATABASE_URL secret (never the live one:
+# the script refuses a database that already has tables). Steps: docs/DEPLOY.md, "Restoring a backup".
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run_id:
+        description: 'Run ID of the "Database backup" run to restore (the number in its address)'
+        required: true
+        type: string
+      confirm:
+        description: 'Type RESTORE to confirm'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read  # to download the backup from the other workflow run
+
+jobs:
+  restore:
+    if: github.repository == 'tz201294/my-job' && inputs.confirm == 'RESTORE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the secrets are set
+        env:
+          DB: ${{ secrets.RESTORE_DATABASE_URL }}
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB" ] || [ -z "$PASS" ]; then
+            echo "::error::Add the RESTORE_DATABASE_URL secret (a new, empty database) and BACKUP_PASSPHRASE."
+            exit 1
+          fi
+
+      - name: Download the backup
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.backup_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/backup
+          pattern: prologue-backup-*
+          merge-multiple: true
+
+      - name: Restore into the empty database
+        env:
+          TARGET_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          file="$(ls "$RUNNER_TEMP"/backup/*.dump.gpg | head -n 1)"
+          bash ops/restore.sh "$file"

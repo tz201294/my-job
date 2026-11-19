@@ -107,6 +107,37 @@ jobs:
           python -m alembic upgrade head
           python -m alembic check
 
+      # The nightly backup (ops/backup.sh, .github/workflows/backup.yml) must really restore: back up a database
+      # with data, restore it into an empty one, compare. A wrong passphrase must fail, and so must restoring over
+      # a database that already has tables (that's how the live one is protected).
+      - name: Backups restore
+        env:
+          DATABASE_URL: postgresql://prologue:prologue@localhost:5432/prologue_migrations?sslmode=disable
+          TARGET_DATABASE_URL: postgresql://prologue:prologue@localhost:5432/prologue_restored?sslmode=disable
+          SPARE_DATABASE_URL: postgresql://prologue:prologue@localhost:5432/prologue_spare?sslmode=disable
+          BACKUP_PASSPHRASE: ci-only-passphrase
+          PGPASSWORD: prologue
+        run: |
+          python -m scripts.seed_sample_data
+          psql -h localhost -U prologue -d prologue_test -c "CREATE DATABASE prologue_restored"
+          psql -h localhost -U prologue -d prologue_test -c "CREATE DATABASE prologue_spare"
+          bash ../ops/backup.sh "$RUNNER_TEMP/backup"
+          file="$(ls "$RUNNER_TEMP"/backup/*.dump.gpg)"
+          bash ../ops/restore.sh "$file"
+          for t in users posts post_comments qa_questions user_interests alembic_version; do
+            a="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM $t")"
+            b="$(psql "$TARGET_DATABASE_URL" -Atc "SELECT count(*) FROM $t")"
+            echo "$t: $a in the original, $b restored"
+            [ "$a" = "$b" ] && [ "$a" -gt 0 ]
+          done
+          if TARGET_DATABASE_URL="$SPARE_DATABASE_URL" BACKUP_PASSPHRASE=wrong bash ../ops/restore.sh "$file"; then
+            echo "A wrong passphrase restored the backup"; exit 1
+          fi
+          if bash ../ops/restore.sh "$file"; then
+            echo "Restoring over a database with tables was allowed"; exit 1
+          fi
+          echo "Backup round trip OK"
+
   frontend:
     name: Frontend lint, tests and build
     runs-on: ubuntu-latest
