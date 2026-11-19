@@ -105,6 +105,10 @@ Moderation page (remove content, suspend or reinstate accounts). Suspended accou
 hidden; blocking hides content both ways and stops follows, comments, questions and notifications between the two.
 Private accounts (Settings > Privacy & data, off by default): posts and stories are shown only to followers the owner
 approves in Notifications; the profile card, AMAs and Live Work stay public. Going public lets waiting requests in.
+"For you" (and the AMA list) is ranked per person in `app/services/feed.py`: the professions picked as interests,
+likes, comments, saves, reviews, questions, upvotes and follows, and the professions of what they open (`view_events`,
+profession only, kept 90 days), recent activity weighing more; about one post in five comes from an unfamiliar field.
+Visitors and the Following / Saved / profile feeds stay newest first.
 Error reporting (Sentry) is off unless `SENTRY_DSN` (API) / `VITE_SENTRY_DSN` (website) is set; `/health` is a
 database-free liveness check, `/health/db` also checks the database.
 

@@ -131,6 +131,8 @@ export const api = {
   unblockUser: (username) => del(`/auth/users/${encodeURIComponent(username)}/block`),
   getBlocked: () => request('/auth/me/blocked'),
   getFollowRequests: () => request('/auth/me/follow-requests'),
+  // What someone opens teaches the "For you" feed (the server keeps only the profession). Never fails loudly.
+  recordView: (kind, id) => post('/activity/views', { kind, id }).catch(() => null),
   acceptFollowRequest: (username) => post(`/auth/me/follow-requests/${encodeURIComponent(username)}/accept`),
   declineFollowRequest: (username) => post(`/auth/me/follow-requests/${encodeURIComponent(username)}/decline`),
   exportMyData: () => request('/auth/me/export'),

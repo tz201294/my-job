@@ -14,6 +14,7 @@ from app.core.time import utcnow
 from app.db.session import get_db
 from app.services.content import remove_challenge, remove_question, remove_suggestion
 from app.services.notifications import notify
+from app.services.feed import rank_questions
 from app.services.moderation import ensure_can_interact, ensure_can_see_posts, hidden_user_ids, is_hidden_from
 from app.models import (
     ChallengeSuggestion, Post, QAQuestion, QAUpvote, SuggestionUpvote, TaskReview, User, WorkChallenge,
@@ -25,6 +26,7 @@ from app.schemas.community import (
 )
 
 router = APIRouter()
+RANK_POOL = 300  # how many of the newest questions a signed-in person's list ranks
 
 
 # Reviews & Ratings
@@ -107,7 +109,7 @@ async def list_questions(
     db: AsyncSession = Depends(get_db),
     user: Optional[User] = Depends(get_optional_user),
 ):
-    """AMA questions across professionals, newest first.
+    """AMA questions across professionals: newest first, or ranked like "For you" when signed in without filters.
 
     `worker_id` limits the list to questions addressed to one worker; `answered=false` lists only
     questions still waiting for an answer (e.g. a worker's inbox).
@@ -122,7 +124,12 @@ async def list_questions(
         stmt = stmt.where(QAQuestion.worker_id == worker_id)
     if answered is not None:
         stmt = stmt.where(QAQuestion.is_answered.is_(True) if answered else QAQuestion.is_answered.isnot(True))
+    ranked = user is not None and not worker_id and answered is None
+    if ranked:  # the whole AMA list, for a signed-in person: ranked like "For you"
+        stmt = stmt.limit(RANK_POOL).offset(0)
     rows = (await db.execute(stmt)).scalars().all()
+    if ranked:
+        rows = (await rank_questions(db, user, rows))[offset:offset + limit]
     voted = await upvoted_question_ids(db, user, rows)
     return [question_out(q, voted) for q in rows]
 

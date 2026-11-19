@@ -80,7 +80,9 @@ export default function CaseStudyDetailModal({ post, reviewsVersion = 0, onClose
               <span>{t('case.rate')}</span>
             </button>
             <button
+              type="button"
               onClick={onClose}
+              aria-label={t('common.close')}
               className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
             >
               <X className="w-6 h-6" />

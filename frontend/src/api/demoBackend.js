@@ -335,6 +335,91 @@ function peopleInProfession(slug) {
     .map(publicProfile);
 }
 
+// ---- "For you": the same ranking as the server (app/services/feed.py), simplified for the demo's data:
+// list position stands in for age (the sample lists are newest first), likes and saves are flags on posts.
+const INTEREST_W = 3;
+const VIEW_W = { post: 0.5, case_study: 1, profile: 0.5, profession: 1.5 };
+const DISCOVERY_EVERY = 5;
+
+function domainOf(s, username) {
+  const p = s.users[username]?.profession;
+  const slug = FIELD_OF[p?.catalog_slug] ? p.catalog_slug : null;
+  return [slug, FIELD_OF[slug] || p?.industry || null];
+}
+
+function affinity(s, u) {
+  const slug = {};
+  const field = {};
+  const add = ([sl, fd], w) => {
+    if (FIELD_OF[sl]) { slug[sl] = (slug[sl] || 0) + w; fd = FIELD_OF[sl]; }
+    if (fd) field[fd] = (field[fd] || 0) + w;
+  };
+  (u.interests || []).forEach((i) => add([i, null], INTEREST_W));
+  s.posts.forEach((p) => {
+    if (p.authorUsername === u.username) return;
+    if (p.isLiked) add(domainOf(s, p.authorUsername), 1);
+    if (p.isBookmarked) add(domainOf(s, p.authorUsername), 3);
+  });
+  s.questions.forEach((q) => {
+    if (q.askerUsername === u.username) add(domainOf(s, q.workerUsername), 3);
+    if (q.upvotedByMe) add(domainOf(s, q.workerUsername), 1);
+  });
+  s.following.forEach((n) => add(domainOf(s, n), 4));
+  (s.views || []).filter((v) => v.user === u.username).forEach((v) => add([v.slug, v.field], VIEW_W[v.kind] || 0));
+  return { slug, field };
+}
+
+function rankForYou(items, ownerOf, popularityOf) {
+  const s = load();
+  const u = me();
+  const aff = affinity(s, u);
+  const familiar = [];
+  const discovery = [];
+  items.forEach((item, i) => {
+    const owner = ownerOf(item);
+    const [sl, fd] = domainOf(s, owner);
+    const fresh = 1 / (1 + i / 3) ** 1.5;
+    const pop = 1 + 0.15 * Math.log1p(Math.max(popularityOf(item) || 0, 0));
+    const followed = owner === u.username || s.following.includes(owner);
+    const care = (aff.slug[sl] || 0) + 0.4 * (aff.field[fd] || 0);
+    if (followed || (aff.slug[sl] || 0) > 0 || (aff.field[fd] || 0) > 0) familiar.push([(1 + care + (followed ? 3 : 0)) * fresh * pop, item]);
+    else discovery.push([fresh * pop, item]);
+  });
+  const byScore = (a, b) => b[0] - a[0];
+  familiar.sort(byScore);
+  discovery.sort(byScore);
+  const out = [];
+  let f = 0;
+  let d = 0;
+  while (f < familiar.length || d < discovery.length) {
+    const wantDiscovery = (out.length + 1) % DISCOVERY_EVERY === 0;
+    if ((wantDiscovery && d < discovery.length) || f >= familiar.length) out.push(discovery[d++][1]);
+    else out.push(familiar[f++][1]);
+  }
+  return out;
+}
+
+// Opening something counts toward its profession (only the profession is kept).
+function recordView(body) {
+  const s = load();
+  const u = me();
+  const kind = body?.kind;
+  const id = String(body?.id || '');
+  if (!VIEW_W[kind]) fail(422, 'kind: Input should be \'post\', \'case_study\', \'profile\' or \'profession\'');
+  let domain = [null, null];
+  if (kind === 'profession') domain = FIELD_OF[id] ? [id, FIELD_OF[id]] : domain;
+  else if (kind === 'profile') domain = id.toLowerCase() !== u.username && s.users[id.toLowerCase()] ? domainOf(s, id.toLowerCase()) : domain;
+  else {
+    const post = s.posts.find((p) => p.id === id);
+    if (post && post.authorUsername !== u.username) domain = domainOf(s, post.authorUsername);
+  }
+  if (domain[0] || domain[1]) {
+    s.views = [...(s.views || []), { user: u.username, kind, slug: domain[0], field: domain[1] }].slice(-500);
+    save();
+  }
+  return null;
+}
+
 function feed(params) {
   const s = load();
   let posts = s.posts.filter(postVisible);
@@ -348,6 +433,8 @@ function feed(params) {
   if (author) posts = posts.filter((p) => p.authorUsername === author.toLowerCase());
   const type = params.get('post_type');
   if (type) posts = posts.filter((p) => p.postType === type);
+  const forYou = !!s.meUsername && !profession && params.get('following') !== 'true' && !author && !type;
+  if (forYou) posts = rankForYou(posts, (p) => p.authorUsername, (p) => (p.likesCount || 0) + 2 * (p.commentsCount || 0));
   const limit = Number(params.get('limit')) || 20;
   const offset = Number(params.get('offset')) || 0;
   return posts.slice(offset, offset + limit);
@@ -510,6 +597,7 @@ function listQuestions(params) {
   const answered = params.get('answered');
   if (answered === 'true') qs = qs.filter((q) => !!q.answerText);
   if (answered === 'false') qs = qs.filter((q) => !q.answerText);
+  if (load().meUsername && !workerId && !answered) qs = rankForYou(qs, (q) => q.workerUsername, (q) => q.upvotes);
   const limit = Number(params.get('limit')) || 50;
   return qs.slice(0, limit);
 }
@@ -1061,6 +1149,7 @@ function handle(endpoint, options) {
   if (route === 'PATCH /auth/me') return updateMe(body || {});
   if (route === 'POST /auth/me/password') return changePassword(body);
   if (route === 'POST /auth/me/delete') return deleteMe(body);
+  if (route === 'POST /activity/views') return recordView(body);
   if (route === 'POST /auth/password/forgot') {
     return { detail: `The demo doesn't send emails. All demo accounts use the password ${DEMO_PASSWORD}.` };
   }

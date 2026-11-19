@@ -99,6 +99,7 @@ UNLIMITED_WRITES = {
     "mark_read",  # notifications
     "reset_password",  # needs a signed link from an email, which can't be guessed
     "verify_email",  # same
+    "record_open",  # opens for the feed: limited silently (SILENT_RULES "view"), never refused
 }
 
 

@@ -11,7 +11,8 @@ describe('comments in the demo app', () => {
 
     // Elena's case study (post_503) has 2 sample comments
     const toggles = await screen.findAllByRole('button', { name: /^Comments \(/ });
-    const elenaToggle = toggles.find((b) => b.getAttribute('aria-label') === 'Comments (2)');
+    const elenaToggle = toggles.find((b) => b.closest('div.card-glow')?.textContent.includes('Subpoena'));
+    expect(elenaToggle.getAttribute('aria-label')).toBe('Comments (2)');
     await click(elenaToggle);
     const section = await screen.findByRole('region', { name: 'Comments' });
     await within(section).findByText(/Saving this for my Civil Procedure exam/);

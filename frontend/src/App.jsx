@@ -553,6 +553,21 @@ export default function App() {
     return () => { cancelled = true; };
   }, [profileUsername, userId]);
 
+  // What someone opens teaches the "For you" feed which professions they look at (the server keeps only the
+  // profession). Each thing counts once per visit, not on every re-render.
+  const lastView = useRef('');
+  const viewTarget = selectedCaseStudy ? ['case_study', selectedCaseStudy.id]
+    : route.page === 'post' ? ['post', route.postId]
+      : route.page === 'profile' ? ['profile', route.username]
+        : route.page === 'profession' ? ['profession', route.slug] : null;
+  const viewKey = userId && viewTarget?.[1] ? viewTarget.join(':') : '';
+  useEffect(() => {
+    if (!viewKey || viewKey === lastView.current) return;
+    lastView.current = viewKey;
+    const [kind, ...rest] = viewKey.split(':');
+    api.recordView(kind, rest.join(':'));
+  }, [viewKey]);
+
   // Load the post named in the address (/p/<id>).
   const pagePostId = route.page === 'post' ? route.postId : null;
   useEffect(() => {

@@ -2,7 +2,7 @@
 // same permissions and validation. One long scenario, in the order a user would do things.
 import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
-import { demoRequest, demoSignOut } from './demoBackend';
+import { demoRequest, demoSignOut, resetDemoData } from './demoBackend';
 import { toChallenge, toComment, toPost, toProfileUser, toQuestion, toStories } from './mappers';
 
 const req = (e, method = 'GET', body) => demoRequest(e, { method, body: body && JSON.stringify(body) });
@@ -347,5 +347,24 @@ describe('demo backend: tags', () => {
     await rejects(req('/posts', 'POST', { title: 'T', caption: 'C', tags: ['two words'] }), 422);
     await rejects(req(`/posts/${p.id}`, 'PATCH', { tags: Array.from({ length: 11 }, (_, i) => `t${i}`) }), 422);
     assert.deepEqual((await req(`/posts/${p.id}`, 'PATCH', { tags: ['#New'] })).tags, ['new']);
+  });
+});
+
+describe('demo backend: For you', () => {
+  it('ranks by interests and what you open, like the server', async () => {
+    resetDemoData();
+    await req('/auth/login', 'POST', { username_or_email: 'david_cpa', password: 'demo1234' });
+    await req('/auth/me', 'PATCH', { interests: ['plumber'] });
+    let feed = (await req('/posts/feed?limit=50')).map(toPost);
+    assert.equal(feed[0].authorUsername, 'sarah_plumber', 'the profession he picked comes first');
+
+    // Opening legal pages moves law up (the opens keep only the profession)
+    for (let i = 0; i < 3; i += 1) await req('/activity/views', 'POST', { kind: 'profession', id: 'lawyer' });
+    await req('/activity/views', 'POST', { kind: 'profile', id: 'elena_lawyer' });
+    feed = (await req('/posts/feed?limit=50')).map(toPost);
+    assert.equal(feed[0].authorUsername, 'elena_lawyer');
+    assert.equal((await req('/community/qa')).map(toQuestion)[0].workerUsername, 'elena_lawyer');
+    await rejects(req('/activity/views', 'POST', { kind: 'page', id: 'x' }), 422);
+    demoSignOut();
   });
 });

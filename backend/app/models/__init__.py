@@ -4,6 +4,7 @@ from app.models.post import CommentReaction, Post, PostComment, PostLike, TaskDe
 from app.models.notification import Notification
 from app.models.social import Follow, FollowRequest, Bookmark
 from app.models.moderation import Block, Report
+from app.models.activity import ViewEvent
 from app.models.community import (
     TaskReview, QAQuestion, QAUpvote, WorkChallenge, ChallengeSuggestion, SuggestionUpvote,
 )
@@ -31,4 +32,5 @@ __all__ = [
     "WorkChallenge",
     "ChallengeSuggestion",
     "SuggestionUpvote",
+    "ViewEvent",
 ]

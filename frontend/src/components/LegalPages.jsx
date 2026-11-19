@@ -10,7 +10,7 @@ import { useI18n } from '../i18n';
 // When the wording changes in a way people must agree to again, also change TERMS_VERSION in
 // backend/app/core/legal.py (each account records the version it accepted) and LAST_UPDATED below.
 
-export const LAST_UPDATED = '18 November 2026';
+export const LAST_UPDATED = '19 November 2026';
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || '';
 
 function Contact() {
@@ -77,9 +77,11 @@ export function PrivacyPage() {
       <H2>What we store</H2>
       <UL>
         <li><strong>Your account:</strong> username, display name, password (stored only as a one-way hash, which nobody can read back), and your email address if you add one, with whether you've confirmed it.</li>
-        <li><strong>Your profile:</strong> bio, photo, your work (field, job title, specialization, years of experience, company) and your interests.</li>
+        <li><strong>Your profile:</strong> bio, photo, your work (field, job title, specialization, years of experience, company) and the professions you'd like to see.</li>
         <li><strong>Your sign-up survey:</strong> whether you work (or what describes you), gender, age, and optionally country and education, plus your choice about sharing them for research.</li>
         <li><strong>What you do on Prologue:</strong> posts, stories, comments, reactions, likes, saved posts, follows, questions and answers, challenges and ideas, reviews, reports you send and accounts you block, and the notifications we create for you.</li>
+        <li><strong>The professions of what you open:</strong> when you open a post, a case study, a profile or a profession page, we note
+          that profession and its field (for example "Nurse, Healthcare"), not which post or person it was. We delete these notes after 90 days.</li>
         <li><strong>The date you accepted these terms</strong> and which version.</li>
         <li><strong>Technical information:</strong> to protect accounts, the server briefly keeps your IP address in memory to count failed logins and limit spam. It isn't written to our database. Our hosting providers keep standard server logs for a short time.</li>
       </UL>
@@ -94,6 +96,10 @@ export function PrivacyPage() {
       <H2>Why we use it</H2>
       <UL>
         <li><strong>To run the service you signed up for:</strong> your account, your content, notifications, and the emails you ask for (confirming your address, resetting your password).</li>
+        <li><strong>To choose your "For you" feed and the order of questions:</strong> from the professions you picked, what you
+          like, comment on, save, review, ask and follow, and the professions of what you open. Recent activity counts more. About one
+          post in five comes from fields you haven't shown interest in, so you keep discovering new work. Nothing is shared with
+          advertisers or anyone else, and the Following feed is never reordered.</li>
         <li><strong>To keep Prologue safe:</strong> spam and login limits, reports, blocking, and moderators reviewing reported content.</li>
         <li><strong>To fix problems:</strong> when the app crashes we receive an error report (see below).</li>
         <li><strong>For research, only if you agree:</strong> if you tick the box at sign-up (you can change it any time in Settings),

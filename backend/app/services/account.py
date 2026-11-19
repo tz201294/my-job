@@ -6,6 +6,7 @@ SQLite, which doesn't enforce foreign keys by default, and on Postgres.
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.activity import ViewEvent
 from app.models import (
     Block, Bookmark, ChallengeSuggestion, CommentReaction, Follow, FollowRequest, Notification, Post, PostComment, PostLike, Report,
     ProfessionProfile, QAQuestion, QAUpvote, Story, SuggestionUpvote, TaskDetails, TaskReview, User, UserInterest,
@@ -128,6 +129,6 @@ async def delete_account(db: AsyncSession, user_id: str) -> None:
     await db.execute(delete(Story).where(Story.user_id == user_id))
 
     # 7. The account itself.
-    for model in (ProfessionProfile, UserSurvey, UserInterest):
+    for model in (ProfessionProfile, UserSurvey, UserInterest, ViewEvent):
         await db.execute(delete(model).where(model.user_id == user_id))
     await db.execute(delete(User).where(User.id == user_id))

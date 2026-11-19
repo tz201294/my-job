@@ -17,6 +17,7 @@ from app.schemas.comment import (
     CommentCreate, CommentPage, CommentResponse, CommentUpdate, ReactionIn, ReactionState,
 )
 from app.services.content import remove_comment, remove_post, sync_comments_count
+from app.services.feed import rank_posts
 from app.services.notifications import notify, withdraw
 from app.services.moderation import (
     ensure_can_interact, ensure_can_see_posts, hidden_user_ids, is_hidden_from, private_hidden_ids,
@@ -24,6 +25,7 @@ from app.services.moderation import (
 from app.schemas.post import PostCreate, PostResponse, PostType, PostUpdate
 
 router = APIRouter()
+RANK_POOL = 300  # how many of the newest posts "For you" ranks
 
 
 @router.get("/feed", response_model=List[PostResponse])
@@ -41,6 +43,7 @@ async def get_feed(
     """Main feed endpoint with optional filters by post type, profession category and author.
 
     `following=true` limits the feed to people the signed-in user follows (plus their own posts).
+    Signed in and without filters, this is "For you": ranked by app/services/feed.py.
     """
     if following and user is None:
         raise HTTPException(status_code=401, detail="Sign in to see your following feed")
@@ -63,7 +66,12 @@ async def get_feed(
         stmt = stmt.join(TaskDetails, TaskDetails.post_id == Post.id).where(
             func.lower(TaskDetails.category) == profession_category.lower()
         )
+    for_you = user is not None and not (following or author_username or profession or post_type or profession_category)
+    if for_you:  # rank the newest RANK_POOL posts, then page through the ranking
+        stmt = stmt.limit(RANK_POOL).offset(0)
     posts = (await db.execute(stmt)).scalars().all()
+    if for_you:
+        posts = (await rank_posts(db, user, posts))[offset:offset + limit]
     liked = await liked_ids_for(db, user, posts)
     saved = await bookmarked_ids_for(db, user, posts)
     return [post_out(p, liked, saved) for p in posts]

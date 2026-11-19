@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.time import utcnow
+from app.models.activity import ViewEvent
 from app.models import (
     Block, Bookmark, ChallengeSuggestion, CommentReaction, Follow, FollowRequest, Notification, Post, PostComment, PostLike,
     ProfessionProfile, QAQuestion, QAUpvote, Report, Story, SuggestionUpvote, TaskDetails, TaskReview, User,
@@ -95,4 +96,7 @@ async def export_user_data(db: AsyncSession, user: User) -> dict:
         "reports_made": [_row(r, drop=("reporter_id", "target_user_id", "resolved_by_id"))
                          for r in await _all(db, select(Report).where(Report.reporter_id == uid))],
         "notifications": with_name(notifications, "actor_id", "from"),
+        # What the "For you" feed learned from: the professions of things you opened (not which ones).
+        "opened_professions": [_row(v, drop=("user_id",)) for v in await _all(
+            db, select(ViewEvent).where(ViewEvent.user_id == uid).order_by(ViewEvent.created_at))],
     }

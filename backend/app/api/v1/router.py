@@ -1,5 +1,7 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, stories, posts, discovery, community, notifications, moderation, uploads, professions
+from app.api.v1.endpoints import (
+    activity, auth, stories, posts, discovery, community, notifications, moderation, uploads, professions,
+)
 
 api_router = APIRouter()
 
@@ -12,3 +14,4 @@ api_router.include_router(notifications.router, prefix="/notifications", tags=["
 api_router.include_router(moderation.router, prefix="/moderation", tags=["Reports & Moderation"])
 api_router.include_router(uploads.router, prefix="/uploads", tags=["Photo uploads"])
 api_router.include_router(professions.router, prefix="/professions", tags=["Profession catalog"])
+api_router.include_router(activity.router, prefix="/activity", tags=["Feed personalization"])

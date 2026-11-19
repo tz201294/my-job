@@ -35,6 +35,7 @@ RULES = {
 # Not answered with 429 (that would tell a stranger the account exists): over this, reset emails just stop.
 SILENT_RULES = {
     "reset_email": [(3, HOUR), (6, DAY)],  # password-reset emails per account
+    "view": [(60, MINUTE), (2000, DAY)],  # opens counted for the feed; beyond this they just aren't counted
 }
 
 limiters = {name: ActionLimiter(limits) for name, (limits, _) in RULES.items()}

@@ -31,6 +31,8 @@ What is done, what is next, and decisions still open. Update this file when a st
   reinstate accounts. Setup: docs/DEPLOY.md step 7.
 - Private accounts: public by default; a private account's posts and stories are for approved followers only
   (follow requests, accepted or declined in Notifications).
+- Interests are catalog professions (picked at sign-up and in Settings), and a personal "For you" feed and AMA order
+  learned from interests, actions and what people open, with about one post in five for discovery.
 - Privacy Policy and Terms of Service pages, accepted at sign-up (version recorded), Download my data (JSON), and
   the font served from the site instead of Google Fonts. Before launch: set VITE_CONTACT_EMAIL and have the text
   checked by someone who knows the law (docs/DEPLOY.md step 6).
